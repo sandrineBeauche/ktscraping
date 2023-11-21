@@ -81,6 +81,10 @@ class SpiderBranch(val scope: CoroutineScope,
             mid.responseOut = spidResp
             mid.itemIn = spidItem
 
+            spiderIn = spidReq
+            spiderOut = spidResp
+            spiderItemIn = spidItem
+
             mid.init()
         }
         return mid

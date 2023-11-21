@@ -10,6 +10,7 @@ import org.kodein.di.*
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
+import kotlin.test.assertNotNull
 
 
 class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMiddleware(scope, name) {
@@ -27,12 +28,12 @@ class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMid
 
 }
 
-data class ItemTest(val value: String): Item
+data class ItemTest(val value: String, val reqName: String): Item
 
-class SpiderClasstest(scope: CoroutineScope, name:String): AbstractSpider(scope, name){
+class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSpider(scope, name){
     override suspend fun parse(req: Request, resp: Response) {
-        logger.debug { "Building a new item "}
-        val item = ItemTest(name)
+        logger.debug { "Building a new item for request ${req.name}"}
+        val item = ItemTest(name, req.name)
         this.itemsOut.send(item)
     }
 
@@ -82,7 +83,7 @@ class CrawlerTest {
                     spiderMiddleware(SpiderMiddlewareClassTest::class) {
                         state["arg1"] = "value1"
                     }
-                    spider(SpiderClasstest::class){
+                    spider(SpiderClassTest::class){
                         urlRequest = "une url"
                         state["returnValue"] = name
                     }
@@ -113,13 +114,13 @@ class CrawlerTest {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 spiderDispatcher {
-                    spider(SpiderClasstest::class, name = "spider1"){
+                    spider(SpiderClassTest::class, name = "spider1"){
                         urlRequest = "une url 1"
-                        state["arg2"] = "value2"
+                        state["arg"] = "value1"
                     }
-                    spider(SpiderClasstest::class, name = "spider2"){
+                    spider(SpiderClassTest::class, name = "spider2"){
                         urlRequest = "une url 2"
-                        state["arg2"] = "value2"
+                        state["arg"] = "value2"
                     }
                 }
             }
@@ -138,10 +139,74 @@ class CrawlerTest {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                channelFactory.spiderItemChannel.receive()
-                channelFactory.spiderItemChannel.receive()
+                val item1 = channelFactory.spiderItemChannel.receive()
+                val item2 = channelFactory.spiderItemChannel.receive()
 
-                logger.debug { "Received the final item" }
+                logger.debug { "Received the final items" }
+                assertNotNull(item1)
+                assertNotNull(item2)
+
+                c.stop()
+                channelFactory.closeChannels()
+            }
+        }
+
+    }
+
+
+    @Test
+    fun testBuildCrawlerWithDispatcherAndBranch() = scope.runTest{
+        coroutineScope {
+            val c = crawler(this, "MainCrawler", ::testDIModule){
+                spiderBranch {
+                    spiderMiddleware(SpiderMiddlewareClassTest::class){
+                        state["arg1"] = "value1"
+                    }
+                    spiderDispatcher {
+                        spiderBranch {
+                            spiderMiddleware(SpiderMiddlewareClassTest::class){
+                                state["arg1"] = "value2"
+                            }
+                            spider(SpiderClassTest::class, name = "spider1"){
+                                urlRequest = "une url 1"
+                                state["arg"] = "value1"
+                            }
+                        }
+                        spiderBranch {
+                            spiderMiddleware(SpiderMiddlewareClassTest::class){
+                                state["arg1"] = "value3"
+                            }
+                            spider(SpiderClassTest::class, name = "spider2"){
+                                urlRequest = "une url 2"
+                                state["arg"] = "value2"
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            launch {
+                c.start()
+            }
+            launch{
+                logger.debug { "interacting with crawler" }
+                val request1 = channelFactory.spiderRequestChannel.receive()
+                val request2 = channelFactory.spiderRequestChannel.receive()
+
+                val response1 = Response(request1)
+                val response2 = Response(request2)
+
+                channelFactory.spiderResponseChannel.send(response1)
+                channelFactory.spiderResponseChannel.send(response2)
+
+                val item1 = channelFactory.spiderItemChannel.receive()
+                val item2 = channelFactory.spiderItemChannel.receive()
+
+                logger.debug { "Received the final items" }
+                assertNotNull(item1)
+                assertNotNull(item2)
+
                 c.stop()
                 channelFactory.closeChannels()
             }

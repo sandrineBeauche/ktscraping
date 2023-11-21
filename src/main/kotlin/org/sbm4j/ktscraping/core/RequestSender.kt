@@ -47,11 +47,11 @@ interface  RequestSender: Controllable {
         scope.launch(CoroutineName("${name}-${request.name}")){
             val respChannel = Channel<Response>(Channel.RENDEZVOUS)
             pendingRequests[request.reqId] = respChannel
-            logger.debug { "sends a request and waits for a response" }
+            logger.debug { "sends the request ${request.name} and waits for a response" }
             requestOut.send(request)
             val response = respChannel.receive()
             respChannel.close()
-            logger.debug { "received the response and call callback" }
+            logger.debug { "received the response for the request ${response.request.name} and call callback" }
             mutex.withLock {
                 try {
                     when (response.status) {
