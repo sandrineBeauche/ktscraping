@@ -1,0 +1,56 @@
+package org.sbm4j.ktscraping.core.dsl
+
+import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.TestScope
+import org.kodein.di.*
+import org.sbm4j.ktscraping.core.*
+import org.sbm4j.ktscraping.requests.AbstractItem
+import org.sbm4j.ktscraping.requests.Item
+import java.util.*
+
+
+data class ItemTest(val value: String, val reqName: String, val url: String = "une url", override val id: UUID = UUID.randomUUID()): AbstractItem(id){
+    override fun clone(): Item {
+        val result = this.copy()
+        return result
+    }
+
+}
+
+
+class EmptyTestingCrawler(
+    scope: CoroutineScope,
+    name: String = "TestCrawler",
+    channelFactory: ChannelFactory,
+    override val di: DI
+) : AbstractCrawler(scope, name, channelFactory){
+    override suspend fun start() {
+        logger.info{"Starting testing crawler ${name}"}
+        super.start()
+    }
+
+    override suspend fun stop() {
+        logger.info{"Stopping testing crawler ${name}"}
+        super.stop()
+    }
+}
+
+
+abstract class CrawlerTest {
+
+    val scope = TestScope()
+
+    val sender: RequestSender = mockk<RequestSender>()
+
+    val channelFactory : ChannelFactory = ChannelFactory()
+
+    fun testDIModule(scope: CoroutineScope, name: String): DI.Module {
+        val mod = DI.Module(name = "testDIModule"){
+            bindSingleton<CoroutineScope> { scope }
+            bind<Crawler> { multiton { di: DI -> EmptyTestingCrawler(instance(), name, instance(), di) }}
+            bindSingleton<ChannelFactory> { channelFactory }
+        }
+        return mod
+    }
+}

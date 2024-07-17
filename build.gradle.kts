@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "2.0.20"
     application
 }
 
@@ -11,30 +11,34 @@ repositories {
 }
 
 
-val kotlin_version: String by project
-val logback_version: String by project
-val coroutines_version: String by project
-val mockk_version: String by project
-val kodein_version = "7.19.0"
+val kotlinVersion: String by project
+val logbackVersion: String by project
+val coroutinesVersion: String by project
+val mockkVersion: String by project
+val kodeinVersion: String by project
+val playwrightVersion: String by project
+val hamkrestVersion: String by project
+val kotlinLoggingVersion: String by project
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutines_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutinesVersion")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:$coroutines_version")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:$coroutinesVersion")
 
     implementation(kotlin("reflect"))
 
-    implementation("ch.qos.logback:logback-classic:$logback_version")
+    implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
-    implementation("org.kodein.di:kodein-di:$kodein_version")
-    implementation("org.kodein.di:kodein-di-jvm:$kodein_version")
+    implementation("org.kodein.di:kodein-di:$kodeinVersion")
+    implementation("org.kodein.di:kodein-di-jvm:$kodeinVersion")
+    implementation("com.microsoft.playwright:playwright:$playwrightVersion")
 
-    testImplementation("io.mockk:mockk:${mockk_version}")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutines_version")
+    testImplementation("io.mockk:mockk:${mockkVersion}")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
     testImplementation(kotlin("test"))
-    testImplementation("com.natpryce:hamkrest:1.8.0.1")
+    testImplementation("com.natpryce:hamkrest:$hamkrestVersion")
 }
 
 tasks.test {
@@ -42,7 +46,8 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(11)
+    jvmToolchain(21
+    )
 }
 
 application {

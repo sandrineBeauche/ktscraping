@@ -11,4 +11,12 @@ data class Request(val sender: RequestSender, var url: String ): Channelable {
     val reqId = lastId.getAndIncrement()
 
     val name = "Request-${reqId}"
+
+    val parameters: MutableMap<String, Any> = mutableMapOf()
+
+    fun extractServerFromUrl(): String{
+        val start = url.indexOf("://")
+        val end = url.indexOf("/", start + 3)
+        return url.substring(start + 3, end)
+    }
 }

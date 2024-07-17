@@ -18,7 +18,7 @@ import org.sbm4j.ktscraping.requests.Response
  */
 interface RequestReceiver: Controllable{
 
-    val requestIn: ReceiveChannel<Request>
+    var requestIn: ReceiveChannel<Request>
 
     val responseOut: SendChannel<Response>
 
@@ -47,7 +47,7 @@ interface RequestReceiver: Controllable{
     fun processRequest(request: Request): Any?
 
     /**
-     * Answers the request. The answer from a request could be following he requests to the next object,
+     * Answers the request. The answer from a request could be following the requests to the next object,
      * or send back a response.
      * @param request the request to be answered
      * @param result the result of the request processing

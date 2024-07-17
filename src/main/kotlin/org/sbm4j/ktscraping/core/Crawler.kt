@@ -8,11 +8,11 @@ import org.kodein.di.*
 fun defaultDIModule(scope: CoroutineScope, name: String): DI.Module {
     val mod = DI.Module(name = "defaultDIModule"){
             bindSingleton<CoroutineScope> { scope }
-            bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(), instance(), name, instance(), instance(), instance(), di) }}
-            bindSingleton<Engine> { Engine(instance(), instance(), instance())  }
-            bindSingleton<Scheduler> { Scheduler(instance()) }
+            bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(), instance(), name, instance(), instance(), di) }}
+            bindSingleton<Engine> { Engine(instance(), instance(), instance()) }
             bindSingleton<CrawlerConfiguration> { CrawlerConfiguration() }
             bindSingleton<ChannelFactory> { ChannelFactory() }
+            bindSingleton<Scheduler> { Scheduler(instance(), instance()) }
         }
     return mod
 }
@@ -59,7 +59,6 @@ class DefaultCrawler(
     channelFactory: ChannelFactory,
     name: String = "MainCrawler",
     val configuration: CrawlerConfiguration,
-    val scheduler: Scheduler,
     val engine: Engine,
     override val di: DI
     ) : AbstractCrawler(scope, name, channelFactory) {

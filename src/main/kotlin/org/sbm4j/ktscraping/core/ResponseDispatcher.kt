@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.core
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
@@ -24,21 +25,21 @@ interface ResponseDispatcher: Controllable, DIAware {
 
 
     suspend fun performRequests(){
-        for ((receiver, sender) in senders) {
-            scope.launch {
+        for ((index, entry) in senders.entries.withIndex()) {
+            val (receiver, sender) = entry
+            scope.launch(CoroutineName("${name}-performRequests-${index}")) {
                 for(request in receiver) {
                     logger.debug { "Received request ${request.name} and follows it" }
                     pendingRequests[request.reqId] = sender as Channel<Response>
                     channelOut.send(request)
                 }
             }
-
         }
     }
 
 
     suspend fun performResponses(){
-        scope.launch {
+        scope.launch(CoroutineName("${name}-performResponses")) {
             for(response in channelIn){
                 val req = response.request
                 logger.debug{ "Received response for the request ${req.name} and dispatch it"}
@@ -88,7 +89,7 @@ class SpiderResponseDispatcher(
 
     suspend fun performItems(){
         for(sender in itemSenders){
-            scope.launch {
+            scope.launch(CoroutineName("${name}-performItems")) {
                 for(item in sender){
                     logger.debug{ "Received an item and follows it" }
                     itemChannelOut.send(item)

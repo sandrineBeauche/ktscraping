@@ -42,6 +42,7 @@ class RequestReceiverTest: ScrapingTest<Request, Response>(){
     @Test
     fun testWithRequest() = TestScope().runTest {
         val (req, resp) = generateRequestResponse(sender)
+        
 
         coroutineScope {
             every { receiver.scope } returns this

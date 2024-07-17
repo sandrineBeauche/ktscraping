@@ -37,7 +37,7 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
 
      override suspend fun start() {
           logger.info{"Starting spider ${name}"}
-          this.receiveResponses()
+          super.start()
           this.startRequests()
      }
 
@@ -48,10 +48,7 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
 
 
      override suspend fun stop() {
-          logger.info{"Stopping spider ${name}"}
-          this.requestOut.close()
           this.itemsOut.close()
-
           super.stop()
      }
 }
