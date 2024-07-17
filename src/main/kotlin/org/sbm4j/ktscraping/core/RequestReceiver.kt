@@ -18,7 +18,7 @@ import org.sbm4j.ktscraping.requests.Response
  */
 interface RequestReceiver: Controllable{
 
-    val requestIn: ReceiveChannel<Request>
+    var requestIn: ReceiveChannel<Request>
 
     val responseOut: SendChannel<Response>
 

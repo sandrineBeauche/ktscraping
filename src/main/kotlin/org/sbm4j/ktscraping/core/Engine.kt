@@ -5,23 +5,26 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.requests.Item
+import org.sbm4j.ktscraping.requests.ItemAck
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 abstract class AbstractEngine(
     override val scope: CoroutineScope,
     channelFactory: ChannelFactory,
-) : RequestSender, RequestReceiver, Pipeline{
+) : RequestSender, RequestReceiver, ItemFollower{
 
     override val mutex: Mutex = Mutex()
     override var state = State()
 
     override val name: String = "Engine"
 
-    override val itemIn: ReceiveChannel<Item> = channelFactory.spiderItemChannel
-    override val itemOut: SendChannel<Item> = channelFactory.itemChannel
+    override var itemIn: ReceiveChannel<Item> = channelFactory.spiderItemChannel
+    override var itemOut: SendChannel<Item> = channelFactory.itemChannel
 
-    override val requestIn: ReceiveChannel<Request> = channelFactory.spiderRequestChannel
+    var itemAckIn: ReceiveChannel<ItemAck> = channelFactory.itemAckChannel
+
+    override var requestIn: ReceiveChannel<Request> = channelFactory.spiderRequestChannel
     override val responseOut: SendChannel<Response> = channelFactory.spiderResponseChannel
 
     override val requestOut: SendChannel<Request> = channelFactory.downloaderRequestChannel
@@ -29,8 +32,8 @@ abstract class AbstractEngine(
 
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
 
-    override fun processItem(item: Item): Boolean {
-        return true
+    override fun processItem(item: Item): Item? {
+        return item
     }
 
 
@@ -45,13 +48,13 @@ abstract class AbstractEngine(
     override suspend fun start() {
         super<RequestSender>.start()
         super<RequestReceiver>.start()
-        super<Pipeline>.start()
+        super<ItemFollower>.start()
     }
 
     override suspend fun stop() {
         super<RequestSender>.stop()
         super<RequestReceiver>.stop()
-        super<Pipeline>.stop()
+        super<ItemFollower>.stop()
     }
 
     override suspend fun pause() {
@@ -66,11 +69,10 @@ abstract class AbstractEngine(
 class Engine(
     scope: CoroutineScope,
     channelFactory: ChannelFactory,
-    val scheduler: Scheduler
 ) : AbstractEngine(scope, channelFactory){
 
     override suspend fun answerRequest(request: Request, result: Any?) {
-        this.scheduler.submitRequest(request)
+        requestOut.send(request)
     }
 
 }

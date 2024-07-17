@@ -1,10 +1,11 @@
-package org.sbm4j.ktscraping.core
+package org.sbm4j.ktscraping.core.dsl
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
+import org.sbm4j.ktscraping.core.*
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
@@ -12,28 +13,11 @@ import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 
 fun buildSpiderChannels(): Triple<Channel<Response>, Channel<Request>, Channel<Item>>{
-    return Triple(Channel<Response>(Channel.UNLIMITED),
-            Channel<Request>(Channel.UNLIMITED),
-            Channel<Item>(Channel.UNLIMITED)
-            )
-}
-
-
-fun crawler(scope: CoroutineScope,
-            name: String = "Crawler",
-            diModuleFactory: (CoroutineScope, String) -> DI.Module,
-            init: Crawler.() -> Unit): Crawler{
-    val di = DI{
-        import(diModuleFactory(scope, name))
-    }
-    val result : Crawler by di.instance(arg = di)
-    result.init()
-    return result
-}
-
-
-fun DefaultCrawler.configuration(initConf: CrawlerConfiguration.() -> Unit){
-    this.configuration.initConf()
+    return Triple(
+        Channel<Response>(Channel.UNLIMITED),
+        Channel<Request>(Channel.UNLIMITED),
+        Channel<Item>(Channel.UNLIMITED)
+    )
 }
 
 fun Crawler.spiderBranch(initBranch: SpiderBranch.() -> Unit){
@@ -57,18 +41,19 @@ fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: Spider
 }
 
 
+
 class SpiderBranch(val scope: CoroutineScope,
                    var spiderIn: Channel<Request>,
                    var spiderOut: Channel<Response>,
                    var spiderItemIn: Channel<Item>,
                    override val di: DI
-) : DIAware{
+) : DIAware {
 
     val senders : MutableList<Controllable> = mutableListOf()
 
     fun <T : SpiderMiddleware>spiderMiddleware(clazz: KClass<T>,
                                                name: String = "SpiderMiddleware",
-                                               init: T.() -> Unit): T?{
+                                               init: T.() -> Unit = {}): T?{
         val mid = clazz.primaryConstructor?.call(scope, name)
         if(mid != null) {
             senders.add(mid)
@@ -92,7 +77,7 @@ class SpiderBranch(val scope: CoroutineScope,
 
     fun <T: AbstractSpider>spider(clazz: KClass<T>,
                                   name:String = "Spider",
-                                  init: T.() -> Unit): T? {
+                                  init: T.() -> Unit = {}): T? {
         val spid = clazz.primaryConstructor?.call(scope, name)
         if(spid !=null){
             senders.add(spid)
@@ -116,9 +101,9 @@ class SpiderBranch(val scope: CoroutineScope,
 
 }
 
-fun <T: AbstractSpider>SpiderResponseDispatcher.spider(clazz: KClass<T>,
-                                                       name: String = "Spider",
-                                                       init: T.() -> Unit): T? {
+fun <T: AbstractSpider> SpiderResponseDispatcher.spider(clazz: KClass<T>,
+                                                        name: String = "Spider",
+                                                        init: T.() -> Unit = {}): T? {
     val spid = clazz.primaryConstructor?.call(scope, name)
     if(spid !=null){
         val crawler : Crawler by di.instance(arg = this.di)

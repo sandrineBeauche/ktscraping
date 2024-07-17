@@ -1,15 +1,22 @@
 package org.sbm4j.ktscraping.core
 
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.sync.Mutex
+import org.kodein.di.DI
+import org.kodein.di.DIAware
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
-interface RequestDispatcher: Controllable {
+interface RequestDispatcher: Controllable, DIAware {
 
-    val receivers: HashMap<SendChannel<Request>, ReceiveChannel<Response>>
+    val senders: MutableList<SendChannel<Request>>
+
+    val receivers: MutableList<ReceiveChannel<Response>>
 
     val channelOut: SendChannel<Response>
 
@@ -17,9 +24,10 @@ interface RequestDispatcher: Controllable {
 
 
     suspend fun performRequests(){
-        scope.launch{
+        scope.launch(CoroutineName("${name}-performRequests")){
             for(request in channelIn){
                 val channel = selectChannel(request)
+                logger.debug { "Received request ${request.name} and dispatch it" }
                 channel.send(request)
             }
         }
@@ -28,15 +36,48 @@ interface RequestDispatcher: Controllable {
     fun selectChannel(request: Request): SendChannel<Request>
 
     suspend fun performResponses(){
-        scope.launch {
-            select {
-                for(ch in receivers.values){
-                    ch.onReceiveCatching{ it ->
-                        val value = it.getOrNull()
-                        channelOut.send(value!!)
-                    }
+        for((index, receiver) in receivers.withIndex()) {
+            scope.launch(CoroutineName("${name}-performResponses-${index}")) {
+                for (response in receiver) {
+                    logger.debug { "Received response for the request ${response.request.name} and follows it" }
+                    channelOut.send(response)
                 }
             }
         }
+    }
+
+    override suspend fun start() {
+        logger.info{ "Starting the request dispatcher ${name}"}
+        performRequests()
+        performResponses()
+    }
+
+    override suspend fun stop() {
+        logger.info{ "Stopping the response dispatcher ${name}"}
+        this.channelOut.close()
+        for(sender in senders){
+            sender.close()
+        }
+    }
+}
+
+abstract class DownloaderRequestDispatcher(
+    override val scope: CoroutineScope,
+    override val name: String = "DownloaderRequestDispatcher",
+    override val di: DI
+): RequestDispatcher{
+
+    override val senders: MutableList<SendChannel<Request>> = mutableListOf()
+    override val receivers: MutableList<ReceiveChannel<Response>> = mutableListOf()
+
+    override lateinit var channelOut: SendChannel<Response>
+    override lateinit var channelIn: ReceiveChannel<Request>
+
+    override val mutex: Mutex = Mutex()
+    override var state: State = State()
+
+    fun addBranch(reqChannel: Channel<Request>, respChannel: Channel<Response>){
+        this.senders.add(reqChannel)
+        this.receivers.add(respChannel)
     }
 }

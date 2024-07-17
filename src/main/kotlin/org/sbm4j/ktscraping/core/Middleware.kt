@@ -72,7 +72,7 @@ abstract class AbstractMiddleware(override val scope: CoroutineScope, override v
  *
  */
 abstract class SpiderMiddleware(scope: CoroutineScope, name:String):
-    AbstractMiddleware(scope, name), Pipeline{
+    AbstractMiddleware(scope, name), ItemFollower {
 
     override lateinit var itemIn: ReceiveChannel<Item>
     override lateinit var itemOut: SendChannel<Item>
@@ -80,12 +80,12 @@ abstract class SpiderMiddleware(scope: CoroutineScope, name:String):
     override suspend fun start() {
         logger.info{"Starting spider middleware ${name}"}
         super<AbstractMiddleware>.start()
-        super<Pipeline>.start()
+        super<ItemFollower>.start()
     }
 
     override suspend fun stop() {
         logger.info{"Stopping spider middleware ${name}"}
         super<AbstractMiddleware>.stop()
-        super<Pipeline>.stop()
+        super<ItemFollower>.stop()
     }
 }
