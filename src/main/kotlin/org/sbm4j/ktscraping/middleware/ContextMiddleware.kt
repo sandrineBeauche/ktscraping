@@ -3,6 +3,7 @@ package org.sbm4j.ktscraping.middleware
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
@@ -10,7 +11,7 @@ class ContextMiddleware(scope: CoroutineScope, name: String) : AbstractMiddlewar
 
     val contexts: MutableMap<RequestSender, Any> = mutableMapOf()
 
-    override fun processRequest(request: Request): Any? {
+    override fun processRequest(request: AbstractRequest): Any? {
         if(contexts.containsKey(request.sender)){
             request.parameters["context"] = contexts.containsKey(request.sender)
         }

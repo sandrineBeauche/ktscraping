@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
@@ -18,7 +19,7 @@ interface Middleware : RequestSender, RequestReceiver {
     /**
      * Answers a request by following it to the next piece
      */
-    override suspend fun answerRequest(request: Request, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
         logger.debug{ "follows request ${request.name}"}
         requestOut.send(request)
     }
@@ -61,10 +62,10 @@ abstract class AbstractMiddleware(override val scope: CoroutineScope, override v
     override var state: State = State()
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
 
-    override lateinit var requestIn: ReceiveChannel<Request>
+    override lateinit var requestIn: ReceiveChannel<AbstractRequest>
     override lateinit var responseOut: SendChannel<Response>
 
-    override lateinit var requestOut: SendChannel<Request>
+    override lateinit var requestOut: SendChannel<AbstractRequest>
     override lateinit var responseIn: ReceiveChannel<Response>
 
 }

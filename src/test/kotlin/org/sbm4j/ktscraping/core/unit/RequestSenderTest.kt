@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.PendingRequestMap
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
@@ -26,11 +27,11 @@ abstract class RequestSenderMock() : RequestSender {
         (responseIn as Channel).close()
     }
 
-    suspend fun callback(request: Request, response: Response){
+    suspend fun callback(request: AbstractRequest, response: Response){
         closeChannels()
     }
 
-    suspend fun callbackErr(request: Request, response: Response){
+    suspend fun callbackErr(request: AbstractRequest, response: Response){
         closeChannels()
     }
 
@@ -40,7 +41,7 @@ abstract class RequestSenderMock() : RequestSender {
 }
 
 
-class RequestSenderTest: ScrapingTest<Response, Request>() {
+class RequestSenderTest: ScrapingTest<Response, AbstractRequest>() {
 
 
     val sender: RequestSenderMock = spyk<RequestSenderMock>()

@@ -17,6 +17,7 @@ import org.sbm4j.ktscraping.core.PendingRequestMap
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.ResponseDispatcher
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
@@ -27,7 +28,7 @@ abstract class ResponseDispatcherMock: ResponseDispatcher{
     override val name: String = "ResponseDispatcherMock"
 }
 
-class ResponseDispatcherTest: ScrapingTest<Response, Request>(){
+class ResponseDispatcherTest: ScrapingTest<Response, AbstractRequest>(){
 
     val sender1 : RequestSender = mockk<RequestSender>()
 
@@ -41,7 +42,7 @@ class ResponseDispatcherTest: ScrapingTest<Response, Request>(){
 
     val respChannel2: Channel<Response> = Channel(Channel.UNLIMITED)
 
-    val senders : MutableMap<ReceiveChannel<Request>, SendChannel<Response>> = mutableMapOf(
+    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response>> = mutableMapOf(
         reqChannel1 to respChannel1,
         reqChannel2 to respChannel2
     )

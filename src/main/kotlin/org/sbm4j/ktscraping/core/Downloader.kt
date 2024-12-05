@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
@@ -13,11 +14,11 @@ abstract class AbstractDownloader(override val scope: CoroutineScope,
     override val mutex: Mutex = Mutex()
     override var state: State = State()
 
-    override lateinit var requestIn: ReceiveChannel<Request>
+    override lateinit var requestIn: ReceiveChannel<AbstractRequest>
     override lateinit var responseOut: SendChannel<Response>
 
 
-    override suspend fun answerRequest(request: Request, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
         responseOut.send(result as Response)
     }
 

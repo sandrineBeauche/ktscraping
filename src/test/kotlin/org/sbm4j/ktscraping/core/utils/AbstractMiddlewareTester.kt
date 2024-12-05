@@ -8,11 +8,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractMiddlewareTester: DualScrapingTest<Request, Response>() {
+abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Response>() {
 
     val sender: RequestSender = mockk<RequestSender>()
 

@@ -8,6 +8,7 @@ import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.requests.AbstractRequest
 
 abstract class AbstractEngine(
     final override val scope: CoroutineScope,
@@ -24,10 +25,10 @@ abstract class AbstractEngine(
 
     var itemAckIn: ReceiveChannel<ItemAck> = channelFactory.itemAckChannel
 
-    override var requestIn: ReceiveChannel<Request> = channelFactory.spiderRequestChannel
+    override var requestIn: ReceiveChannel<AbstractRequest> = channelFactory.spiderRequestChannel
     override val responseOut: SendChannel<Response> = channelFactory.spiderResponseChannel
 
-    override val requestOut: SendChannel<Request> = channelFactory.downloaderRequestChannel
+    override val requestOut: SendChannel<AbstractRequest> = channelFactory.downloaderRequestChannel
     override val responseIn: ReceiveChannel<Response> = channelFactory.downloaderResponseChannel
 
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
@@ -68,11 +69,11 @@ class Engine(
     val scheduler: Scheduler
 ) : AbstractEngine(scope, channelFactory){
 
-    override fun processRequest(request: Request): Any? {
+    override fun processRequest(request: AbstractRequest): Any? {
         return true
     }
 
-    override suspend fun answerRequest(request: Request, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
         this.scheduler.submitRequest(request)
     }
 

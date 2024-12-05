@@ -6,16 +6,17 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.reflect.KClass
 import kotlin.reflect.full.primaryConstructor
 
-fun buildSpiderChannels(): Triple<Channel<Response>, Channel<Request>, Channel<Item>>{
+fun buildSpiderChannels(): Triple<Channel<Response>, Channel<AbstractRequest>, Channel<Item>>{
     return Triple(
         Channel<Response>(Channel.UNLIMITED),
-        Channel<Request>(Channel.UNLIMITED),
+        Channel<AbstractRequest>(Channel.UNLIMITED),
         Channel<Item>(Channel.UNLIMITED)
     )
 }
@@ -43,7 +44,7 @@ fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: Spider
 
 
 class SpiderBranch(val scope: CoroutineScope,
-                   var spiderIn: Channel<Request>,
+                   var spiderIn: Channel<AbstractRequest>,
                    var spiderOut: Channel<Response>,
                    var spiderItemIn: Channel<Item>,
                    override val di: DI

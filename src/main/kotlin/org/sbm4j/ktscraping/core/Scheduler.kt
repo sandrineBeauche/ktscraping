@@ -8,12 +8,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 
 
 class Scheduler(override val scope: CoroutineScope, val configuration: CrawlerConfiguration): Controllable {
 
-    lateinit var requestOut: SendChannel<Request>
+    lateinit var requestOut: SendChannel<AbstractRequest>
 
     override val mutex: Mutex = Mutex()
     override val name: String = "Scheduler"
@@ -21,11 +22,11 @@ class Scheduler(override val scope: CoroutineScope, val configuration: CrawlerCo
 
     val requestSemaphore: Semaphore = Semaphore(configuration.nbConnexions, 0)
 
-    val pendingRequest: MutableMap<String, Channel<Request>> = mutableMapOf()
+    val pendingRequest: MutableMap<String, Channel<AbstractRequest>> = mutableMapOf()
 
-    suspend fun submitRequest(request: Request) {
+    suspend fun submitRequest(request: AbstractRequest) {
         val server = request.extractServerFromUrl()
-        var ch: Channel<Request>
+        var ch: Channel<AbstractRequest>
         mutex.withLock {
             logger.debug { "Scheduling request ${request} on server ${server}" }
             if(!pendingRequest.containsKey(server)){
@@ -38,7 +39,8 @@ class Scheduler(override val scope: CoroutineScope, val configuration: CrawlerCo
                         requestOut.send(req)
                         if(configuration.autoThrottle > 0){
                             logger.debug { "delai of ${configuration.autoThrottle}ms for auto-throttle"}
-                            delay(configuration.autoThrottle.toLong())
+                            delay(10000)
+                            logger.debug { "ready to send another request" }
                         }
                     }
                 }

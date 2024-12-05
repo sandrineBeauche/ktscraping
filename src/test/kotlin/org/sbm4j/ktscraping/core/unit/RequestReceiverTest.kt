@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.RequestReceiver
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
@@ -18,7 +19,7 @@ abstract class RequestReceiverMock(): RequestReceiver {
     override val mutex: Mutex = Mutex()
     override val name: String = "RequestReceiver"
 
-    override suspend fun answerRequest(request: Request, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
         (requestIn as Channel).close()
         responseOut.close()
     }

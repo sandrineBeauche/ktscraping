@@ -2,22 +2,24 @@ package org.sbm4j.ktscraping.dowloaders
 
 import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
+import com.microsoft.playwright.BrowserType.LaunchOptions
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.requests.Request
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
 
-class PlaywrightDownloader(scope: CoroutineScope, name: String) : AbstractDownloader(scope, name) {
+
+class PlaywrightDownloader(scope: CoroutineScope, name: String, val headless: Boolean = true) : AbstractDownloader(scope, name) {
 
     lateinit var browser: Browser
 
     override suspend fun start() {
         super.start()
         val playwright = Playwright.create()
-        browser = playwright.chromium().launch()
+        browser = playwright.chromium().launch(LaunchOptions().setHeadless(headless))
     }
 
     override suspend fun stop() {
@@ -25,7 +27,7 @@ class PlaywrightDownloader(scope: CoroutineScope, name: String) : AbstractDownlo
         browser.close()
     }
 
-    override fun processRequest(request: Request): Any? {
+    override fun processRequest(request: AbstractRequest): Any? {
         val context = getContext(request)
         val page = context.newPage()
         page.navigate(request.url)
@@ -35,14 +37,17 @@ class PlaywrightDownloader(scope: CoroutineScope, name: String) : AbstractDownlo
             page.func()
         }
 
-        val content = page.content()
         val response = Response(request, Status.OK)
-        response.contents["payload"] = content
+        response.contents["payload"] = page.content()
+        if(page.frames().size > 1){
+            val frames = page.frames().associateBy({it.name()}, {it.content()})
+            response.contents["frames"] = frames
+        }
         response.contents["context"] = context
         return response
     }
 
-    fun getContext(request: Request): BrowserContext{
+    fun getContext(request: AbstractRequest): BrowserContext{
         return if(request.parameters.containsKey("context")){
             request.parameters["context"] as BrowserContext
         } else{

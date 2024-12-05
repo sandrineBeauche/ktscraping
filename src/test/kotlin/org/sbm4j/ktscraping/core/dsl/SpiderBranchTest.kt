@@ -1,3 +1,4 @@
+
 package org.sbm4j.ktscraping.core.dsl
 
 import com.natpryce.hamkrest.allOf
@@ -13,19 +14,20 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractSpider
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSpider(scope, name){
-    override suspend fun parse(req: Request, resp: Response) {
+    override suspend fun parse(req: AbstractRequest, resp: Response) {
         logger.debug { "Building a new item for request ${req.name}"}
         val item = ItemTest(state["returnValue"] as String, req.name, req.url)
 
         this.itemsOut.send(item)
     }
 
-    override suspend fun callbackError(req: Request, resp: Response) {
+    override suspend fun callbackError(req: AbstractRequest, resp: Response) {
     }
 
 }
@@ -35,7 +37,7 @@ class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMid
         return true
     }
 
-    override fun processRequest(request: Request): Any? {
+    override fun processRequest(request: AbstractRequest): Any? {
         return request
     }
 

@@ -5,7 +5,7 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
-import org.sbm4j.ktscraping.requests.Request
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Response
 
 
@@ -18,7 +18,7 @@ import org.sbm4j.ktscraping.requests.Response
  */
 interface RequestReceiver: Controllable{
 
-    var requestIn: ReceiveChannel<Request>
+    var requestIn: ReceiveChannel<AbstractRequest>
 
     val responseOut: SendChannel<Response>
 
@@ -44,7 +44,7 @@ interface RequestReceiver: Controllable{
      * @param request the request to be processes
      * @return true if the request should be answered, false otherwise
      */
-    fun processRequest(request: Request): Any?
+    fun processRequest(request: AbstractRequest): Any?
 
     /**
      * Answers the request. The answer from a request could be following the requests to the next object,
@@ -52,7 +52,7 @@ interface RequestReceiver: Controllable{
      * @param request the request to be answered
      * @param result the result of the request processing
      */
-    suspend fun answerRequest(request: Request, result: Any?)
+    suspend fun answerRequest(request: AbstractRequest, result: Any?)
 
     override suspend fun start() {
         this.performRequests()

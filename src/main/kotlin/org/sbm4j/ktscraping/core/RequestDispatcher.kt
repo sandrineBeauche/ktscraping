@@ -9,18 +9,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.DI
 import org.kodein.di.DIAware
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 interface RequestDispatcher: Controllable, DIAware {
 
-    val senders: MutableList<SendChannel<Request>>
+    val senders: MutableList<SendChannel<AbstractRequest>>
 
     val receivers: MutableList<ReceiveChannel<Response>>
 
     val channelOut: SendChannel<Response>
 
-    val channelIn: ReceiveChannel<Request>
+    val channelIn: ReceiveChannel<AbstractRequest>
 
 
     suspend fun performRequests(){
@@ -33,7 +34,7 @@ interface RequestDispatcher: Controllable, DIAware {
         }
     }
 
-    fun selectChannel(request: Request): SendChannel<Request>
+    fun selectChannel(request: AbstractRequest): SendChannel<AbstractRequest>
 
     suspend fun performResponses(){
         for((index, receiver) in receivers.withIndex()) {
@@ -67,16 +68,16 @@ abstract class DownloaderRequestDispatcher(
     override val di: DI
 ): RequestDispatcher{
 
-    override val senders: MutableList<SendChannel<Request>> = mutableListOf()
+    override val senders: MutableList<SendChannel<AbstractRequest>> = mutableListOf()
     override val receivers: MutableList<ReceiveChannel<Response>> = mutableListOf()
 
     override lateinit var channelOut: SendChannel<Response>
-    override lateinit var channelIn: ReceiveChannel<Request>
+    override lateinit var channelIn: ReceiveChannel<AbstractRequest>
 
     override val mutex: Mutex = Mutex()
     override var state: State = State()
 
-    fun addBranch(reqChannel: Channel<Request>, respChannel: Channel<Response>){
+    fun addBranch(reqChannel: Channel<AbstractRequest>, respChannel: Channel<Response>){
         this.senders.add(reqChannel)
         this.receivers.add(respChannel)
     }

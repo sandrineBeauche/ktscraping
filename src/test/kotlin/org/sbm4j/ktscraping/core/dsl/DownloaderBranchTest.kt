@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
@@ -21,13 +22,13 @@ class MiddlewareClassTest(scope: CoroutineScope, name: String): AbstractMiddlewa
         return true
     }
 
-    override fun processRequest(request: Request): Any? {
+    override fun processRequest(request: AbstractRequest): Any? {
         return request
     }
 }
 
 class DownloaderClassTest(scope: CoroutineScope, name: String) : AbstractDownloader(scope, name){
-    override fun processRequest(request: Request): Any? {
+    override fun processRequest(request: AbstractRequest): Any? {
         val resp = Response(request)
         resp.contents["downloader"] = name
         return resp
@@ -82,7 +83,7 @@ class DownloaderBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 downloaderDispatcher("dispatcher1",
-                    {req: Request ->
+                    {req: AbstractRequest ->
                         if(req.url == url1) senders[0]
                         else senders[1]
                     })
@@ -115,12 +116,12 @@ class DownloaderBranchTest: CrawlerTest() {
         }
 
         assertThat(response1, allOf(
-            has(Response::request, has(Request::url, equalTo(url1))),
+            has(Response::request, has(AbstractRequest::url, equalTo(url1))),
             has(Response::contents, equalTo(mutableMapOf("downloader" to "Downloader1")))
         ))
 
         assertThat(response2, allOf(
-            has(Response::request, has(Request::url, equalTo(url2))),
+            has(Response::request, has(AbstractRequest::url, equalTo(url2))),
             has(Response::contents, equalTo(mutableMapOf("downloader" to "Downloader2")))
         ))
     }
@@ -136,7 +137,7 @@ class DownloaderBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 downloaderDispatcher("dispatcher1",
-                    {req: Request ->
+                    {req: AbstractRequest ->
                         if(req.url == url1) senders[0]
                         else senders[1]
                     })
@@ -175,12 +176,12 @@ class DownloaderBranchTest: CrawlerTest() {
         }
 
         assertThat(response1, allOf(
-            has(Response::request, has(Request::url, equalTo(url1))),
+            has(Response::request, has(AbstractRequest::url, equalTo(url1))),
             has(Response::contents, equalTo(mutableMapOf("downloader" to "Downloader1")))
         ))
 
         assertThat(response2, allOf(
-            has(Response::request, has(Request::url, equalTo(url2))),
+            has(Response::request, has(AbstractRequest::url, equalTo(url2))),
             has(Response::contents, equalTo(mutableMapOf("downloader" to "Downloader2")))
         ))
     }

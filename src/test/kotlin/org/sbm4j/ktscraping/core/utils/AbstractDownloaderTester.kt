@@ -8,11 +8,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractDownloaderTester: ScrapingTest<Request, Response>() {
+abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>() {
 
     lateinit var downloader: AbstractDownloader
 
@@ -46,5 +47,14 @@ abstract class AbstractDownloaderTester: ScrapingTest<Request, Response>() {
             closeChannels()
             downloader.stop()
         }
+    }
+
+    protected suspend fun sendRequest(request: AbstractRequest): Response?{
+        var response: Response? = null
+        withDownloader {
+            inChannel.send(request)
+            response = outChannel.receive()
+        }
+        return response
     }
 }

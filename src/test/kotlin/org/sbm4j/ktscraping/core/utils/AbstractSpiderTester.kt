@@ -8,12 +8,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractSpider
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractSpiderTester: ScrapingTest<Response, Request>(){
+abstract class AbstractSpiderTester: ScrapingTest<Response, AbstractRequest>(){
 
     lateinit var spider: AbstractSpider
 

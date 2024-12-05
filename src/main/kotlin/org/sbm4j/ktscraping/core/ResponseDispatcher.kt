@@ -9,15 +9,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.DI
 import org.kodein.di.DIAware
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 interface ResponseDispatcher: Controllable, DIAware {
 
-    val senders : MutableMap<ReceiveChannel<Request>, SendChannel<Response>>
+    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response>>
 
-    val channelOut: SendChannel<Request>
+    val channelOut: SendChannel<AbstractRequest>
 
     val channelIn: ReceiveChannel<Response>
 
@@ -71,11 +72,11 @@ class SpiderResponseDispatcher(
     override val di: DI
 ): ResponseDispatcher{
 
-    override val senders: MutableMap<ReceiveChannel<Request>, SendChannel<Response>> = mutableMapOf()
+    override val senders: MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response>> = mutableMapOf()
 
     val itemSenders: MutableList<ReceiveChannel<Item>> = mutableListOf()
 
-    override lateinit var channelOut: SendChannel<Request>
+    override lateinit var channelOut: SendChannel<AbstractRequest>
 
     override lateinit var channelIn: ReceiveChannel<Response>
 
@@ -108,7 +109,7 @@ class SpiderResponseDispatcher(
         super.stop()
     }
 
-    fun addBranch(reqChannel: Channel<Request>, respChannel: Channel<Response>, itemChannel: Channel<Item>){
+    fun addBranch(reqChannel: Channel<AbstractRequest>, respChannel: Channel<Response>, itemChannel: Channel<Item>){
         this.senders.put(reqChannel, respChannel)
         this.itemSenders.add(itemChannel)
     }

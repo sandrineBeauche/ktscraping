@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
@@ -18,7 +19,7 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
      override var state: State = State()
      override var pendingRequests: PendingRequestMap = PendingRequestMap()
 
-     override lateinit var requestOut: SendChannel<Request>
+     override lateinit var requestOut: SendChannel<AbstractRequest>
      override lateinit var responseIn: ReceiveChannel<Response>
 
      lateinit var itemsOut: SendChannel<Item>
@@ -31,9 +32,9 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
           this.send(req, ::parse, ::callbackError)
      }
 
-     abstract suspend fun parse(req: Request, resp: Response)
+     abstract suspend fun parse(req: AbstractRequest, resp: Response)
 
-     abstract suspend fun callbackError(req: Request, resp: Response)
+     abstract suspend fun callbackError(req: AbstractRequest, resp: Response)
 
      override suspend fun start() {
           logger.info{"Starting spider ${name}"}

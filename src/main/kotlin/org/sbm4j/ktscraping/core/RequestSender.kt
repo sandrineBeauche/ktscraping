@@ -6,13 +6,14 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KSuspendFunction2
 
-typealias Callback = KSuspendFunction2<Request, Response, Unit>
+typealias Callback = KSuspendFunction2<AbstractRequest, Response, Unit>
 typealias PendingRequestMap = ConcurrentHashMap<Int, Channel<Response>>
 
 class NoRequestSenderException(message: String) : Exception(message)
@@ -33,7 +34,7 @@ interface  RequestSender: Controllable {
 
     var pendingRequests: PendingRequestMap
 
-    val requestOut: SendChannel<Request>
+    val requestOut: SendChannel<AbstractRequest>
 
     val responseIn: ReceiveChannel<Response>
 
@@ -43,7 +44,7 @@ interface  RequestSender: Controllable {
      * @param request the request to be sent
      * @param callback the callback to be executed
      */
-    suspend fun send(request: Request, callback: Callback, callbackError: Callback? = null) {
+    suspend fun send(request: AbstractRequest, callback: Callback, callbackError: Callback? = null) {
         scope.launch(CoroutineName("${name}-${request.name}")){
             val respChannel = Channel<Response>(Channel.RENDEZVOUS)
             pendingRequests[request.reqId] = respChannel

@@ -17,6 +17,7 @@ import org.kodein.di.DI
 import org.sbm4j.ktscraping.core.DownloaderRequestDispatcher
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
@@ -27,7 +28,7 @@ class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response>() {
     val sender1 : RequestSender = mockk<RequestSender>()
 
     val dispatcher = spyk(object: DownloaderRequestDispatcher(mockk<CoroutineScope>(), di = mockk<DI>()){
-        override fun selectChannel(request: Request): SendChannel<Request> {
+        override fun selectChannel(request: AbstractRequest): SendChannel<AbstractRequest> {
             return when(request.url){
                 "url1" -> senders[0]
                 else -> senders[1]
@@ -35,11 +36,11 @@ class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response>() {
         }
     })
 
-    val reqChannel1: Channel<Request> = Channel(Channel.UNLIMITED)
+    val reqChannel1: Channel<AbstractRequest> = Channel(Channel.UNLIMITED)
 
     val respChannel1: Channel<Response> = Channel(Channel.UNLIMITED)
 
-    val reqChannel2: Channel<Request> = Channel(Channel.UNLIMITED)
+    val reqChannel2: Channel<AbstractRequest> = Channel(Channel.UNLIMITED)
 
     val respChannel2: Channel<Response> = Channel(Channel.UNLIMITED)
 

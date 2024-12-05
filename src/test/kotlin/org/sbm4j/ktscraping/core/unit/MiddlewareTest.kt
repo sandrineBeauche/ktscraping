@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
+import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.Test
@@ -20,7 +21,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
                 return true
             }
 
-            override fun processRequest(request: Request): Any? {
+            override fun processRequest(request: AbstractRequest): Any? {
                 request.url = "Another url"
                 return request
             }
