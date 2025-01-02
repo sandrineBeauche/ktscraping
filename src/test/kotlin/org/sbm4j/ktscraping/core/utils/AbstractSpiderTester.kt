@@ -14,7 +14,8 @@ import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractSpiderTester: ScrapingTest<Response, AbstractRequest>(){
+abstract class AbstractSpiderTester: ScrapingTest<Response,
+        AbstractRequest>(){
 
     lateinit var spider: AbstractSpider
 

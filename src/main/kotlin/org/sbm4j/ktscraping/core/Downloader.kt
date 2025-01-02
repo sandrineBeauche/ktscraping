@@ -24,12 +24,12 @@ abstract class AbstractDownloader(override val scope: CoroutineScope,
 
 
     override suspend fun start() {
-        logger.info{"Starting downloader ${name}"}
+        logger.info{"${name}: Starting downloader"}
         super.start()
     }
 
     override suspend fun stop() {
-        logger.info{"Stopping spider ${name}"}
+        logger.info{"${name}: Stopping downloader"}
         super.stop()
     }
 }

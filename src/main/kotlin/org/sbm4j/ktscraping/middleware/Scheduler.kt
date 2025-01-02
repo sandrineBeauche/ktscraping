@@ -1,4 +1,4 @@
-package org.sbm4j.ktscraping.core
+package org.sbm4j.ktscraping.middleware
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -8,8 +8,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import org.sbm4j.ktscraping.core.Controllable
+import org.sbm4j.ktscraping.core.CrawlerConfiguration
+import org.sbm4j.ktscraping.core.State
+import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
 
 
 class Scheduler(override val scope: CoroutineScope, val configuration: CrawlerConfiguration): Controllable {
@@ -28,19 +31,19 @@ class Scheduler(override val scope: CoroutineScope, val configuration: CrawlerCo
         val server = request.extractServerFromUrl()
         var ch: Channel<AbstractRequest>
         mutex.withLock {
-            logger.debug { "Scheduling request ${request} on server ${server}" }
+            logger.debug { "${name}: Scheduling request ${request.name} on server ${server}" }
             if(!pendingRequest.containsKey(server)){
                 ch = Channel(Channel.UNLIMITED)
                 pendingRequest.put(server, ch)
                 scope.launch {
                     for(req in ch){
                         requestSemaphore.acquire()
-                        logger.debug { "Sending request ${req}" }
+                        logger.debug { "${name}: Sending request ${req.name}" }
                         requestOut.send(req)
                         if(configuration.autoThrottle > 0){
-                            logger.debug { "delai of ${configuration.autoThrottle}ms for auto-throttle"}
+                            logger.debug { "${name}: delai of ${configuration.autoThrottle}ms for auto-throttle"}
                             delay(10000)
-                            logger.debug { "ready to send another request" }
+                            logger.debug { "${name}: ready to send another request" }
                         }
                     }
                 }
@@ -56,12 +59,12 @@ class Scheduler(override val scope: CoroutineScope, val configuration: CrawlerCo
 
 
     override suspend fun start() {
-        logger.debug{"start scheduling requests"}
+        logger.debug{"${name}: start scheduling requests"}
     }
 
     override suspend fun stop() {
         super.stop()
-        logger.debug{"stop scheduling requests"}
+        logger.debug{"${name}: stop scheduling requests"}
         for(ch in pendingRequest.values){
             ch.close()
         }

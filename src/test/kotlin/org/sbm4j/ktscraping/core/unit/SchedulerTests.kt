@@ -10,7 +10,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.CrawlerConfiguration
 import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.Scheduler
+import org.sbm4j.ktscraping.middleware.Scheduler
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import kotlin.test.BeforeTest

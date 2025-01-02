@@ -34,11 +34,13 @@ abstract class ItemDispatcher(override val scope: CoroutineScope, override val n
 
 
     override suspend fun start() {
+        logger.info { "${name}: starting the item dispatcher" }
         this.performItems()
         this.performAcks()
     }
 
     override suspend fun stop() {
+        logger.info { "${name}: stopping the item dispatcher" }
         itemAckOut.close()
         for(current in itemOuts){
             current.close()

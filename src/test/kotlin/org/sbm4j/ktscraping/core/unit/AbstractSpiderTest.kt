@@ -4,6 +4,7 @@ import io.mockk.coVerify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.sbm4j.ktscraping.core.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.AbstractSpider
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.requests.*
@@ -21,13 +22,13 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         }
     }
 
-    override fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSpider{
-        return object: AbstractSpider(sc,  spiderName){
-            override suspend fun parse(req: AbstractRequest, resp: Response) {
+    override fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSimpleSpider {
+        return object: AbstractSimpleSpider(sc,  spiderName){
+            override suspend fun parse(resp: Response) {
                 this.itemsOut.send(expectedItem)
             }
 
-            override suspend fun callbackError(req: AbstractRequest, resp: Response) {
+            override suspend fun callbackError(ex: Throwable) {
                 TODO("Not yet implemented")
             }
         }
@@ -42,18 +43,19 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         lateinit var resp: Response
         lateinit var receivedItem: Item
 
-        spider.urlRequest = url
+        (spider as AbstractSimpleSpider).urlRequest = url
 
         withSpider {
             req = outChannel.receive()
             assertTrue{req.url == url}
+
 
             resp = Response(req)
             inChannel.send(resp)
             receivedItem = itemChannel.receive()
         }
 
-        coVerify{ spider.parse(req, resp)}
+        coVerify{ (spider as AbstractSimpleSpider).parse(resp)}
         assertEquals(expectedItem, receivedItem)
     }
 }

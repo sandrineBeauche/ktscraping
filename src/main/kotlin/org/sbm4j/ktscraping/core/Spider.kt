@@ -1,15 +1,15 @@
 package org.sbm4j.ktscraping.core
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
-
-
+import org.sbm4j.ktscraping.requests.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 
 abstract class AbstractSpider(override val scope: CoroutineScope,
@@ -24,27 +24,23 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
 
      lateinit var itemsOut: SendChannel<Item>
 
-     lateinit var urlRequest: String
+     abstract suspend fun performScraping()
 
-     suspend fun startRequests(){
-          val req = Request(this, urlRequest)
-          logger.info{"${name} sends a new request ${req.name}"}
-          this.send(req, ::parse, ::callbackError)
-     }
-
-     abstract suspend fun parse(req: AbstractRequest, resp: Response)
-
-     abstract suspend fun callbackError(req: AbstractRequest, resp: Response)
 
      override suspend fun start() {
-          logger.info{"Starting spider ${name}"}
+          logger.info{"${name}: Starting spider"}
           super.start()
-          this.startRequests()
+          scope.launch {
+               logger.info{"${name}: Start performing scraping"}
+               performScraping()
+               logger.info{"${name}: finished performing scraping"}
+               itemsOut.send(ItemEnd())
+          }
      }
 
 
      override suspend fun performResponse(response: Response) {
-          throw NoRequestSenderException("request ${response.request.name} is not correlated to a sender")
+          throw NoRequestSenderException("${name}: request ${response.request.name} is not correlated to a sender")
      }
 
 
@@ -52,4 +48,30 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
           this.itemsOut.close()
           super.stop()
      }
+
+
+     protected suspend fun sendSync(request: AbstractRequest) = suspendCoroutine<Response> { continuation ->
+          scope.launch(CoroutineName("${name}-${request.name}")) {
+               this@AbstractSpider.peformSend(request, continuation::resume, continuation::resumeWithException)
+          }
+     }
+}
+
+
+abstract class AbstractSimpleSpider(
+     scope: CoroutineScope,
+     name: String = "Spider"
+) : AbstractSpider(scope, name) {
+
+     lateinit var urlRequest: String
+
+     override suspend fun performScraping() {
+          val req = Request(this, urlRequest)
+          logger.info { "${name} sends a new request ${req.name}" }
+          this.send(req, ::parse, ::callbackError)
+     }
+
+     abstract suspend fun parse(resp: Response)
+
+     abstract suspend fun callbackError(ex: Throwable)
 }

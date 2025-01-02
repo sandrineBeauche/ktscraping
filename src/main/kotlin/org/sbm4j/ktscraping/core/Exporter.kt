@@ -18,12 +18,12 @@ abstract class AbstractExporter(override val scope: CoroutineScope, override val
     lateinit var itemAckOut: SendChannel<ItemAck>
 
     override suspend fun start() {
-        logger.info{"Starting Exporter ${name}"}
+        logger.info{"${name}: Starting Exporter"}
         super.start()
     }
 
     override suspend fun stop() {
-        logger.info{"Stopping the exporter ${name}"}
+        logger.info{"${name}: Stopping the exporter"}
         itemAckOut.close()
         super.stop()
     }
@@ -35,7 +35,7 @@ abstract class AbstractExporter(override val scope: CoroutineScope, override val
     abstract fun exportItem(item: Item)
 
     override suspend fun pushItem(item: Item) {
-        logger.debug{ "Exporter ${this.name} exporting the item ${item}" }
+        logger.debug{ "${name}: exporting the item ${item}" }
         exportItem(item)
         val ack = ItemAck(item.id, ItemStatus.PROCESSED)
         itemAckOut.send(ack)

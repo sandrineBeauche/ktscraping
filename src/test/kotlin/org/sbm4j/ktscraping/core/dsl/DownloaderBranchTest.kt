@@ -46,8 +46,8 @@ class DownloaderBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 downloaderBranch {
-                    middleware(MiddlewareClassTest::class)
-                    downloader(DownloaderClassTest::class, name = "Downloader1")
+                    middleware<MiddlewareClassTest>()
+                    downloader<DownloaderClassTest>(name = "Downloader1")
                 }
             }
 
@@ -88,8 +88,8 @@ class DownloaderBranchTest: CrawlerTest() {
                         else senders[1]
                     })
                 {
-                    downloader(DownloaderClassTest::class, name = "Downloader1")
-                    downloader(DownloaderClassTest::class, name = "Downloader2")
+                    downloader<DownloaderClassTest>(name = "Downloader1")
+                    downloader<DownloaderClassTest>(name = "Downloader2")
                 }
             }
 
@@ -143,12 +143,12 @@ class DownloaderBranchTest: CrawlerTest() {
                     })
                 {
                     downloaderBranch {
-                        middleware(MiddlewareClassTest::class, name = "Middleware1")
-                        downloader(DownloaderClassTest::class, name = "Downloader1")
+                        middleware<MiddlewareClassTest>(name = "Middleware1")
+                        downloader<DownloaderClassTest>(name = "Downloader1")
                     }
                     downloaderBranch {
-                        middleware(MiddlewareClassTest::class, name = "Middleware2")
-                        downloader(DownloaderClassTest::class, name = "Downloader2")
+                        middleware<MiddlewareClassTest>(name = "Middleware2")
+                        downloader<DownloaderClassTest>(name = "Downloader2")
                     }
                 }
             }

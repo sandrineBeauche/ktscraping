@@ -12,9 +12,11 @@ import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
 
 
-class PlaywrightDownloader(scope: CoroutineScope, name: String, val headless: Boolean = true) : AbstractDownloader(scope, name) {
+class PlaywrightDownloader(scope: CoroutineScope, name: String = "Playwright downloader") : AbstractDownloader(scope, name) {
 
     lateinit var browser: Browser
+
+    var headless: Boolean = true
 
     override suspend fun start() {
         super.start()

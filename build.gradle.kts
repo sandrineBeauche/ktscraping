@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm") version "2.0.20"
     application
+    kotlin("plugin.serialization") version "1.8.0"
 }
 
 group = "org.sbm4j"
@@ -35,10 +36,16 @@ dependencies {
     implementation("org.kodein.di:kodein-di-jvm:$kodeinVersion")
     implementation("com.microsoft.playwright:playwright:$playwrightVersion")
 
+    implementation("it.skrape:skrapeit:1.2.2")
+    implementation("com.fleeksoft.ksoup:ksoup:0.2.1")
+
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
     testImplementation(kotlin("test"))
     testImplementation("com.natpryce:hamkrest:$hamkrestVersion")
+
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }
 
 tasks.test {
@@ -52,4 +59,10 @@ kotlin {
 
 application {
     mainClass.set("MainKt")
+}
+
+task("codegen", JavaExec::class) {
+    mainClass = "com.microsoft.playwright.CLI"
+    classpath = sourceSets["main"].runtimeClasspath
+    args = mutableListOf("codegen")
 }

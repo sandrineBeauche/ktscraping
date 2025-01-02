@@ -52,42 +52,42 @@ class SpiderBranch(val scope: CoroutineScope,
 
     val senders : MutableList<Controllable> = mutableListOf()
 
-    fun <T : SpiderMiddleware>spiderMiddleware(clazz: KClass<T>,
-                                               name: String = "SpiderMiddleware",
-                                               init: T.() -> Unit = {}): T?{
-        val mid = clazz.primaryConstructor?.call(scope, name)
-        if(mid != null) {
-            senders.add(mid)
-            mid.requestOut = spiderIn
-            mid.responseIn = spiderOut
-            mid.itemOut = spiderItemIn
+    inline fun <reified T : SpiderMiddleware>spiderMiddleware(
+                                               name: String? = null,
+                                               init: T.() -> Unit = {}): T{
+        val mid = buildControllable<T>(name, scope)
 
-            val (spidResp, spidReq, spidItem) = buildSpiderChannels()
-            mid.requestIn = spidReq
-            mid.responseOut = spidResp
-            mid.itemIn = spidItem
+        senders.add(mid)
+        mid.requestOut = spiderIn
+        mid.responseIn = spiderOut
+        mid.itemOut = spiderItemIn
 
-            spiderIn = spidReq
-            spiderOut = spidResp
-            spiderItemIn = spidItem
+        val (spidResp, spidReq, spidItem) = buildSpiderChannels()
+        mid.requestIn = spidReq
+        mid.responseOut = spidResp
+        mid.itemIn = spidItem
 
-            mid.init()
-        }
+        spiderIn = spidReq
+        spiderOut = spidResp
+        spiderItemIn = spidItem
+
+        mid.init()
+
         return mid
     }
 
-    fun <T: AbstractSpider>spider(clazz: KClass<T>,
-                                  name:String = "Spider",
-                                  init: T.() -> Unit = {}): T? {
-        val spid = clazz.primaryConstructor?.call(scope, name)
-        if(spid !=null){
-            senders.add(spid)
-            spid.requestOut = spiderIn
-            spid.responseIn = spiderOut
-            spid.itemsOut = spiderItemIn
+    inline fun <reified T: AbstractSpider>spider(
+                                  name: String? = null,
+                                  init: T.() -> Unit = {}): T {
+        val spid = buildControllable<T>(name, scope)
 
-            spid.init()
-        }
+        senders.add(spid)
+        spid.requestOut = spiderIn
+        spid.responseIn = spiderOut
+        spid.itemsOut = spiderItemIn
+
+        spid.init()
+
         return spid
     }
 
@@ -102,23 +102,24 @@ class SpiderBranch(val scope: CoroutineScope,
 
 }
 
-fun <T: AbstractSpider> SpiderResponseDispatcher.spider(clazz: KClass<T>,
-                                                        name: String = "Spider",
-                                                        init: T.() -> Unit = {}): T? {
-    val spid = clazz.primaryConstructor?.call(scope, name)
-    if(spid !=null){
-        val crawler : Crawler by di.instance(arg = this.di)
-        crawler.controllables.add(spid)
+inline fun <reified T: AbstractSpider> SpiderResponseDispatcher.spider(
+    name: String? = null,
+    init: T.() -> Unit = {}
+): T {
+    val spid = buildControllable<T>(name, scope)
 
-        val (spidResp, spidReq, spidItem) = buildSpiderChannels()
-        spid.requestOut = spidReq
-        spid.responseIn = spidResp
-        val itemChannel = spidItem
-        spid.itemsOut = itemChannel
+    val crawler: Crawler by di.instance(arg = this.di)
+    crawler.controllables.add(spid)
 
-        this.addBranch(spidReq, spidResp, itemChannel)
-        spid.init()
-    }
+    val (spidResp, spidReq, spidItem) = buildSpiderChannels()
+    spid.requestOut = spidReq
+    spid.responseIn = spidResp
+    val itemChannel = spidItem
+    spid.itemsOut = itemChannel
+
+    this.addBranch(spidReq, spidResp, itemChannel)
+    spid.init()
+
     return spid
 }
 

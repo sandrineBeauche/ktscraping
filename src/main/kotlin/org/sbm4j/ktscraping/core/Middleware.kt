@@ -79,14 +79,27 @@ abstract class SpiderMiddleware(scope: CoroutineScope, name:String):
     override lateinit var itemOut: SendChannel<Item>
 
     override suspend fun start() {
-        logger.info{"Starting spider middleware ${name}"}
+        logger.info{"${name}: Starting spider middleware"}
         super<AbstractMiddleware>.start()
         super<ItemFollower>.start()
     }
 
     override suspend fun stop() {
-        logger.info{"Stopping spider middleware ${name}"}
+        logger.info{"${name}: Stopping spider middleware"}
         super<AbstractMiddleware>.stop()
         super<ItemFollower>.stop()
+    }
+}
+
+abstract class DownloaderMiddleware(scope: CoroutineScope, name: String): AbstractMiddleware(scope, name){
+
+    override suspend fun start() {
+        logger.info{"${name}: Starting downloader middleware"}
+        super.start()
+    }
+
+    override suspend fun stop() {
+        logger.info{"${name}: Stopping downloader middleware"}
+        super.stop()
     }
 }

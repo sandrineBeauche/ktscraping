@@ -16,9 +16,9 @@ interface ItemReceiver: Controllable{
 
     suspend fun performItems(){
         scope.launch(CoroutineName("${name}-performItems")){
-            logger.debug { "Waiting for items to process" }
+            logger.debug { "${name}: Waiting for items to process" }
             for(item in itemIn){
-                logger.debug{ "Received an item to process" }
+                logger.debug{ "${name}: Received an item to process" }
                 //mutex.withLock {
                     val resultItem = processItem(item)
                     if(resultItem != null){
@@ -55,6 +55,14 @@ interface ItemFollower: ItemReceiver{
 
     }
 
+    override suspend fun start() {
+        super.start()
+        performAcks()
+    }
+
+    suspend fun performAck(itemAck: ItemAck): Unit{}
+
+    suspend fun performAcks(){}
 
 }
 
@@ -65,23 +73,25 @@ interface Pipeline : ItemFollower {
 
     var itemAckOut: SendChannel<ItemAck>
 
-    suspend fun performAcks(){
+    override suspend fun performAcks(){
         scope.launch(CoroutineName("${name}-performAcks")){
-            logger.debug { "Waiting for items acks to follow" }
+            logger.debug { "${name}: Waiting for items acks to follow" }
             for(itemAck in itemAckIn){
+                logger.debug{ "${name}: Received an item ack to process" }
+                performAck(itemAck)
                 itemAckOut.send(itemAck)
             }
         }
     }
 
     override suspend fun start() {
-        logger.info{"Starting Pipeline ${name}"}
+        logger.info{"${name}: Starting pipeline"}
         this.performAcks()
         super.start()
     }
 
     override suspend fun stop() {
-        logger.info{"Stopping the Pipeline ${name}"}
+        logger.info{"${name}: Stopping pipeline"}
         itemAckOut.close()
         super.stop()
     }

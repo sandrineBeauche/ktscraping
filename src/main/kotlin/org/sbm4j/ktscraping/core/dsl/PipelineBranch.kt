@@ -67,37 +67,37 @@ class PipelineBranch(
 
     val senders : MutableList<Controllable> = mutableListOf()
 
-    fun <T: AbstractPipeline>pipeline(clazz: KClass<T>,
-                                      name: String = "pipeline",
-                                      init: T.() -> Unit = {}): T?{
-        val pip = clazz.primaryConstructor?.call(scope, name)
-        if(pip != null){
-            senders.add(pip)
-            pip.itemIn = pipelineItemIn
-            pip.itemAckOut = pipelineItemAckOut
+    inline fun <reified T: AbstractPipeline>pipeline(
+                                      name: String? = null,
+                                      init: T.() -> Unit = {}): T{
+        val pip = buildControllable<T>(name, scope)
 
-            val (newPipItem, newPipItemAck) = buildPipelineChannels()
-            pip.itemOut = newPipItem
-            pip.itemAckIn = newPipItemAck
+        senders.add(pip)
+        pip.itemIn = pipelineItemIn
+        pip.itemAckOut = pipelineItemAckOut
 
-            pipelineItemIn = newPipItem
-            pipelineItemAckOut = newPipItemAck
+        val (newPipItem, newPipItemAck) = buildPipelineChannels()
+        pip.itemOut = newPipItem
+        pip.itemAckIn = newPipItemAck
 
-            pip.init()
-        }
+        pipelineItemIn = newPipItem
+        pipelineItemAckOut = newPipItemAck
+
+        pip.init()
+
         return pip
     }
 
-    fun <T: AbstractExporter>exporter(clazz: KClass<T>,
-                                      name: String = "Exporter",
-                                      init: T.() -> Unit = {}): T? {
-        val exp = clazz.primaryConstructor?.call(scope, name)
-        if(exp != null){
-            senders.add(exp)
-            exp.itemIn = pipelineItemIn
-            exp.itemAckOut = pipelineItemAckOut
-            exp.init()
-        }
+    inline fun <reified T: AbstractExporter>exporter(
+                                      name: String? = null,
+                                      init: T.() -> Unit = {}): T {
+        val exp = buildControllable<T>(name, scope)
+
+        senders.add(exp)
+        exp.itemIn = pipelineItemIn
+        exp.itemAckOut = pipelineItemAckOut
+        exp.init()
+
         return exp
     }
 
@@ -128,21 +128,21 @@ class PipelineBranch(
 }
 
 
-fun <T: AbstractExporter> ItemDispatcher.exporter(clazz: KClass<T>,
-                                                  name: String = "exporter",
+inline fun <reified T: AbstractExporter> ItemDispatcher.exporter(
+                                                  name: String? = null,
                                                   init: T.() -> Unit = {}): T? {
-    val exp = clazz.primaryConstructor?.call(scope, name)
-    if(exp != null){
-        val crawler : Crawler by di.instance(arg = this.di)
-        crawler.controllables.add(exp)
+    val exp = buildControllable<T>(name, scope)
 
-        val (newItemChannel, newItemAckChannel) = buildPipelineChannels()
-        exp.itemIn = newItemChannel
-        exp.itemAckOut = newItemAckChannel
+    val crawler: Crawler by di.instance(arg = this.di)
+    crawler.controllables.add(exp)
 
-        this.addBranch(newItemChannel, newItemAckChannel)
-        exp.init()
-    }
+    val (newItemChannel, newItemAckChannel) = buildPipelineChannels()
+    exp.itemIn = newItemChannel
+    exp.itemAckOut = newItemAckChannel
+
+    this.addBranch(newItemChannel, newItemAckChannel)
+    exp.init()
+
     return exp
 }
 

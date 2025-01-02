@@ -1,14 +1,15 @@
 package org.sbm4j.ktscraping.core
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.AbstractRequest
+import org.sbm4j.ktscraping.middleware.Scheduler
+import org.sbm4j.ktscraping.requests.*
+import java.util.UUID
 
 abstract class AbstractEngine(
     final override val scope: CoroutineScope,
@@ -33,22 +34,60 @@ abstract class AbstractEngine(
 
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
 
+    var receivedItemEnd: Boolean = false
+
+    val pendingItems: MutableList<UUID> = mutableListOf()
+
+    val resultChannel: SendChannel<CrawlerResult> = Channel<CrawlerResult>(Channel.RENDEZVOUS)
+
     override fun processItem(item: Item): Item? {
-        return item
+        return if(item is ItemEnd){
+            receivedItemEnd = true
+            null
+        } else{
+            pendingItems.add(item.id)
+            item
+        }
     }
 
+    abstract fun computeResult(): CrawlerResult
+
+
+    override suspend fun performAck(itemAck: ItemAck) {
+        pendingItems.remove(itemAck.itemId)
+        if(receivedItemEnd && pendingItems.isEmpty()){
+            val result = computeResult()
+            resultChannel.send(result)
+        }
+    }
+
+    override suspend fun performAcks(){
+        scope.launch(CoroutineName("${name}-performAcks")){
+            logger.debug { "${name}: Waiting for items acks to follow" }
+            for(itemAck in itemAckIn){
+                logger.debug{ "${name}: Received an item ack to process" }
+                performAck(itemAck)
+            }
+        }
+    }
+
+    override suspend fun performItems() {
+        super.performItems()
+    }
 
     override suspend fun performResponse(response: Response) {
         this.responseOut.send(response)
     }
 
     override suspend fun start() {
+        logger.info { "${name}: starting engine" }
         super<RequestSender>.start()
         super<RequestReceiver>.start()
         super<ItemFollower>.start()
     }
 
     override suspend fun stop() {
+        logger.info { "${name}: stopping engine" }
         super<RequestSender>.stop()
         super<RequestReceiver>.stop()
         super<ItemFollower>.stop()
@@ -63,10 +102,13 @@ abstract class AbstractEngine(
     }
 }
 
+
+data class StatsCrawlerResult(val nbRequests: Int, val nbItems: Int): CrawlerResult
+
 class Engine(
     scope: CoroutineScope,
     channelFactory: ChannelFactory,
-    val scheduler: Scheduler
+    val progressMonitor: ProgressMonitor
 ) : AbstractEngine(scope, channelFactory){
 
     override fun processRequest(request: AbstractRequest): Any? {
@@ -74,21 +116,29 @@ class Engine(
     }
 
     override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
-        this.scheduler.submitRequest(request)
+        progressMonitor.receivedRequest++
+        this.requestOut.send(request)
+    }
+
+    override fun computeResult(): CrawlerResult {
+        return StatsCrawlerResult(this.progressMonitor.receivedResponse, this.progressMonitor.receivedItem)
     }
 
     override suspend fun performResponse(response: Response) {
-        this.scheduler.receivedResponse()
+        progressMonitor.receivedResponse++
         super.performResponse(response)
     }
 
-    override suspend fun start() {
-        super.start()
-        scheduler.start()
+    override fun processItem(item: Item): Item? {
+        if(item !is ItemEnd) {
+            progressMonitor.receivedItem++
+        }
+        return super.processItem(item)
     }
 
-    override suspend fun stop() {
-        scheduler.stop()
-        super.stop()
+
+    override suspend fun performAck(itemAck: ItemAck) {
+        progressMonitor.receivedItemAck++
+        super.performAck(itemAck)
     }
 }

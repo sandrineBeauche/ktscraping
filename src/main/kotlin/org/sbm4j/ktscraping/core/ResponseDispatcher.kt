@@ -92,7 +92,7 @@ class SpiderResponseDispatcher(
         for(sender in itemSenders){
             scope.launch(CoroutineName("${name}-performItems")) {
                 for(item in sender){
-                    logger.debug{ "Received an item and follows it" }
+                    logger.debug{ "${name}: Received an item and follows it" }
                     itemChannelOut.send(item)
                 }
             }

@@ -57,38 +57,35 @@ class DownloaderBranch(
 
     val senders: MutableList<Controllable> = mutableListOf()
 
-    fun <T: AbstractMiddleware>middleware(clazz: KClass<T>,
-                                  name: String = "Middleware",
-                                  init: T.() -> Unit = {}): T?{
-        val mid = clazz.primaryConstructor?.call(scope, name)
-        if(mid != null){
-            senders.add(mid)
-            mid.requestIn = downloaderOut
-            mid.responseOut = downloaderIn
+    inline fun <reified T: AbstractMiddleware>middleware(
+                                  name: String? = null,
+                                  init: T.() -> Unit = {}): T {
+        val mid = buildControllable<T>(name, scope)
 
-            val (downReq, downResp) = buildDownloaderChannels()
-            mid.requestOut = downReq
-            mid.responseIn = downResp
+        senders.add(mid)
+        mid.requestIn = downloaderOut
+        mid.responseOut = downloaderIn
 
-            downloaderIn = downResp
-            downloaderOut = downReq
+        val (downReq, downResp) = buildDownloaderChannels()
+        mid.requestOut = downReq
+        mid.responseIn = downResp
 
-            mid.init()
-        }
+        downloaderIn = downResp
+        downloaderOut = downReq
+
+        mid.init()
         return mid
     }
 
-    fun <T: AbstractDownloader>downloader(clazz: KClass<T>,
-                                          name: String = "downloader",
-                                          init: T.() -> Unit = {}): T?{
-        val down = clazz.primaryConstructor?.call(scope, name)
-        if(down != null){
-            senders.add(down)
-            down.requestIn = downloaderOut
-            down.responseOut = downloaderIn
+    inline fun <reified T: AbstractDownloader>downloader(
+                                          name: String? = null,
+                                          init: T.() -> Unit = {}): T{
+        val down = buildControllable<T>(name, scope)
+        senders.add(down)
+        down.requestIn = downloaderOut
+        down.responseOut = downloaderIn
+        down.init()
 
-            down.init()
-        }
         return down
     }
 
@@ -109,21 +106,20 @@ class DownloaderBranch(
     }
 }
 
-fun <T: AbstractDownloader> DownloaderRequestDispatcher.downloader(clazz: KClass<T>,
-                                                                   name: String = "Downloader",
-                                                                   init: T.() -> Unit = {}): T?{
-    val down = clazz.primaryConstructor?.call(scope, name)
-    if(down != null){
-        val crawler : Crawler by di.instance(arg = this.di)
-        crawler.controllables.add(down)
+inline fun <reified T: AbstractDownloader> DownloaderRequestDispatcher.downloader(
+                                                                   name: String? = null,
+                                                                   init: T.() -> Unit = {}): T {
+    val down = buildControllable<T>(name, scope)
 
-        val (downReq, downResp) = buildDownloaderChannels()
-        down.requestIn = downReq
-        down.responseOut = downResp
+    val crawler: Crawler by di.instance(arg = this.di)
+    crawler.controllables.add(down)
 
-        this.addBranch(downReq, downResp)
-        down.init()
-    }
+    val (downReq, downResp) = buildDownloaderChannels()
+    down.requestIn = downReq
+    down.responseOut = downResp
+
+    this.addBranch(downReq, downResp)
+    down.init()
 
     return down
 }

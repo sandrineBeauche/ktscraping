@@ -28,7 +28,7 @@ interface RequestReceiver: Controllable{
     suspend fun performRequests(){
         scope.launch(CoroutineName("${name}-performRequests")) {
             for(req in requestIn){
-                logger.debug{ "received request ${req.name} on ${name}"}
+                logger.debug{ "${name}: received request ${req.name}"}
                 var result: Any? = null
                 mutex.withLock {
                     result = processRequest(req)

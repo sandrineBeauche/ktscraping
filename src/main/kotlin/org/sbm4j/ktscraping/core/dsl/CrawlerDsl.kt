@@ -3,9 +3,11 @@ package org.sbm4j.ktscraping.core.dsl
 import kotlinx.coroutines.CoroutineScope
 import org.kodein.di.DI
 import org.kodein.di.instance
+import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.Crawler
 import org.sbm4j.ktscraping.core.CrawlerConfiguration
 import org.sbm4j.ktscraping.core.DefaultCrawler
+import kotlin.reflect.full.primaryConstructor
 
 
 fun crawler(scope: CoroutineScope,
@@ -23,6 +25,26 @@ fun crawler(scope: CoroutineScope,
 
 fun DefaultCrawler.configuration(initConf: CrawlerConfiguration.() -> Unit){
     this.configuration.initConf()
+}
+
+inline fun <reified T: Controllable> buildControllable(
+    name: String? = null,
+    scope: CoroutineScope
+): T {
+    val construct = T::class.primaryConstructor!!
+    val params = construct.parameters
+    val values = if(name == null){
+        if(params[1].isOptional) {
+            mapOf(params[0] to scope)
+        }
+        else{
+            mapOf(params[0] to scope, params[1] to T::class.simpleName)
+        }
+    }
+    else{
+        mapOf(params[0] to scope, params[1] to name)
+    }
+    return construct.callBy(values)
 }
 
 

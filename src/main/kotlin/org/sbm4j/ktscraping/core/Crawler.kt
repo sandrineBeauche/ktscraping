@@ -1,9 +1,15 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.*
+import org.sbm4j.ktscraping.middleware.Scheduler
 
+
+interface CrawlerResult{
+
+}
 
 fun defaultDIModule(scope: CoroutineScope, name: String): DI.Module {
     val mod = DI.Module(name = "defaultDIModule"){
@@ -12,7 +18,7 @@ fun defaultDIModule(scope: CoroutineScope, name: String): DI.Module {
             bindSingleton<Engine> { Engine(instance(), instance(), instance()) }
             bindSingleton<CrawlerConfiguration> { CrawlerConfiguration() }
             bindSingleton<ChannelFactory> { ChannelFactory() }
-            bindSingleton<Scheduler> { Scheduler(instance(), instance()) }
+            bindSingleton<ProgressMonitor> { ProgressMonitor() }
         }
     return mod
 }
@@ -37,6 +43,8 @@ interface Crawler : Controllable, DIAware{
         }
         super.stop()
     }
+
+    suspend fun waitFinished(): CrawlerResult
 }
 
 
@@ -65,14 +73,19 @@ class DefaultCrawler(
 
 
     override suspend fun start() {
-        logger.info{"Starting crawler ${name}"}
+        logger.info{"${name}: Starting crawler"}
         engine.start()
         super.start()
     }
 
     override suspend fun stop() {
-        logger.info{ "Stopping crawler ${name}" }
+        logger.info{ "${name}: Stopping crawler" }
         engine.stop()
         super.stop()
+    }
+
+    override suspend fun waitFinished(): CrawlerResult {
+        val result = (engine.resultChannel as ReceiveChannel<*>).receive()
+        return result as CrawlerResult
     }
 }

@@ -34,6 +34,10 @@ class EmptyTestingCrawler(
         logger.info{"Stopping testing crawler ${name}"}
         super.stop()
     }
+
+    override suspend fun waitFinished(): CrawlerResult {
+        TODO("Not yet implemented")
+    }
 }
 
 

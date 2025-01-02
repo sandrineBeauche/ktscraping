@@ -11,6 +11,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.sbm4j.ktscraping.core.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.AbstractSpider
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
@@ -19,15 +20,15 @@ import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
-class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSpider(scope, name){
-    override suspend fun parse(req: AbstractRequest, resp: Response) {
-        logger.debug { "Building a new item for request ${req.name}"}
-        val item = ItemTest(state["returnValue"] as String, req.name, req.url)
+class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSimpleSpider(scope, name){
+    override suspend fun parse(resp: Response) {
+        logger.debug { "Building a new item for request ${resp.request.name}"}
+        val item = ItemTest(state["returnValue"] as String, resp.request.name, resp.request.url)
 
         this.itemsOut.send(item)
     }
 
-    override suspend fun callbackError(req: AbstractRequest, resp: Response) {
+    override suspend fun callbackError(ex: Throwable) {
     }
 
 }
@@ -57,8 +58,8 @@ class SpiderBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 spiderBranch {
-                    spiderMiddleware(SpiderMiddlewareClassTest::class)
-                    spider(SpiderClassTest::class, spiderName){
+                    spiderMiddleware<SpiderMiddlewareClassTest>()
+                    spider<SpiderClassTest>(spiderName){
                         urlRequest = expectedUrl
                         state["returnValue"] = name
                     }
@@ -101,11 +102,11 @@ class SpiderBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 spiderDispatcher {
-                    spider(SpiderClassTest::class, name = "spider1"){
+                    spider<SpiderClassTest>(name = "spider1"){
                         urlRequest = url1
                         state["returnValue"] = value1
                     }
-                    spider(SpiderClassTest::class, name = "spider2"){
+                    spider<SpiderClassTest>(name = "spider2"){
                         urlRequest = url2
                         state["returnValue"] = value2
                     }
@@ -160,18 +161,18 @@ class SpiderBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 spiderBranch {
-                    spiderMiddleware(SpiderMiddlewareClassTest::class)
+                    spiderMiddleware<SpiderMiddlewareClassTest>()
                     spiderDispatcher {
                         spiderBranch {
-                            spiderMiddleware(SpiderMiddlewareClassTest::class)
-                            spider(SpiderClassTest::class, name = "spider1"){
+                            spiderMiddleware<SpiderMiddlewareClassTest>()
+                            spider<SpiderClassTest>(name = "spider1"){
                                 urlRequest = url1
                                 state["returnValue"] = value1
                             }
                         }
                         spiderBranch {
-                            spiderMiddleware(SpiderMiddlewareClassTest::class)
-                            spider(SpiderClassTest::class, name = "spider2"){
+                            spiderMiddleware<SpiderMiddlewareClassTest>()
+                            spider<SpiderClassTest>(name = "spider2"){
                                 urlRequest = url2
                                 state["returnValue"] = value2
                             }

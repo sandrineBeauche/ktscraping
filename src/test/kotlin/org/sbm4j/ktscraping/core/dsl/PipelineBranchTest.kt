@@ -11,8 +11,12 @@ import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.AbstractPipeline
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.Item
+import org.sbm4j.ktscraping.requests.ItemAck
 
 class PipelineClassTest(scope: CoroutineScope, name: String): AbstractPipeline(scope, name){
+    override suspend fun performAck(itemAck: ItemAck) {
+    }
+
     override fun processItem(item: Item): Item? {
         return item
     }
@@ -31,8 +35,8 @@ class PipelineBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 pipelineBranch {
-                    pipeline(PipelineClassTest::class)
-                    exporter(ExporterClassTest::class)
+                    pipeline<PipelineClassTest>()
+                    exporter<ExporterClassTest>()
                 }
             }
 
@@ -60,8 +64,8 @@ class PipelineBranchTest: CrawlerTest() {
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                  pipelineDispatcherAll{
-                    exporter(ExporterClassTest::class, "exporter1")
-                    exporter(ExporterClassTest::class, "exporter2")
+                    exporter<ExporterClassTest>("exporter1")
+                    exporter<ExporterClassTest>("exporter2")
                 }
             }
 
@@ -95,8 +99,8 @@ class PipelineBranchTest: CrawlerTest() {
                         else itemOuts[1]
                     })
                 {
-                    exporter(ExporterClassTest::class, "exporter1")
-                    exporter(ExporterClassTest::class, "exporter2")
+                    exporter<ExporterClassTest>("exporter1")
+                    exporter<ExporterClassTest>("exporter2")
                 }
             }
 
