@@ -20,7 +20,7 @@ interface Middleware : RequestSender, RequestReceiver {
      * Answers a request by following it to the next piece
      */
     override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
-        logger.debug{ "follows request ${request.name}"}
+        logger.debug{ "${name}: follows request ${request.name}"}
         requestOut.send(request)
     }
 
@@ -29,7 +29,7 @@ interface Middleware : RequestSender, RequestReceiver {
         if(response.request.sender != this){
             val result = processResponse(response)
             if(result){
-                logger.debug{"follow response from the request ${response.request.name}"}
+                logger.debug{"${name}: follow response from the request ${response.request.name}"}
                 responseOut.send(response)
             }
         }

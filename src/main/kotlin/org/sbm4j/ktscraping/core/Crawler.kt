@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.*
-import org.sbm4j.ktscraping.middleware.Scheduler
 
 
 interface CrawlerResult{
@@ -14,9 +13,8 @@ interface CrawlerResult{
 fun defaultDIModule(scope: CoroutineScope, name: String): DI.Module {
     val mod = DI.Module(name = "defaultDIModule"){
             bindSingleton<CoroutineScope> { scope }
-            bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(), instance(), name, instance(), instance(), di) }}
+            bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(), instance(), name, instance(), di) }}
             bindSingleton<Engine> { Engine(instance(), instance(), instance()) }
-            bindSingleton<CrawlerConfiguration> { CrawlerConfiguration() }
             bindSingleton<ChannelFactory> { ChannelFactory() }
             bindSingleton<ProgressMonitor> { ProgressMonitor() }
         }
@@ -66,7 +64,6 @@ class DefaultCrawler(
     scope: CoroutineScope,
     channelFactory: ChannelFactory,
     name: String = "MainCrawler",
-    val configuration: CrawlerConfiguration,
     val engine: Engine,
     override val di: DI
     ) : AbstractCrawler(scope, name, channelFactory) {

@@ -27,12 +27,3 @@ data class Request(
     override var url: String
 ): AbstractRequest(sender, url)
 
-class PlaywrightRequest(
-    override val sender: RequestSender,
-    override var url: String,
-    func: Page.() -> Unit
-): AbstractRequest(sender, url){
-    init {
-        parameters["playwright"] = func
-    }
-}

@@ -7,10 +7,21 @@ import com.microsoft.playwright.Page
 import com.microsoft.playwright.Playwright
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractDownloader
+import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
 
+
+class PlaywrightRequest(
+    override val sender: RequestSender,
+    override var url: String,
+    func: Page.() -> Unit
+): AbstractRequest(sender, url){
+    init {
+        parameters["playwright"] = func
+    }
+}
 
 class PlaywrightDownloader(scope: CoroutineScope, name: String = "Playwright downloader") : AbstractDownloader(scope, name) {
 

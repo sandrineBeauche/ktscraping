@@ -5,7 +5,6 @@ import org.kodein.di.DI
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.Crawler
-import org.sbm4j.ktscraping.core.CrawlerConfiguration
 import org.sbm4j.ktscraping.core.DefaultCrawler
 import kotlin.reflect.full.primaryConstructor
 
@@ -23,9 +22,6 @@ fun crawler(scope: CoroutineScope,
 }
 
 
-fun DefaultCrawler.configuration(initConf: CrawlerConfiguration.() -> Unit){
-    this.configuration.initConf()
-}
 
 inline fun <reified T: Controllable> buildControllable(
     name: String? = null,

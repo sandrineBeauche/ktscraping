@@ -7,7 +7,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.middleware.Scheduler
 import org.sbm4j.ktscraping.requests.*
 import java.util.UUID
 
