@@ -40,7 +40,7 @@ class IntegrationTestDownloader(
     scope: CoroutineScope,
     name: String = "TestDownloader"
 ): AbstractDownloader(scope, name){
-    override fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processRequest(request: AbstractRequest): Any? {
         val response = Response(request, Status.OK)
         response.contents["prop1"] = "value1"
         return response

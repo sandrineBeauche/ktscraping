@@ -22,13 +22,13 @@ class MiddlewareClassTest(scope: CoroutineScope, name: String): AbstractMiddlewa
         return true
     }
 
-    override fun processRequest(request: AbstractRequest): Any? {
-        return request
+    override suspend fun processRequest(request: AbstractRequest): Any? {
+        return true
     }
 }
 
 class DownloaderClassTest(scope: CoroutineScope, name: String) : AbstractDownloader(scope, name){
-    override fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processRequest(request: AbstractRequest): Any? {
         val resp = Response(request)
         resp.contents["downloader"] = name
         return resp

@@ -19,7 +19,7 @@ interface Middleware : RequestSender, RequestReceiver {
     /**
      * Answers a request by following it to the next piece
      */
-    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
         logger.debug{ "${name}: follows request ${request.name}"}
         requestOut.send(request)
     }

@@ -20,6 +20,7 @@ val kodeinVersion: String by project
 val playwrightVersion: String by project
 val hamkrestVersion: String by project
 val kotlinLoggingVersion: String by project
+val ktorVersion: String by project
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -38,6 +39,8 @@ dependencies {
 
     implementation("it.skrape:skrapeit:1.2.2")
     implementation("com.fleeksoft.ksoup:ksoup:0.2.1")
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")

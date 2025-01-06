@@ -18,7 +18,8 @@ abstract class AbstractDownloader(override val scope: CoroutineScope,
     override lateinit var responseOut: SendChannel<Response>
 
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
+        logger.debug { "$name : answer to ${request.name} with a response"}
         responseOut.send(result as Response)
     }
 

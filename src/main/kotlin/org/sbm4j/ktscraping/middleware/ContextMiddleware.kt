@@ -12,7 +12,7 @@ class ContextMiddleware(scope: CoroutineScope, name: String = "Context middlewar
 
     val contexts: MutableMap<RequestSender, Any> = mutableMapOf()
 
-    override fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processRequest(request: AbstractRequest): Any? {
         if(contexts.containsKey(request.sender)){
             request.parameters["context"] = contexts.containsKey(request.sender)
         }

@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
+import io.mockk.coVerify
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
@@ -21,7 +22,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
                 return true
             }
 
-            override fun processRequest(request: AbstractRequest): Any? {
+            override suspend fun processRequest(request: AbstractRequest): Any? {
                 request.url = "Another url"
                 return request
             }
@@ -44,7 +45,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
             val receivedResp = followOutChannel.receive()
         }
 
-        verify { middleware.processRequest(req)}
+        coVerify { middleware.processRequest(req)}
         verify { middleware.processResponse(resp)}
     }
 }

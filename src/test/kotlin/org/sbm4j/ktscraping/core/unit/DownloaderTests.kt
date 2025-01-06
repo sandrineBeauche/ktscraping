@@ -18,7 +18,7 @@ class DownloaderTests: AbstractDownloaderTester() {
 
     override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
         return object: AbstractDownloader(sc, downloaderName){
-            override fun processRequest(request: AbstractRequest): Any? {
+            override suspend fun processRequest(request: AbstractRequest): Any? {
                 return Response(request, Status.OK)
             }
         }

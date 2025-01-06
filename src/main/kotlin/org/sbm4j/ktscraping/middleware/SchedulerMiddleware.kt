@@ -29,11 +29,11 @@ class SchedulerMiddleware(scope: CoroutineScope, name: String = "Context middlew
         return true
     }
 
-    override fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processRequest(request: AbstractRequest): Any? {
         return true
     }
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
         submitRequest(request)
     }
 

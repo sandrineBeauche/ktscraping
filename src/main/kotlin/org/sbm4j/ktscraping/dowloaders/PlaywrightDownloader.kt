@@ -40,7 +40,7 @@ class PlaywrightDownloader(scope: CoroutineScope, name: String = "Playwright dow
         browser.close()
     }
 
-    override fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processRequest(request: AbstractRequest): Any? {
         val context = getContext(request)
         val page = context.newPage()
         page.navigate(request.url)

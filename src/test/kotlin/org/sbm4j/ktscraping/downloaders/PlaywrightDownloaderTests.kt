@@ -29,4 +29,30 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         assertNotNull(response)
     }
 
+    @Test
+    fun testSVGImageDownload() = TestScope().runTest {
+        val request = Request(sender, "https://www.iana.org/_img/2022/iana-logo-header.svg")
+        lateinit var response: Response
+
+        withDownloader {
+            inChannel.send(request)
+            response = outChannel.receive()
+        }
+
+        assertNotNull(response)
+    }
+
+    @Test
+    fun testPNGImageDownload() = TestScope().runTest {
+        val request = Request(sender, "https://fr.wikipedia.org/static/images/icons/wikipedia.png")
+        lateinit var response: Response
+
+        withDownloader {
+            inChannel.send(request)
+            response = outChannel.receive()
+        }
+
+        assertNotNull(response)
+    }
+
 }

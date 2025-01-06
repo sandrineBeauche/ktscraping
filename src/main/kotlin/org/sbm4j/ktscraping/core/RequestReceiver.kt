@@ -29,12 +29,14 @@ interface RequestReceiver: Controllable{
         scope.launch(CoroutineName("${name}-performRequests")) {
             for(req in requestIn){
                 logger.debug{ "${name}: received request ${req.name}"}
-                var result: Any? = null
+                var result: Any?
                 mutex.withLock {
                     result = processRequest(req)
                 }
 
-                answerRequest(req, result)
+                if((result is Boolean && result == true) || result != null) {
+                    answerRequest(req, result!!)
+                }
             }
         }
     }
@@ -42,9 +44,9 @@ interface RequestReceiver: Controllable{
     /**
      * Performs some treatments on the requests
      * @param request the request to be processes
-     * @return true if the request should be answered, false otherwise
+     * @return the result of the request. It is a response for a request receiver that produces a response, or true if the request should follow. It returns null or false if the request should be ignored.
      */
-    fun processRequest(request: AbstractRequest): Any?
+    suspend fun processRequest(request: AbstractRequest): Any?
 
     /**
      * Answers the request. The answer from a request could be following the requests to the next object,
@@ -52,7 +54,7 @@ interface RequestReceiver: Controllable{
      * @param request the request to be answered
      * @param result the result of the request processing
      */
-    suspend fun answerRequest(request: AbstractRequest, result: Any?)
+    suspend fun answerRequest(request: AbstractRequest, result: Any)
 
     override suspend fun start() {
         this.performRequests()

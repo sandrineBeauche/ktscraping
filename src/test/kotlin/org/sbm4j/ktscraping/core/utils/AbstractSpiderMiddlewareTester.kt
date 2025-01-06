@@ -54,8 +54,7 @@ abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest,
             func()
 
             outChannel.close()
-            inChannel.
-            close()
+            inChannel.close()
             itemChannelIn.close()
             itemChannelOut.close()
             middleware.stop()

@@ -9,12 +9,10 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.assertTimeout
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
-import java.time.Duration
 import kotlin.test.Test
 
 class SchedulerMiddlewareTests: AbstractMiddlewareTester() {

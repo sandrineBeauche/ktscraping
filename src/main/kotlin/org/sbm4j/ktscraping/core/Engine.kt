@@ -110,12 +110,13 @@ class Engine(
     val progressMonitor: ProgressMonitor
 ) : AbstractEngine(scope, channelFactory){
 
-    override fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processRequest(request: AbstractRequest): Any? {
+        progressMonitor.receivedRequest++
         return true
     }
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
-        progressMonitor.receivedRequest++
+    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
+
         this.requestOut.send(request)
     }
 

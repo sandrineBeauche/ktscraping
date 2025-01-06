@@ -68,7 +68,13 @@ abstract class AbstractSimpleSpider(
      override suspend fun performScraping() {
           val req = Request(this, urlRequest)
           logger.info { "${name} sends a new request ${req.name}" }
-          this.send(req, ::parse, ::callbackError)
+          try {
+               val resp = this.sendSync(req)
+               parse(resp)
+          }
+          catch(ex: Throwable){
+               callbackError(ex)
+          }
      }
 
      abstract suspend fun parse(resp: Response)

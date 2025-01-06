@@ -19,7 +19,7 @@ abstract class RequestReceiverMock(): RequestReceiver {
     override val mutex: Mutex = Mutex()
     override val name: String = "RequestReceiver"
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any?) {
+    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
         (requestIn as Channel).close()
         responseOut.close()
     }
@@ -47,7 +47,7 @@ class RequestReceiverTest: ScrapingTest<Request, Response>(){
 
         coroutineScope {
             every { receiver.scope } returns this
-            every { receiver.processRequest(req) } returns resp
+            coEvery { receiver.processRequest(req) } returns resp
 
             receiver.performRequests()
             inChannel.send(req)

@@ -9,10 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.DI
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.requests.*
 
 interface ResponseDispatcher: Controllable, DIAware {
 
@@ -87,15 +84,29 @@ class SpiderResponseDispatcher(
 
     override var state: State = State()
 
+    var nbItemEnd: Int = 0
+
 
     suspend fun performItems(){
         for(sender in itemSenders){
             scope.launch(CoroutineName("${name}-performItems")) {
                 for(item in sender){
-                    logger.debug{ "${name}: Received an item and follows it" }
-                    itemChannelOut.send(item)
+                    performItem(item)
                 }
             }
+        }
+    }
+
+    suspend fun performItem(item: Item){
+        if(item is ItemEnd){
+            nbItemEnd++
+            if(nbItemEnd == itemSenders.size){
+                itemChannelOut.send(item)
+            }
+        }
+        else{
+            logger.debug{ "${name}: Received an item and follows it" }
+            itemChannelOut.send(item)
         }
     }
 

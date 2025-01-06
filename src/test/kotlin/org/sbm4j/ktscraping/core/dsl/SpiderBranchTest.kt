@@ -38,8 +38,8 @@ class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMid
         return true
     }
 
-    override fun processRequest(request: AbstractRequest): Any? {
-        return request
+    override suspend fun processRequest(request: AbstractRequest): Any? {
+        return true
     }
 
     override fun processItem(item: Item): Item? {
@@ -130,6 +130,8 @@ class SpiderBranchTest: CrawlerTest() {
                 item1 = channelFactory.spiderItemChannel.receive() as ItemTest
                 item2 = channelFactory.spiderItemChannel.receive() as ItemTest
 
+                val itemEnd = channelFactory.spiderItemChannel.receive()
+
                 logger.debug { "Received the final items" }
 
                 c.stop()
@@ -197,6 +199,7 @@ class SpiderBranchTest: CrawlerTest() {
 
                 item1 = channelFactory.spiderItemChannel.receive() as ItemTest
                 item2 = channelFactory.spiderItemChannel.receive() as ItemTest
+                val itemEnd = channelFactory.spiderItemChannel.receive()
 
                 logger.debug { "Received the final items" }
 

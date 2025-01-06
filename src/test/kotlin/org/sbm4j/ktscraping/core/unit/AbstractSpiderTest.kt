@@ -29,7 +29,7 @@ class AbstractSpiderTest: AbstractSpiderTester() {
             }
 
             override suspend fun callbackError(ex: Throwable) {
-                TODO("Not yet implemented")
+                println("error handled by callback: ${ex.message}")
             }
         }
     }
