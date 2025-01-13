@@ -95,7 +95,7 @@ class ImageMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(sco
         return true
     }
 
-    override fun processItem(item: Item): Item? {
-        return item
+    override fun processItem(item: Item): List<Item> {
+        return listOf(item)
     }
 }

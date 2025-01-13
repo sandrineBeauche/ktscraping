@@ -41,8 +41,8 @@ class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMid
         return true
     }
 
-    override fun processItem(item: Item): Item? {
-        return item
+    override fun processItem(item: Item): List<Item> {
+        return listOf(item)
     }
 
 }

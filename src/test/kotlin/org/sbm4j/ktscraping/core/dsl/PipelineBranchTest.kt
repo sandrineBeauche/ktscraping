@@ -18,8 +18,8 @@ class PipelineClassTest(scope: CoroutineScope, name: String): AbstractPipeline(s
     override suspend fun performAck(itemAck: ItemAck) {
     }
 
-    override fun processItem(item: Item): Item? {
-        return item
+    override fun processItem(item: Item): List<Item> {
+        return listOf(item)
     }
 }
 

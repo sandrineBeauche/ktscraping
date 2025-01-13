@@ -39,13 +39,13 @@ abstract class AbstractEngine(
 
     val resultChannel: SendChannel<CrawlerResult> = Channel<CrawlerResult>(Channel.RENDEZVOUS)
 
-    override fun processItem(item: Item): Item? {
+    override fun processItem(item: Item): List<Item> {
         return if(item is ItemEnd){
             receivedItemEnd = true
-            null
+            listOf()
         } else{
             pendingItems.add(item.itemId)
-            item
+            listOf(item)
         }
     }
 
@@ -129,7 +129,7 @@ class Engine(
         super.performResponse(response)
     }
 
-    override fun processItem(item: Item): Item? {
+    override fun processItem(item: Item): List<Item> {
         if(item !is ItemEnd) {
             progressMonitor.receivedItem++
         }

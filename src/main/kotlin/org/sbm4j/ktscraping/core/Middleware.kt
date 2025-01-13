@@ -17,11 +17,17 @@ import org.sbm4j.ktscraping.requests.Response
 interface Middleware : RequestSender, RequestReceiver {
 
     /**
-     * Answers a request by following it to the next piece
+     * Answers a request by following it to the next piece or return a response to the sender
      */
     override suspend fun answerRequest(request: AbstractRequest, result: Any) {
-        logger.debug{ "${name}: follows request ${request.name}"}
-        requestOut.send(request)
+        if(result is Response){
+            logger.debug { "${name}: returns a response for the request ${request.name}" }
+            responseOut.send(result)
+        }
+        else {
+            logger.debug { "${name}: follows request ${request.name}" }
+            requestOut.send(request)
+        }
     }
 
     override suspend fun performResponse(response: Response) {

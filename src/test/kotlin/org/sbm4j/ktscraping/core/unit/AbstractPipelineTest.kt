@@ -18,8 +18,8 @@ import org.sbm4j.ktscraping.requests.ItemStatus
 class AbstractPipelineTest: AbstractPipelineTester() {
     override fun buildPipeline(sc: CoroutineScope, pipelineName: String): AbstractPipeline {
         return object: AbstractPipeline(sc, pipelineName){
-            override fun processItem(item: Item): Item? {
-                return item
+            override fun processItem(item: Item): List<Item> {
+                return listOf(item)
             }
         }
     }

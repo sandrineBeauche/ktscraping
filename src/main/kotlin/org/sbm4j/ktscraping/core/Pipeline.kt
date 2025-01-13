@@ -21,8 +21,8 @@ interface ItemReceiver: Controllable{
                 logger.debug{ "${name}: Received an item to process" }
                 //mutex.withLock {
                     val resultItem = processItem(item)
-                    if(resultItem != null){
-                        pushItem(resultItem)
+                    resultItem.forEach {
+                        pushItem(it)
                     }
                 //}
 
@@ -34,7 +34,7 @@ interface ItemReceiver: Controllable{
         this.performItems()
     }
 
-    fun processItem(item: Item): Item?
+    fun processItem(item: Item): List<Item>
 
     suspend fun pushItem(item: Item)
 
