@@ -36,8 +36,16 @@ abstract class AbstractExporter(override val scope: CoroutineScope, override val
 
     override suspend fun pushItem(item: Item) {
         logger.debug{ "${name}: exporting the item ${item}" }
-        exportItem(item)
-        val ack = ItemAck(item.id, ItemStatus.PROCESSED)
-        itemAckOut.send(ack)
+        lateinit var ack: ItemAck
+        try {
+            exportItem(item)
+            ack = ItemAck(item.itemId, ItemStatus.PROCESSED)
+        }
+        catch(ex: Exception){
+            ack = ItemAck(item.itemId, ItemStatus.ERROR)
+        }
+        finally {
+            itemAckOut.send(ack)
+        }
     }
 }

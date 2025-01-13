@@ -79,7 +79,7 @@ class ItemDispatcherAll(scope: CoroutineScope, name: String, di: DI): ItemDispat
     }
 
     override suspend fun pushItem(item: Item) {
-        pendingAcks.put(item.id, 0)
+        pendingAcks.put(item.itemId, 0)
         itemOuts.forEach { it.send(item.clone()) }
     }
 }

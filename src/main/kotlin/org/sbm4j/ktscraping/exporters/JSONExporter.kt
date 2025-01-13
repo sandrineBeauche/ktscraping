@@ -4,12 +4,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.requests.AbstractItem
+import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
 
 class JSONExporter(scope: CoroutineScope, name: String = "JSONExporter"): AbstractExporter(scope, name) {
 
-    val documents: MutableList<AbstractItem> = mutableListOf()
+    val documents: MutableList<DataItem> = mutableListOf()
 
     override suspend fun start() {
         super.start()
@@ -23,6 +23,6 @@ class JSONExporter(scope: CoroutineScope, name: String = "JSONExporter"): Abstra
     }
 
     override fun exportItem(item: Item) {
-        documents.add(item as AbstractItem)
+        documents.add(item as DataItem)
     }
 }
