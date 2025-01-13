@@ -56,4 +56,19 @@ class HttpClientImageDownloaderTests: AbstractDownloaderTester() {
 
         assertThat(response.status, equalTo(Status.NOT_FOUND))
     }
+
+
+    @Test
+    fun testDownloadImageSVG() = TestScope().runTest {
+        val request = Request(sender, "https://www.iana.org/_img/2022/iana-logo-header.svg")
+        lateinit var response: Response
+
+        withDownloader {
+            inChannel.send(request)
+            response = outChannel.receive()
+        }
+
+        assertThat(response.status, equalTo(Status.OK))
+        println(response.contents["payload"])
+    }
 }

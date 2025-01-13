@@ -5,13 +5,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.requests.AbstractItem
-import org.sbm4j.ktscraping.requests.Item
-import java.util.*
+import org.sbm4j.ktscraping.requests.Data
 
 
-data class ItemTest(val value: String, val reqName: String, val url: String = "une url", override val id: UUID = UUID.randomUUID()): AbstractItem(id){
-    override fun clone(): Item {
+data class DataItemTest(
+    val value: String,
+    val reqName: String,
+    val url: String = "une url",
+): Data(){
+    override fun clone(): Data {
         val result = this.copy()
         return result
     }

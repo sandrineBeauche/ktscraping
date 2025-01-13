@@ -49,12 +49,6 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
           super.stop()
      }
 
-
-     protected suspend fun sendSync(request: AbstractRequest) = suspendCoroutine<Response> { continuation ->
-          scope.launch(CoroutineName("${name}-${request.name}")) {
-               this@AbstractSpider.peformSend(request, continuation::resume, continuation::resumeWithException)
-          }
-     }
 }
 
 

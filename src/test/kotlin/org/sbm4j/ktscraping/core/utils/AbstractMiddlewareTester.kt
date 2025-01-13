@@ -6,6 +6,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.requests.AbstractRequest

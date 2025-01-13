@@ -26,4 +26,3 @@ data class Request(
     override val sender: RequestSender,
     override var url: String
 ): AbstractRequest(sender, url)
-

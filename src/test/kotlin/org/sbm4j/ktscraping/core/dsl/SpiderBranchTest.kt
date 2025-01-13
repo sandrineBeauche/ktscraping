@@ -12,20 +12,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
-import org.sbm4j.ktscraping.core.AbstractSpider
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.AbstractRequest
+import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSimpleSpider(scope, name){
     override suspend fun parse(resp: Response) {
         logger.debug { "Building a new item for request ${resp.request.name}"}
-        val item = ItemTest(state["returnValue"] as String, resp.request.name, resp.request.url)
+        val data = DataItemTest(state["returnValue"] as String, resp.request.name, resp.request.url)
 
-        this.itemsOut.send(item)
+        this.itemsOut.send(DataItem(data))
     }
 
     override suspend fun callbackError(ex: Throwable) {
@@ -34,7 +33,7 @@ class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSimpleSpider(
 }
 
 class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMiddleware(scope, name) {
-    override fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: Response): Boolean {
         return true
     }
 
@@ -77,7 +76,7 @@ class SpiderBranchTest: CrawlerTest() {
                 val response = Response(request)
                 channelFactory.spiderResponseChannel.send(response)
 
-                val item = channelFactory.spiderItemChannel.receive() as ItemTest
+                val item = channelFactory.spiderItemChannel.receive() as DataItemTest
                 assertThat(item.value, equalTo(spiderName))
                 logger.debug { "Received the final item" }
 
@@ -96,8 +95,8 @@ class SpiderBranchTest: CrawlerTest() {
         val value1 = "value1"
         val value2 = "value2"
 
-        lateinit var item1: ItemTest
-        lateinit var item2: ItemTest
+        lateinit var item1: DataItemTest
+        lateinit var item2: DataItemTest
 
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
@@ -127,8 +126,8 @@ class SpiderBranchTest: CrawlerTest() {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                item1 = channelFactory.spiderItemChannel.receive() as ItemTest
-                item2 = channelFactory.spiderItemChannel.receive() as ItemTest
+                item1 = channelFactory.spiderItemChannel.receive() as DataItemTest
+                item2 = channelFactory.spiderItemChannel.receive() as DataItemTest
 
                 val itemEnd = channelFactory.spiderItemChannel.receive()
 
@@ -139,13 +138,13 @@ class SpiderBranchTest: CrawlerTest() {
             }
         }
 
-        assertThat(item1, isA<ItemTest>(allOf(
-            has(ItemTest::url, equalTo(url1)),
-            has(ItemTest::value, equalTo(value1))
+        assertThat(item1, isA<DataItemTest>(allOf(
+            has(DataItemTest::url, equalTo(url1)),
+            has(DataItemTest::value, equalTo(value1))
         )))
-        assertThat(item2, isA<ItemTest>(allOf(
-            has(ItemTest::url, equalTo(url2)),
-            has(ItemTest::value, equalTo(value2))
+        assertThat(item2, isA<DataItemTest>(allOf(
+            has(DataItemTest::url, equalTo(url2)),
+            has(DataItemTest::value, equalTo(value2))
         )))
     }
 
@@ -157,8 +156,8 @@ class SpiderBranchTest: CrawlerTest() {
         val value1 = "value1"
         val value2 = "value2"
 
-        lateinit var item1: ItemTest
-        lateinit var item2: ItemTest
+        lateinit var item1: DataItemTest
+        lateinit var item2: DataItemTest
 
         coroutineScope {
             val c = crawler(this, "MainCrawler", ::testDIModule){
@@ -197,8 +196,8 @@ class SpiderBranchTest: CrawlerTest() {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                item1 = channelFactory.spiderItemChannel.receive() as ItemTest
-                item2 = channelFactory.spiderItemChannel.receive() as ItemTest
+                item1 = channelFactory.spiderItemChannel.receive() as DataItemTest
+                item2 = channelFactory.spiderItemChannel.receive() as DataItemTest
                 val itemEnd = channelFactory.spiderItemChannel.receive()
 
                 logger.debug { "Received the final items" }
@@ -208,13 +207,13 @@ class SpiderBranchTest: CrawlerTest() {
             }
         }
 
-        assertThat(item1, isA<ItemTest>(allOf(
-            has(ItemTest::url, equalTo(url1)),
-            has(ItemTest::value, equalTo(value1))
+        assertThat(item1, isA<DataItemTest>(allOf(
+            has(DataItemTest::url, equalTo(url1)),
+            has(DataItemTest::value, equalTo(value1))
         )))
-        assertThat(item2, isA<ItemTest>(allOf(
-            has(ItemTest::url, equalTo(url2)),
-            has(ItemTest::value, equalTo(value2))
+        assertThat(item2, isA<DataItemTest>(allOf(
+            has(DataItemTest::url, equalTo(url2)),
+            has(DataItemTest::value, equalTo(value2))
         )))
 
     }

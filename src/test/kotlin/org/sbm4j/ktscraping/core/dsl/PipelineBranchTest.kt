@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.AbstractPipeline
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
 
@@ -46,11 +47,12 @@ class PipelineBranchTest: CrawlerTest() {
             launch {
                 logger.debug { "interacting with crawler" }
 
-                val item1 = ItemTest("value1", "request1")
+                val data1 = DataItemTest("value1", "request1")
+                val item1 = DataItem(data1)
                 channelFactory.itemChannel.send(item1)
 
                 val ack = channelFactory.itemAckChannel.receive()
-                assertThat(ack.itemId, equalTo(item1.id))
+                assertThat(ack.itemId, equalTo(item1.itemId))
 
                 c.stop()
                 channelFactory.closeChannels()
@@ -75,11 +77,12 @@ class PipelineBranchTest: CrawlerTest() {
             launch {
                 logger.debug { "interacting with crawler" }
 
-                val item1 = ItemTest("value1", "request1")
+                val data1 = DataItemTest("value1", "request1")
+                val item1 = DataItem(data1)
                 channelFactory.itemChannel.send(item1)
 
                 val ack = channelFactory.itemAckChannel.receive()
-                assertThat(ack.itemId, equalTo(item1.id))
+                assertThat(ack.itemId, equalTo(item1.itemId))
 
                 c.stop()
                 channelFactory.closeChannels()
@@ -94,7 +97,7 @@ class PipelineBranchTest: CrawlerTest() {
             val c = crawler(this, "MainCrawler", ::testDIModule){
                 pipelineDispatcherOne("dispatcher1",
                     {item: Item ->
-                        val it = item as ItemTest
+                        val it = item as DataItemTest
                         if(it.value == "value1") itemOuts[0]
                         else itemOuts[1]
                     })
@@ -110,11 +113,12 @@ class PipelineBranchTest: CrawlerTest() {
             launch {
                 logger.debug { "interacting with crawler" }
 
-                val item1 = ItemTest("value1", "request1")
+                val data1 = DataItemTest("value1", "request1")
+                val item1 = DataItem(data1)
                 channelFactory.itemChannel.send(item1)
 
                 val ack = channelFactory.itemAckChannel.receive()
-                assertThat(ack.itemId, equalTo(item1.id))
+                assertThat(ack.itemId, equalTo(item1.itemId))
 
                 c.stop()
                 channelFactory.closeChannels()

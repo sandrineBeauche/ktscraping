@@ -1,7 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -19,11 +18,13 @@ class SpiderTest: AbstractSpiderTester() {
 
     lateinit var resp: Response
 
-    var expectedItem = object: AbstractItem(){
-        override fun clone(): Item {
+    val data = object:Data(){
+        override fun clone(): Data {
             return this
         }
     }
+
+    var expectedItem = DataItem(data)
 
     override fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSpider {
         return object: AbstractSpider(sc, spiderName){

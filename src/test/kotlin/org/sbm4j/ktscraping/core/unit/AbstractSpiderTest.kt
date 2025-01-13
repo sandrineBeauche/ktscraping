@@ -5,7 +5,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
-import org.sbm4j.ktscraping.core.AbstractSpider
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.requests.*
 import kotlin.test.Test
@@ -15,12 +14,13 @@ import kotlin.test.assertTrue
 
 class AbstractSpiderTest: AbstractSpiderTester() {
 
-
-    var expectedItem = object: AbstractItem(){
-        override fun clone(): Item {
+    val data = object:Data(){
+        override fun clone(): Data {
             return this
         }
     }
+
+    var expectedItem = DataItem(data)
 
     override fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSimpleSpider {
         return object: AbstractSimpleSpider(sc,  spiderName){

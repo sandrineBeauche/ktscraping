@@ -13,7 +13,7 @@ import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
 
 
-class PlaywrightRequest(
+open class PlaywrightRequest(
     override val sender: RequestSender,
     override var url: String,
     func: Page.() -> Unit

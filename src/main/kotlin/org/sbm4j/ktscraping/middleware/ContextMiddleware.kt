@@ -19,7 +19,7 @@ class ContextMiddleware(scope: CoroutineScope, name: String = "Context middlewar
         return request
     }
 
-    override fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: Response): Boolean {
         if(response.contents.containsKey("context")){
             contexts[response.request.sender] = response.contents["context"]!!
         }

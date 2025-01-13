@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.dowloaders.PlaywrightDownloader
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
@@ -56,5 +57,14 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>
             response = outChannel.receive()
         }
         return response
+    }
+}
+
+abstract class AbstractPlaywrightRequestDownloadTester(val headless: Boolean): AbstractDownloaderTester(){
+
+    override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
+        val play = PlaywrightDownloader(sc, downloaderName)
+        play.headless = headless
+        return play
     }
 }

@@ -18,7 +18,7 @@ import org.sbm4j.ktscraping.requests.Response
 
 
 class MiddlewareClassTest(scope: CoroutineScope, name: String): AbstractMiddleware(scope, name){
-    override fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: Response): Boolean {
         return true
     }
 

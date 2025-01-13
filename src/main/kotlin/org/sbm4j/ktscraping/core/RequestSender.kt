@@ -7,12 +7,12 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.reflect.KFunction
-import kotlin.reflect.KSuspendFunction2
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 typealias Callback = suspend (Response) -> Unit
 typealias CallbackError = suspend (Throwable) -> Unit
@@ -51,26 +51,30 @@ interface  RequestSender: Controllable {
         val response = respChannel.receive()
         respChannel.close()
         logger.debug { "${name}: received the response for the request ${response.request.name} and call callback" }
-        mutex.withLock {
-            try {
-                when (response.status) {
-                    Status.OK -> callback(response)
-                    else -> {
-                        if (callbackError != null){
-                            val ex = RequestException("Error when fetching the request ${request.name}", response)
-                            callbackError(ex)
-                        }
-                        else callback(response)
-                    }
+
+        try {
+            when (response.status) {
+                Status.OK -> callback(response)
+                else -> {
+                    if (callbackError != null) {
+                        val ex = RequestException("Error when fetching the request ${request.name}", response)
+                        callbackError(ex)
+                    } else callback(response)
                 }
             }
-            catch(ex: Exception){
-                val message = "Error while executing callback from the request ${request.name}"
-                logger.error(ex){ message }
-                if(callbackError != null){
-                    callbackError(RequestException(message, response, ex))
-                }
+        } catch (ex: Exception) {
+            val message = "Error while executing callback from the request ${request.name}"
+            logger.error(ex) { message }
+            if (callbackError != null) {
+                callbackError(RequestException(message, response, ex))
             }
+        }
+
+    }
+
+    suspend fun sendSync(request: AbstractRequest) = suspendCoroutine<Response> { continuation ->
+        scope.launch(CoroutineName("${name}-${request.name}")) {
+            this@RequestSender.peformSend(request, continuation::resume, continuation::resumeWithException)
         }
     }
 
@@ -94,26 +98,29 @@ interface  RequestSender: Controllable {
         scope.launch(CoroutineName("${name}-performResponses")) {
             logger.debug { "${name}: Waits for responses to process" }
             for (resp in responseIn) {
-
-                val req = resp.request
-                val reqId = req.reqId
-                if (req.sender == this@RequestSender && reqId in pendingRequests.keys) {
-                    logger.debug{ "${name}: Dispatch response to the request coroutine" }
-                    val respChannel = pendingRequests[reqId]
-                    pendingRequests.remove(reqId)
-                    respChannel?.send(resp)
-                } else {
-                    logger.debug{"${name}: Process response"}
-                    mutex.withLock {
-                        try{
-                            performResponse(resp)
-                        }
-                        catch(ex: Exception){
-                            logger.error(ex){ "${name}: Error while processing response"}
+                logger.debug { "${name}: received a response for the request ${resp.request.name}" }
+                scope.launch(CoroutineName("${name}-performResponse-${resp.request.name}")) {
+                    val req = resp.request
+                    val reqId = req.reqId
+                    if (req.sender == this@RequestSender && reqId in pendingRequests.keys) {
+                        logger.debug{ "${name}: Dispatch response for the request ${resp.request.name} to the request coroutine" }
+                        val respChannel = pendingRequests[reqId]
+                        pendingRequests.remove(reqId)
+                        respChannel?.send(resp)
+                    } else {
+                        logger.debug{"${name}: Process response for the request ${resp.request.name}"}
+                        mutex.withLock {
+                            try{
+                                performResponse(resp)
+                            }
+                            catch(ex: Exception){
+                                logger.error(ex){ "${name}: Error while processing response"}
+                            }
                         }
                     }
                 }
             }
+            logger.debug { "${name}: Finished receiving responses" }
         }
     }
 

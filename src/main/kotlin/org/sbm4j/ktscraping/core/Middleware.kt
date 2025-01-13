@@ -43,7 +43,7 @@ interface Middleware : RequestSender, RequestReceiver {
      * @param response the response to be processed
      * @return true if the response should be followed to the previous piece, false otherwise.
      */
-    fun processResponse(response: Response): Boolean
+    suspend fun processResponse(response: Response): Boolean
 
     override suspend fun start() {
         super<RequestReceiver>.start()

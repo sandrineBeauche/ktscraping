@@ -24,7 +24,7 @@ class SchedulerMiddleware(scope: CoroutineScope, name: String = "Context middlew
 
     val pendingRequest: MutableMap<String, Channel<AbstractRequest>> = mutableMapOf()
 
-    override fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: Response): Boolean {
         requestSemaphore.release()
         return true
     }

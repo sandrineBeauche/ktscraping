@@ -42,6 +42,11 @@ dependencies {
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
+    implementation("org.dizitart:nitrite-bom:4.3.0")
+    implementation("org.dizitart:nitrite:4.3.0")
+    implementation("org.dizitart:potassium-nitrite:4.3.0")
+    implementation("org.dizitart:nitrite-mvstore-adapter:4.3.0")
+
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
     testImplementation(kotlin("test"))

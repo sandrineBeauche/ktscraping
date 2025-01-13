@@ -16,7 +16,7 @@ import org.sbm4j.ktscraping.requests.*
 import java.util.*
 import kotlin.test.Test
 
-data class IntegrationTestItem(val value: String, override val id: UUID = UUID.randomUUID()): Item {
+data class IntegrationTestItem(val value: String, override val itemId: UUID = UUID.randomUUID()): Item {
     override fun clone(): Item {
         return this.copy()
     }

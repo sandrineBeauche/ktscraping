@@ -8,8 +8,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.core.dsl.ItemTest
+import org.sbm4j.ktscraping.core.dsl.DataItemTest
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
+import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
 import org.sbm4j.ktscraping.requests.ItemStatus
@@ -27,17 +28,18 @@ class AbstractPipelineTest: AbstractPipelineTester() {
     @Test
     fun testPipeline() = TestScope().runTest {
 
-        val itemVal = ItemTest("coucou", "request1")
+        val dataVal = DataItemTest("coucou", "request1")
+        val itemVal = DataItem(dataVal)
 
         withPipeline {
             inChannel.send(itemVal)
             val processed = followInChannel.receive()
 
-            val ack = ItemAck(processed.id, ItemStatus.PROCESSED)
+            val ack = ItemAck(processed.itemId, ItemStatus.PROCESSED)
             outChannel.send(ack)
             val receivedAck = followOutChannel.receive()
 
-            assertThat(receivedAck.itemId, equalTo(itemVal.id))
+            assertThat(receivedAck.itemId, equalTo(itemVal.itemId))
         }
 
         coVerify { pipeline.processItem(itemVal) }

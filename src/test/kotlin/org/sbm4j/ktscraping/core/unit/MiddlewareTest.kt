@@ -18,7 +18,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
 
     override fun buildMiddleware(sc: CoroutineScope, middlewareName: String): AbstractMiddleware {
         return object: AbstractMiddleware(sc, middlewareName){
-            override fun processResponse(response: Response): Boolean {
+            override suspend fun processResponse(response: Response): Boolean {
                 return true
             }
 
@@ -46,6 +46,6 @@ class MiddlewareTest: AbstractMiddlewareTester() {
         }
 
         coVerify { middleware.processRequest(req)}
-        verify { middleware.processResponse(resp)}
+        coVerify { middleware.processResponse(resp)}
     }
 }

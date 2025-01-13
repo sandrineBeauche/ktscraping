@@ -44,7 +44,7 @@ abstract class AbstractEngine(
             receivedItemEnd = true
             null
         } else{
-            pendingItems.add(item.id)
+            pendingItems.add(item.itemId)
             item
         }
     }

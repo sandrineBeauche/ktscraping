@@ -17,17 +17,24 @@ import org.sbm4j.ktscraping.requests.Status
 
 class HttpClientImageDownloader(scope: CoroutineScope, name: String): AbstractDownloader(scope, name) {
 
+    val rawExtensions: List<String> = listOf("png", "bmp", "jpg", "jpeg")
+
+
     override suspend fun processRequest(request: AbstractRequest): Any? {
-        lateinit var bytes: ByteArray
 
         val client = HttpClient(CIO)
 
         try{
-            val resp: HttpResponse = client.get(request.url)
-            bytes = resp.readBytes()
-
             val response = Response(request)
-            response.contents["imagePayload"] = bytes
+            val extension = request.url.split(".").last()
+
+            val resp: HttpResponse = client.get(request.url)
+            if(rawExtensions.contains(extension)) {
+                response.contents["imagePayload"] = resp.readRawBytes()
+            }
+            else{
+                response.contents["payload"] = resp.bodyAsText()
+            }
             return response
         }
         catch(ex: UnresolvedAddressException){

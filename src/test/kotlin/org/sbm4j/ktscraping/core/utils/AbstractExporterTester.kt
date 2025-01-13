@@ -7,10 +7,12 @@ import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractExporter
+import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.Item
+import org.sbm4j.ktscraping.requests.ItemAck
 import kotlin.test.BeforeTest
 
-abstract class AbstractExporterTester: ScrapingTest<Item, Item>(){
+abstract class AbstractExporterTester: ScrapingTest<Item, ItemAck>(){
 
     lateinit var exporter: AbstractExporter
 
@@ -19,7 +21,8 @@ abstract class AbstractExporterTester: ScrapingTest<Item, Item>(){
     abstract fun buildExporter(sc: CoroutineScope, exporterName: String): AbstractExporter
 
     @BeforeTest
-    fun setUp(){
+    open fun setUp(){
+        logger.debug { "setup abstractexporter tester" }
         initChannels()
         clearAllMocks()
 
@@ -28,6 +31,7 @@ abstract class AbstractExporterTester: ScrapingTest<Item, Item>(){
         exporter = spyk(buildExporter(sc, exporterName))
 
         every { exporter.itemIn } returns inChannel
+        every { exporter.itemAckOut } returns outChannel
     }
 
     suspend fun withExporter(func: suspend AbstractExporterTester.() -> Unit){
