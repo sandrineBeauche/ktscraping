@@ -9,10 +9,7 @@ import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
 import org.sbm4j.ktscraping.exporters.Contact
 import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.requests.ItemEnd
-import org.sbm4j.ktscraping.requests.ItemError
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.requests.*
 
 class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
     override fun buildMiddleware(sc: CoroutineScope, middlewareName: String): SpiderMiddleware {
@@ -70,7 +67,7 @@ class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
             response = followOutChannel.receive()
             logger.debug { "Received a response: $response" }
 
-            itemChannelIn.send(ItemError(Exception(), sender))
+            itemChannelIn.send(ItemError(Exception(), sender, ErrorLevel.MINOR))
             itemChannelOut.receive()
 
             logger.debug { "send item end" }

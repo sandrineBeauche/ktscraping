@@ -34,7 +34,7 @@ interface ItemReceiver: Controllable{
         this.performItems()
     }
 
-    fun processItem(item: Item): List<Item>
+    suspend fun processItem(item: Item): List<Item>
 
     suspend fun pushItem(item: Item)
 

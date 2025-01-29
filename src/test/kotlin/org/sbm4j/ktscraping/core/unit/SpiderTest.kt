@@ -28,7 +28,7 @@ class SpiderTest: AbstractSpiderTester() {
 
     override fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSpider {
         return object: AbstractSpider(sc, spiderName){
-            override suspend fun performScraping() {
+            override suspend fun performScraping(subScope: CoroutineScope) {
                 val req = Request(this, url)
                 resp = sendSync(req)
                 itemsOut.send(expectedItem)

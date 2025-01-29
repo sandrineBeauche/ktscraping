@@ -39,13 +39,21 @@ abstract class AbstractEngine(
 
     val resultChannel: SendChannel<CrawlerResult> = Channel<CrawlerResult>(Channel.RENDEZVOUS)
 
-    override fun processItem(item: Item): List<Item> {
-        return if(item is ItemEnd){
-            receivedItemEnd = true
-            listOf()
-        } else{
-            pendingItems.add(item.itemId)
-            listOf(item)
+    override suspend fun processItem(item: Item): List<Item> {
+        return when(item){
+            is ItemEnd -> {
+                receivedItemEnd = true
+                listOf()
+            }
+            is ItemProgress -> {
+                listOf()
+            }
+            is ItemError -> {
+                listOf()
+            }
+            else -> {
+                listOf(item)
+            }
         }
     }
 
@@ -102,7 +110,14 @@ abstract class AbstractEngine(
 }
 
 
-data class StatsCrawlerResult(val nbRequests: Int, val nbItems: Int): CrawlerResult
+data class StatsCrawlerResult(
+    var nbRequests: Int = 0,
+    var nbItems: Int = 0,
+    val errors: MutableList<ItemError> = mutableListOf(),
+    var responseOK: Int = 0,
+    var responseError: Int = 0,
+    var nbGoogleAPIRequests: Int = 0
+): CrawlerResult
 
 class Engine(
     scope: CoroutineScope,
@@ -110,28 +125,44 @@ class Engine(
     val progressMonitor: ProgressMonitor
 ) : AbstractEngine(scope, channelFactory){
 
+    val stats: StatsCrawlerResult = StatsCrawlerResult()
+
     override suspend fun processRequest(request: AbstractRequest): Any? {
-        progressMonitor.receivedRequest++
+        stats.nbRequests++
+        if(request is GoogleSearchImageRequest){
+            stats.nbGoogleAPIRequests++
+        }
         return true
     }
 
     override suspend fun answerRequest(request: AbstractRequest, result: Any) {
-
         this.requestOut.send(request)
     }
 
     override fun computeResult(): CrawlerResult {
-        return StatsCrawlerResult(this.progressMonitor.receivedResponse, this.progressMonitor.receivedItem)
+        return stats
     }
 
     override suspend fun performResponse(response: Response) {
-        progressMonitor.receivedResponse++
+        when(response.status){
+            Status.OK -> stats.responseOK++
+            else -> stats.responseError++
+        }
         super.performResponse(response)
     }
 
-    override fun processItem(item: Item): List<Item> {
-        if(item !is ItemEnd) {
-            progressMonitor.receivedItem++
+    override suspend fun processItem(item: Item): List<Item> {
+        when(item){
+            is ItemEnd -> {}
+            is ItemError -> {
+                stats.errors.add(item)
+            }
+            is ItemProgress -> {
+                progressMonitor.processItemProgress(item)
+            }
+            else -> {
+                this.stats.nbItems++
+            }
         }
         return super.processItem(item)
     }

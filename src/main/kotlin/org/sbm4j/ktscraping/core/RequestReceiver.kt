@@ -1,12 +1,17 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.newFixedThreadPoolContext
 import kotlinx.coroutines.sync.withLock
 import org.sbm4j.ktscraping.requests.AbstractRequest
+import org.sbm4j.ktscraping.requests.ErrorLevel
 import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.requests.Status
+import kotlin.coroutines.CoroutineContext
 
 
 /**
@@ -25,19 +30,31 @@ interface RequestReceiver: Controllable{
     /**
      * Receives all the requests and process them.
      */
+    @OptIn(DelicateCoroutinesApi::class)
     suspend fun performRequests(){
         scope.launch(CoroutineName("${name}-performRequests")) {
             for(req in requestIn){
-                logger.debug{ "${name}: received request ${req.name}"}
-                var result: Any?
-                mutex.withLock {
-                    result = processRequest(req)
-                }
+                this.launch() {
+                    try {
+                        logger.debug { "${name}: received request ${req.name}" }
+                        var result: Any? = processRequest(req)
 
-                if((result is Boolean && result == true) || result != null) {
-                    answerRequest(req, result!!)
+                        if ((result is Boolean && result == true) || result != null) {
+                            answerRequest(req, result)
+                        }
+                    }
+                    catch(ex: Exception){
+                        logger.error{ "${this@RequestReceiver.name}: error when processing request ${req.name} - ${ex.message}" }
+                        val response = Response(req, Status.ERROR)
+                        response.contents["level"] = ErrorLevel.MAJOR
+                        response.contents["exception"] = ex
+                        response.contents["controllableName"] = this@RequestReceiver.name
+                        responseOut.send(response)
+                    }
                 }
+                logger.debug { "${name}: ready to receive another request" }
             }
+            logger.debug{"${name}: Finished to receive requests"}
         }
     }
 

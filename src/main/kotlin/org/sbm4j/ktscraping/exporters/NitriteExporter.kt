@@ -11,31 +11,30 @@ import org.dizitart.no2.mvstore.MVStoreModule
 import org.sbm4j.ktscraping.requests.DataItem
 import java.io.File
 
-class NitriteExporter(scope: CoroutineScope, name: String): DBExporter(scope, name) {
+fun buildNitriteDB(file: File): Nitrite{
+    val storeModule = MVStoreModule.withConfig()
+        .filePath(file)
+        .build()
 
-    lateinit var DBFile: File
+    return nitrite {
+        loadModule(storeModule)
+        loadModule(module(KotlinXSerializationMapper()))
+    }
+}
+
+
+class NitriteExporter(scope: CoroutineScope, name: String): DBExporter(scope, name) {
 
     lateinit var db: Nitrite
 
     override suspend fun start() {
         super.start()
-        db = buildDB()
     }
 
-    fun buildDB(): Nitrite{
-        val storeModule = MVStoreModule.withConfig()
-            .filePath(DBFile)
-            .build()
-
-        return nitrite {
-            loadModule(storeModule)
-            loadModule(module(KotlinXSerializationMapper()))
-        }
-    }
 
     override suspend fun stop() {
         super.stop()
-        db.close()
+        db.commit()
     }
 
     override fun performItemUpdate(item: ItemUpdate) {

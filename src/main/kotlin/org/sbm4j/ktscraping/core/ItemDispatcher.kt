@@ -28,7 +28,7 @@ abstract class ItemDispatcher(override val scope: CoroutineScope, override val n
 
     val itemAckIns: MutableList<ReceiveChannel<ItemAck>> = mutableListOf()
 
-    override fun processItem(item: Item): List<Item> {
+    override suspend fun processItem(item: Item): List<Item> {
         return listOf(item)
     }
 

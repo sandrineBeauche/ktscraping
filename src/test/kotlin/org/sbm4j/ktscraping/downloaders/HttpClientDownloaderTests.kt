@@ -7,7 +7,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
-import org.sbm4j.ktscraping.dowloaders.HttpClientImageDownloader
+import org.sbm4j.ktscraping.dowloaders.HttpClientDownloader
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import org.sbm4j.ktscraping.requests.Status
@@ -16,10 +16,10 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 
-class HttpClientImageDownloaderTests: AbstractDownloaderTester() {
+class HttpClientDownloaderTests: AbstractDownloaderTester() {
 
     override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
-        return HttpClientImageDownloader(sc, downloaderName)
+        return HttpClientDownloader(sc, downloaderName)
     }
 
     @Test
@@ -40,6 +40,7 @@ class HttpClientImageDownloaderTests: AbstractDownloaderTester() {
         val root = this.javaClass.getResource("/")?.file
         val f = File(root, "downloaded_image.png")
         f.writeBytes(imageBytes)
+
 
         f.delete()
     }
@@ -71,4 +72,6 @@ class HttpClientImageDownloaderTests: AbstractDownloaderTester() {
         assertThat(response.status, equalTo(Status.OK))
         println(response.contents["payload"])
     }
+
+
 }

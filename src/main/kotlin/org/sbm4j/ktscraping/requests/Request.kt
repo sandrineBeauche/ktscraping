@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger
 open class AbstractRequest(open val sender: RequestSender, open var url: String ): Channelable {
     companion object {
         val lastId = AtomicInteger(0)
+        val rawExtensions: List<String> = listOf("png", "bmp", "jpg", "jpeg")
     }
 
     val reqId = lastId.getAndIncrement()
@@ -18,7 +19,16 @@ open class AbstractRequest(open val sender: RequestSender, open var url: String 
     fun extractServerFromUrl(): String{
         val start = url.indexOf("://")
         val end = url.indexOf("/", start + 3)
-        return url.substring(start + 3, end)
+        return if(end > 0){
+            url.substring(start + 3, end)
+        } else{
+            url.substring(start + 3)
+        }
+    }
+
+    fun isRawImage(): Boolean{
+        val extension = url.split(".").last()
+        return rawExtensions.contains(extension)
     }
 }
 

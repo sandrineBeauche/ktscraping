@@ -28,7 +28,7 @@ abstract class AbstractExporter(override val scope: CoroutineScope, override val
         super.stop()
     }
 
-    override fun processItem(item: Item): List<Item> {
+    override suspend fun processItem(item: Item): List<Item> {
         return listOf(item)
     }
 

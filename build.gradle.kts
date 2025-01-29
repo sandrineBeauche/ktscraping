@@ -47,6 +47,9 @@ dependencies {
     implementation("org.dizitart:potassium-nitrite:4.3.0")
     implementation("org.dizitart:nitrite-mvstore-adapter:4.3.0")
 
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
+    implementation("com.nfeld.jsonpathkt:jsonpathkt:2.0.1")
+
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
     testImplementation(kotlin("test"))

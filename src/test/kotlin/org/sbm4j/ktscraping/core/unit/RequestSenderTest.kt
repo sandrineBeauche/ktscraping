@@ -3,12 +3,15 @@ package org.sbm4j.ktscraping.core.unit
 import io.mockk.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.assertThrows
 import org.sbm4j.ktscraping.core.PendingRequestMap
 import org.sbm4j.ktscraping.core.RequestException
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
@@ -25,7 +28,7 @@ abstract class RequestSenderMock() : RequestSender {
 
     var closed: Boolean = false
 
-    private fun closeChannels(){
+    fun closeChannels(){
         if(!closed) {
             requestOut.close()
             (responseIn as Channel).close()
@@ -150,6 +153,31 @@ class RequestSenderTest: ScrapingTest<Response, AbstractRequest>() {
 
         repeat(2){
             inChannel.send(resps[it])
+        }
+    }
+
+    @Test
+    fun testWithContinuationException() = TestScope().runTest {
+        val (req, resp) = generateRequestResponse(sender, status = Status.NOT_FOUND)
+        resp.contents["close"] = true
+
+        coroutineScope {
+            every { sender.scope } returns this
+            sender.receiveResponses()
+
+            launch {
+                val r = outChannel.receive()
+                inChannel.send(resp)
+            }
+            launch{
+                try {
+                    val received = sender.sendSync(req)
+                }
+                catch(ex: Exception){
+                    logger.debug { "sendSync throws an exception: ${ex.message}" }
+                    sender.closeChannels()
+                }
+            }
         }
     }
 }

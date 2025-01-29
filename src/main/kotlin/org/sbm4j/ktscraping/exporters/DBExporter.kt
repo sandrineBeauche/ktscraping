@@ -2,9 +2,9 @@ package org.sbm4j.ktscraping.exporters
 
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractExporter
+import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
-import java.util.*
 import kotlin.reflect.KProperty
 
 data class ItemUpdate(
@@ -12,8 +12,7 @@ data class ItemUpdate(
     val keyName: KProperty<*>,
     val keyValue: Any,
     val values: Map<String, Any>,
-    override val itemId: UUID = UUID.randomUUID()
-): Item {
+): Item() {
     override fun clone(): Item {
         return this.copy()
     }
@@ -23,8 +22,7 @@ data class ItemDelete(
     val entityType: Class<*>,
     val keyName: KProperty<*>,
     val keyValue: Any,
-    override val itemId: UUID = UUID.randomUUID()
-): Item {
+): Item() {
     override fun clone(): Item {
         return this.copy()
     }
@@ -35,9 +33,18 @@ data class ItemDelete(
 abstract class DBExporter(scope: CoroutineScope, name: String): AbstractExporter(scope, name) {
     override fun exportItem(item: Item) {
         when(item){
-            is ItemUpdate -> performItemUpdate(item)
-            is ItemDelete -> performItemDelete(item)
-            is DataItem -> perfomInsertItem(item)
+            is ItemUpdate -> {
+                logger.debug { "${name}: update item ${item}" }
+                performItemUpdate(item)
+            }
+            is ItemDelete -> {
+                logger.debug { "${name}: delete item ${item}"}
+                performItemDelete(item)
+            }
+            is DataItem -> {
+                logger.debug { "${name}: insert item ${item}"}
+                perfomInsertItem(item)
+            }
         }
     }
 

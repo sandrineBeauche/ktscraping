@@ -100,12 +100,10 @@ abstract class SpiderMiddleware(scope: CoroutineScope, name:String):
 abstract class DownloaderMiddleware(scope: CoroutineScope, name: String): AbstractMiddleware(scope, name){
 
     override suspend fun start() {
-        logger.info{"${name}: Starting downloader middleware"}
         super.start()
     }
 
     override suspend fun stop() {
-        logger.info{"${name}: Stopping downloader middleware"}
         super.stop()
     }
 }

@@ -11,7 +11,7 @@ import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Response
 
-class SchedulerMiddleware(scope: CoroutineScope, name: String = "Context middleware"): DownloaderMiddleware(scope, name) {
+class SchedulerMiddleware(scope: CoroutineScope, name: String = "Scheduler middleware"): DownloaderMiddleware(scope, name) {
 
     var nbConnexions: Int = 10
         set(value) {
@@ -37,35 +37,47 @@ class SchedulerMiddleware(scope: CoroutineScope, name: String = "Context middlew
         submitRequest(request)
     }
 
+    private fun createServerChannel(server: String): Channel<AbstractRequest>{
+        val ch = Channel<AbstractRequest>(Channel.UNLIMITED)
+        pendingRequest[server] = ch
+        scope.launch {
+            for(req in ch){
+                requestSemaphore.acquire()
+                logger.debug { "${name}: Sending request ${req.name}" }
+                requestOut.send(req)
+                if(autoThrottle > 0){
+                    logger.debug { "${name}: delai of ${autoThrottle}ms for auto-throttle"}
+                    delay(autoThrottle.toLong())
+                    logger.debug { "${name}: ready to send another request" }
+                }
+            }
+        }
+        return ch
+    }
+
     suspend fun submitRequest(request: AbstractRequest) {
         val server = request.extractServerFromUrl()
         var ch: Channel<AbstractRequest>
         mutex.withLock {
             logger.debug { "${name}: Scheduling request ${request.name} on server ${server}" }
-            if(!pendingRequest.containsKey(server)){
-                ch = Channel(Channel.UNLIMITED)
-                pendingRequest.put(server, ch)
-                scope.launch {
-                    for(req in ch){
-                        requestSemaphore.acquire()
-                        logger.debug { "${name}: Sending request ${req.name}" }
-                        requestOut.send(req)
-                        if(autoThrottle > 0){
-                            logger.debug { "${name}: delai of ${autoThrottle}ms for auto-throttle"}
-                            delay(10000)
-                            logger.debug { "${name}: ready to send another request" }
-                        }
-                    }
-                }
+            ch = if(!pendingRequest.containsKey(server)){
+                createServerChannel(server)
             }
             else{
-                ch = pendingRequest[server]!!
+                pendingRequest[server]!!
             }
         }
         ch.send(request)
     }
 
+    override suspend
+    fun start() {
+        logger.info{"${name}: Starting scheduler middleware"}
+        super.start()
+    }
+
     override suspend fun stop() {
+        logger.info{"${name}: Stopping scheduler middleware"}
         this.pendingRequest.values.forEach {
             it.close()
         }

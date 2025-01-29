@@ -13,6 +13,11 @@ enum class DBSyncState{
 }
 
 class DBSyncMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(scope, name) {
+    companion object{
+        val DBSYNC_STATE: String = "DBSyncState"
+        val DBSYNC_KEY: String = "DBSyncKey"
+        val DBSYNC: String = "DBSync"
+    }
 
     lateinit var keys: Set<Any>
 
@@ -25,28 +30,30 @@ class DBSyncMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(sc
     var errorOccured: Boolean = false
 
     override suspend fun processResponse(response: Response): Boolean {
+        if(response.request.parameters.getOrDefault(DBSYNC_STATE, null) == DBSyncState.NEW){
+            response.contents[DBSYNC_STATE] = DBSyncState.NEW
+        }
         return true
     }
 
     override suspend fun processRequest(request: AbstractRequest): Any? {
-        println(request)
-        if(request.parameters.containsKey("DBSyncKey")){
-            val key = request.parameters["DBSyncKey"]
+        if(request.parameters.containsKey(DBSYNC_KEY)){
+            val key = request.parameters[DBSYNC_KEY]
             if(keys.contains(key)){
                 val result = Response(request, Status.OK)
-                result.contents["DBSync"] = DBSyncState.UPTODATE
+                result.contents[DBSYNC] = DBSyncState.UPTODATE
                 updatedKeys.add(key!!)
                 return result
             }
             else{
-                request.parameters["DBSyncState"] = DBSyncState.NEW
+                request.parameters[DBSYNC_STATE] = DBSyncState.NEW
             }
         }
 
         return request
     }
 
-    override fun processItem(item: Item): List<Item> {
+    override suspend fun processItem(item: Item): List<Item> {
         when(item){
             is ItemError -> {
                 errorOccured = true

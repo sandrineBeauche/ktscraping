@@ -1,6 +1,8 @@
 package org.sbm4j.ktscraping.core
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.*
@@ -40,6 +42,12 @@ interface Crawler : Controllable, DIAware{
             cont.stop()
         }
         super.stop()
+        try {
+            this.scope.cancel()
+        }
+        catch(ex: CancellationException){
+            logger.info { "Crawler stopped"  }
+        }
     }
 
     suspend fun waitFinished(): CrawlerResult

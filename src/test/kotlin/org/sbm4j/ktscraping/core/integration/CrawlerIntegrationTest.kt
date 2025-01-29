@@ -16,7 +16,7 @@ import org.sbm4j.ktscraping.requests.*
 import java.util.*
 import kotlin.test.Test
 
-data class IntegrationTestItem(val value: String, override val itemId: UUID = UUID.randomUUID()): Item {
+data class IntegrationTestItem(val value: String, ): Item() {
     override fun clone(): Item {
         return this.copy()
     }
@@ -26,7 +26,7 @@ class IntegrationTestSpider(
     scope: CoroutineScope,
     name: String
 ): AbstractSpider(scope, name){
-    override suspend fun performScraping() {
+    override suspend fun performScraping(subScope: CoroutineScope) {
         val req1 = Request(this, "request1")
         val resp1 = sendSync(req1)
         val value = resp1.contents["prop1"] as String

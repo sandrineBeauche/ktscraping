@@ -1,9 +1,11 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import org.sbm4j.ktscraping.requests.AbstractRequest
@@ -43,7 +45,7 @@ interface  RequestSender: Controllable {
 
     val responseIn: ReceiveChannel<Response>
 
-    suspend fun peformSend(request: AbstractRequest, callback: Callback, callbackError: CallbackError? = null){
+    private suspend fun peformSend(request: AbstractRequest, callback: Callback, callbackError: CallbackError? = null){
         val respChannel = Channel<Response>(Channel.RENDEZVOUS)
         pendingRequests[request.reqId] = respChannel
         logger.debug { "${name}: sends the request ${request.name} and waits for a response" }
@@ -72,8 +74,11 @@ interface  RequestSender: Controllable {
 
     }
 
-    suspend fun sendSync(request: AbstractRequest) = suspendCoroutine<Response> { continuation ->
-        scope.launch(CoroutineName("${name}-${request.name}")) {
+    suspend fun sendSync(
+        request: AbstractRequest,
+        subScope: CoroutineScope = scope
+    ) = suspendCoroutine<Response> { continuation ->
+        subScope.launch(CoroutineName("${name}-${request.name}")) {
             this@RequestSender.peformSend(request, continuation::resume, continuation::resumeWithException)
         }
     }
@@ -83,8 +88,13 @@ interface  RequestSender: Controllable {
      * @param request the request to be sent
      * @param callback the callback to be executed
      */
-    suspend fun send(request: AbstractRequest, callback: Callback, callbackError: CallbackError? = null) {
-        scope.launch(CoroutineName("${name}-${request.name}")){
+    suspend fun send(
+        request: AbstractRequest,
+        callback: Callback,
+        callbackError: CallbackError? = null,
+        subScope: CoroutineScope = scope
+    ) {
+        subScope.launch(CoroutineName("${name}-${request.name}")){
             this@RequestSender.peformSend(request, callback, callbackError)
         }
     }
@@ -114,7 +124,8 @@ interface  RequestSender: Controllable {
                                 performResponse(resp)
                             }
                             catch(ex: Exception){
-                                logger.error(ex){ "${name}: Error while processing response"}
+                                logger.error(ex){ "${name}: Error while processing response - ${ex.message}"}
+
                             }
                         }
                     }

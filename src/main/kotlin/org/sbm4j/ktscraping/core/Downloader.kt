@@ -8,8 +8,26 @@ import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
-abstract class AbstractDownloader(override val scope: CoroutineScope,
-                          override val name: String): RequestReceiver{
+enum class ContentType{
+    HTML,
+    XML,
+    JSON,
+    SVG_IMAGE,
+    BITMAP_IMAGE,
+    IMAGE,
+    FILE
+}
+
+abstract class AbstractDownloader(
+    override val scope: CoroutineScope,
+    override val name: String
+): RequestReceiver{
+
+    companion object{
+        val PAYLOAD: String = "payload"
+        val FRAMES: String = "frames"
+        val CONTENT_TYPE: String = "contentType"
+    }
 
     override val mutex: Mutex = Mutex()
     override var state: State = State()
