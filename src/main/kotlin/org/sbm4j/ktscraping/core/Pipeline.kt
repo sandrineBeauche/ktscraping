@@ -18,7 +18,7 @@ interface ItemReceiver: Controllable{
         scope.launch(CoroutineName("${name}-performItems")){
             logger.debug { "${name}: Waiting for items to process" }
             for(item in itemIn){
-                logger.debug{ "${name}: Received an item to process" }
+                logger.debug{ "${name}: Received an item to process: ${item}" }
                 //mutex.withLock {
                     val resultItem = processItem(item)
                     resultItem.forEach {
@@ -30,7 +30,7 @@ interface ItemReceiver: Controllable{
         }
     }
 
-    override suspend fun start() {
+    override suspend fun run() {
         this.performItems()
     }
 
@@ -52,11 +52,11 @@ interface ItemFollower: ItemReceiver{
     override suspend fun stop() {
         super.stop()
         this.itemOut.close()
-
     }
 
-    override suspend fun start() {
-        super.start()
+
+    override suspend fun run() {
+        super.run()
         performAcks()
     }
 
@@ -84,10 +84,10 @@ interface Pipeline : ItemFollower {
         }
     }
 
-    override suspend fun start() {
+
+    override suspend fun run() {
         logger.info{"${name}: Starting pipeline"}
-        this.performAcks()
-        super.start()
+        super.run()
     }
 
     override suspend fun stop() {
@@ -98,7 +98,7 @@ interface Pipeline : ItemFollower {
 
 }
 
-abstract class AbstractPipeline(override val scope: CoroutineScope, override val name: String): Pipeline{
+abstract class AbstractPipeline(override val name: String): Pipeline{
     override val mutex: Mutex = Mutex()
 
     override var state: State = State()
@@ -111,5 +111,8 @@ abstract class AbstractPipeline(override val scope: CoroutineScope, override val
     override lateinit var itemAckIn: ReceiveChannel<ItemAck>
 
     override lateinit var itemAckOut: SendChannel<ItemAck>
+
+    override lateinit var scope: CoroutineScope
+
 
 }

@@ -1,6 +1,5 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import org.kodein.di.DI
 import org.kodein.di.DIAware
@@ -8,10 +7,7 @@ import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
-import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
 
 fun buildSpiderChannels(): Triple<Channel<Response>, Channel<AbstractRequest>, Channel<Item>>{
     return Triple(
@@ -22,7 +18,7 @@ fun buildSpiderChannels(): Triple<Channel<Response>, Channel<AbstractRequest>, C
 }
 
 fun Crawler.spiderBranch(initBranch: SpiderBranch.() -> Unit){
-    val branch = SpiderBranch(this.scope,
+    val branch = SpiderBranch(
         this.channelFactory.spiderRequestChannel,
         this.channelFactory.spiderResponseChannel,
         this.channelFactory.spiderItemChannel,
@@ -32,7 +28,7 @@ fun Crawler.spiderBranch(initBranch: SpiderBranch.() -> Unit){
 }
 
 fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: SpiderResponseDispatcher.() -> Unit){
-    val dispatcher = SpiderResponseDispatcher(this.scope, name, this.di)
+    val dispatcher = SpiderResponseDispatcher(name, this.di)
     dispatcher.channelOut = this.channelFactory.spiderRequestChannel
     dispatcher.channelIn = this.channelFactory.spiderResponseChannel
     dispatcher.itemChannelOut = this.channelFactory.spiderItemChannel
@@ -43,11 +39,11 @@ fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: Spider
 
 
 
-class SpiderBranch(val scope: CoroutineScope,
-                   var spiderIn: Channel<AbstractRequest>,
-                   var spiderOut: Channel<Response>,
-                   var spiderItemIn: Channel<Item>,
-                   override val di: DI
+class SpiderBranch(
+    var spiderIn: Channel<AbstractRequest>,
+    var spiderOut: Channel<Response>,
+    var spiderItemIn: Channel<Item>,
+    override val di: DI
 ) : DIAware {
 
     val senders : MutableList<Controllable> = mutableListOf()
@@ -55,7 +51,7 @@ class SpiderBranch(val scope: CoroutineScope,
     inline fun <reified T : SpiderMiddleware>spiderMiddleware(
                                                name: String? = null,
                                                init: T.() -> Unit = {}): T{
-        val mid = buildControllable<T>(name, scope)
+        val mid = buildControllable<T>(name)
 
         senders.add(mid)
         mid.requestOut = spiderIn
@@ -79,7 +75,7 @@ class SpiderBranch(val scope: CoroutineScope,
     inline fun <reified T: AbstractSpider>spider(
                                   name: String? = null,
                                   init: T.() -> Unit = {}): T {
-        val spid = buildControllable<T>(name, scope)
+        val spid = buildControllable<T>(name)
 
         senders.add(spid)
         spid.requestOut = spiderIn
@@ -92,7 +88,7 @@ class SpiderBranch(val scope: CoroutineScope,
     }
 
     fun spiderDispatcher(name: String = "dispatcher", init: SpiderResponseDispatcher.() -> Unit){
-        val dispatcher = SpiderResponseDispatcher(scope, name, this.di)
+        val dispatcher = SpiderResponseDispatcher(name, this.di)
         dispatcher.channelOut = spiderIn
         dispatcher.channelIn = spiderOut
         dispatcher.itemChannelOut = spiderItemIn
@@ -106,7 +102,7 @@ inline fun <reified T: AbstractSpider> SpiderResponseDispatcher.spider(
     name: String? = null,
     init: T.() -> Unit = {}
 ): T {
-    val spid = buildControllable<T>(name, scope)
+    val spid = buildControllable<T>(name)
 
     val crawler: Crawler by di.instance(arg = this.di)
     crawler.controllables.add(spid)
@@ -126,7 +122,7 @@ inline fun <reified T: AbstractSpider> SpiderResponseDispatcher.spider(
 fun SpiderResponseDispatcher.spiderBranch(initBranch: SpiderBranch.() -> Unit){
     val (spidResp, spidReq, spidItem) = buildSpiderChannels()
     this.addBranch(spidReq, spidResp, spidItem)
-    val branch = SpiderBranch(this.scope, spidReq, spidResp, spidItem, this.di)
+    val branch = SpiderBranch(spidReq, spidResp, spidItem, this.di)
     branch.initBranch()
 
     val crawler : Crawler by this.di.instance(arg = this.di)

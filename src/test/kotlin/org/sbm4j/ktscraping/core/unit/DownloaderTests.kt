@@ -16,8 +16,8 @@ class DownloaderTests: AbstractDownloaderTester() {
 
     private val url: String = "an url"
 
-    override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
-        return object: AbstractDownloader(sc, downloaderName){
+    override fun buildDownloader(downloaderName: String): AbstractDownloader {
+        return object: AbstractDownloader(downloaderName){
             override suspend fun processRequest(request: AbstractRequest): Any? {
                 return Response(request, Status.OK)
             }

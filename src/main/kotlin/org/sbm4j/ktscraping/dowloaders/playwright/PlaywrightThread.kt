@@ -4,6 +4,7 @@ import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
 import com.microsoft.playwright.BrowserType
 import com.microsoft.playwright.Playwright
+import com.microsoft.playwright.PlaywrightException
 import org.sbm4j.ktscraping.core.logger
 import java.util.concurrent.ThreadFactory
 
@@ -31,9 +32,14 @@ class PlaywrightThread(val headless: Boolean, val runnable: Runnable): Thread(){
 
             runnable.run()
 
-            context.close()
-            browser.close()
-            playwright.close()
+            try {
+                context.close()
+                browser.close()
+                playwright.close()
+            }
+            catch(ex: PlaywrightException){
+                logger.warn { "Playwright is already shutdown" }
+            }
         }
         catch(ex:Exception){
             logger.error(ex) { ex.message }

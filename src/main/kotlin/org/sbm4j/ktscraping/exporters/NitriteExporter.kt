@@ -23,14 +23,9 @@ fun buildNitriteDB(file: File): Nitrite{
 }
 
 
-class NitriteExporter(scope: CoroutineScope, name: String): DBExporter(scope, name) {
+class NitriteExporter(name: String): DBExporter(name) {
 
     lateinit var db: Nitrite
-
-    override suspend fun start() {
-        super.start()
-    }
-
 
     override suspend fun stop() {
         super.stop()

@@ -2,6 +2,7 @@ package org.sbm4j.ktscraping.middleware
 
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.SpiderMiddleware
+import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.requests.*
 import kotlin.reflect.KProperty
@@ -12,7 +13,7 @@ enum class DBSyncState{
     NEW
 }
 
-class DBSyncMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(scope, name) {
+class DBSyncMiddleware(name: String): SpiderMiddleware(name) {
     companion object{
         val DBSYNC_STATE: String = "DBSyncState"
         val DBSYNC_KEY: String = "DBSyncKey"
@@ -56,7 +57,9 @@ class DBSyncMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(sc
     override suspend fun processItem(item: Item): List<Item> {
         when(item){
             is ItemError -> {
-                errorOccured = true
+                if(item.level == ErrorLevel.MAJOR || item.level == ErrorLevel.FATAL) {
+                    errorOccured = true
+                }
                 return listOf(item)
             }
             is ItemEnd -> return processItemEnd(item)
@@ -68,6 +71,7 @@ class DBSyncMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(sc
         val result: MutableList<Item> = mutableListOf()
 
         if(!errorOccured) {
+            logger.debug { "${name}: get keys to delete to update database" }
             val keyToDelete = keys - updatedKeys
             val itemDeletes = keyToDelete.map {
                 ItemDelete(classObject, keyProperty, it)

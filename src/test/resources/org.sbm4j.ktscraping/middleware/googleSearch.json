@@ -1,0 +1,248 @@
+{
+  "kind": "customsearch#search",
+  "url": {
+    "type": "application/json",
+    "template": "https://www.googleapis.com/customsearch/v1?q={searchTerms}&num={count?}&start={startIndex?}&lr={language?}&safe={safe?}&cx={cx?}&sort={sort?}&filter={filter?}&gl={gl?}&cr={cr?}&googlehost={googleHost?}&c2coff={disableCnTwTranslation?}&hq={hq?}&hl={hl?}&siteSearch={siteSearch?}&siteSearchFilter={siteSearchFilter?}&exactTerms={exactTerms?}&excludeTerms={excludeTerms?}&linkSite={linkSite?}&orTerms={orTerms?}&dateRestrict={dateRestrict?}&lowRange={lowRange?}&highRange={highRange?}&searchType={searchType}&fileType={fileType?}&rights={rights?}&imgSize={imgSize?}&imgType={imgType?}&imgColorType={imgColorType?}&imgDominantColor={imgDominantColor?}&alt=json"
+  },
+  "queries": {
+    "request": [
+      {
+        "title": "Google Custom Search - lectures",
+        "totalResults": "19720000000",
+        "searchTerms": "lectures",
+        "count": 10,
+        "startIndex": 1,
+        "inputEncoding": "utf8",
+        "outputEncoding": "utf8",
+        "safe": "off",
+        "cx": "313786b8193494bad",
+        "searchType": "image"
+      }
+    ],
+    "nextPage": [
+      {
+        "title": "Google Custom Search - lectures",
+        "totalResults": "19720000000",
+        "searchTerms": "lectures",
+        "count": 10,
+        "startIndex": 11,
+        "inputEncoding": "utf8",
+        "outputEncoding": "utf8",
+        "safe": "off",
+        "cx": "313786b8193494bad",
+        "searchType": "image"
+      }
+    ]
+  },
+  "context": {
+    "title": "BRMScraping"
+  },
+  "searchInformation": {
+    "searchTime": 0.433,
+    "formattedSearchTime": "0.43",
+    "totalResults": "19720000000",
+    "formattedTotalResults": "19,720,000,000"
+  },
+  "items": [
+    {
+      "kind": "customsearch#result",
+      "title": "Fawcett Lectures | Cell Biology",
+      "htmlTitle": "Fawcett \u003cb\u003eLectures\u003c/b\u003e | Cell Biology",
+      "link": "https://cellbio.hms.harvard.edu/sites/default/files/hero-images/Heard_Fawcett_2018.jpg",
+      "displayLink": "cellbio.hms.harvard.edu",
+      "snippet": "Fawcett Lectures | Cell Biology",
+      "htmlSnippet": "Fawcett \u003cb\u003eLectures\u003c/b\u003e | Cell Biology",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://cellbio.hms.harvard.edu/events/fawcett-lectures",
+        "height": 460,
+        "width": 1200,
+        "byteSize": 146849,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_op-v8BH8ofh8ZWs9Dhj15DXdr6axwcZEpMYmCB1_2B_O3HXSl7jzVQ&s",
+        "thumbnailHeight": 58,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Adding group activities to large lectures shows promising results ...",
+      "htmlTitle": "Adding group activities to large \u003cb\u003electures\u003c/b\u003e shows promising results ...",
+      "link": "https://news.uoregon.edu/sites/default/files/styles/landscape_xl/public/field/image/lecture_hall-shutterstock.jpg?itok=9flpJ22p",
+      "displayLink": "news.uoregon.edu",
+      "snippet": "Adding group activities to large lectures shows promising results ...",
+      "htmlSnippet": "Adding group activities to large \u003cb\u003electures\u003c/b\u003e shows promising results ...",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://news.uoregon.edu/content/adding-group-activities-large-lectures-shows-promising-results",
+        "height": 675,
+        "width": 1200,
+        "byteSize": 184303,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0FCD9xc5Tv84Lc2qhWKQuWR5mrRpn8NxKeX3xmRUM3bcvuF-eiXonjg&s",
+        "thumbnailHeight": 84,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "5 Ways to Make Your Lecture More Interactive and Engaging",
+      "htmlTitle": "5 Ways to Make Your \u003cb\u003eLecture\u003c/b\u003e More Interactive and Engaging",
+      "link": "https://echo360.com/wp-content/uploads/2017/02/Lecture-Hall.jpg",
+      "displayLink": "echo360.com",
+      "snippet": "5 Ways to Make Your Lecture More Interactive and Engaging",
+      "htmlSnippet": "5 Ways to Make Your \u003cb\u003eLecture\u003c/b\u003e More Interactive and Engaging",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://echo360.com/5-ways-to-make-your-lecture-more-interactive-and-engaging/",
+        "height": 801,
+        "width": 1200,
+        "byteSize": 463375,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRL3WJtmfJc0DhUi8ANOHulrc99HPcw28gQRiZ9ogNeRIThqkxHFpBtt_4&s",
+        "thumbnailHeight": 100,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Lecture - Wikipedia",
+      "htmlTitle": "\u003cb\u003eLecture\u003c/b\u003e - Wikipedia",
+      "link": "https://upload.wikimedia.org/wikipedia/commons/2/26/ADFA_Lecture_Theatres.jpg",
+      "displayLink": "en.wikipedia.org",
+      "snippet": "Lecture - Wikipedia",
+      "htmlSnippet": "\u003cb\u003eLecture\u003c/b\u003e - Wikipedia",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://en.wikipedia.org/wiki/Lecture",
+        "height": 2358,
+        "width": 3543,
+        "byteSize": 17094877,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_NbDX1jMEUgnCKZ3An6UiBYy7CutxrwZrL9ClG86lPHaiwJe2w6k1KIg&s",
+        "thumbnailHeight": 100,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Introduction to Chemical Engineering | Lectures by Professor ...",
+      "htmlTitle": "Introduction to Chemical Engineering | \u003cb\u003eLectures\u003c/b\u003e by Professor ...",
+      "link": "https://cheme.stanford.edu/sites/g/files/sbiybj17096/files/styles/breakpoint_2xl_2x/public/media/image/130529-7067_1.jpg?itok=t-Rptmbg",
+      "displayLink": "cheme.stanford.edu",
+      "snippet": "Introduction to Chemical Engineering | Lectures by Professor ...",
+      "htmlSnippet": "Introduction to Chemical Engineering | \u003cb\u003eLectures\u003c/b\u003e by Professor ...",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://cheme.stanford.edu/academics-admissions/where-do-chemical-engineers-work/introduction-chemical-engineering-lectures",
+        "height": 1996,
+        "width": 3000,
+        "byteSize": 940929,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR5BV3i_a4u3w2E-Q5onQTE4JRfgnck6ViZAVYXsCnPk31PDc4QCPw-rds&s",
+        "thumbnailHeight": 100,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Five Tips for Engaged Lecturing",
+      "htmlTitle": "Five Tips for Engaged \u003cb\u003eLecturing\u003c/b\u003e",
+      "link": "https://ctl.columbia.edu/files/2021/08/40792436311_d43895a315_o-1024x576.jpg",
+      "displayLink": "ctl.columbia.edu",
+      "snippet": "Five Tips for Engaged Lecturing",
+      "htmlSnippet": "Five Tips for Engaged \u003cb\u003eLecturing\u003c/b\u003e",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://ctl.columbia.edu/resources-and-technology/resources/engaged-lecturing/",
+        "height": 576,
+        "width": 1024,
+        "byteSize": 100542,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz9K-jJBX90_I1jlXveFcAIbBJmSUqd6EPwVBrJRjA4fNFcxJbpQBKsJg&s",
+        "thumbnailHeight": 84,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "History of the CHRISTMAS LECTURES | Royal Institution",
+      "htmlTitle": "History of the CHRISTMAS \u003cb\u003eLECTURES\u003c/b\u003e | Royal Institution",
+      "link": "https://www.rigb.org/sites/default/files/styles/inline_image/public/images/2440x1092_faraday%20painting%20blaikley_ri.jpg?itok=x0h3TmEN",
+      "displayLink": "www.rigb.org",
+      "snippet": "History of the CHRISTMAS LECTURES | Royal Institution",
+      "htmlSnippet": "History of the CHRISTMAS \u003cb\u003eLECTURES\u003c/b\u003e | Royal Institution",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://www.rigb.org/christmas-lectures/history-christmas-lectures",
+        "height": 403,
+        "width": 900,
+        "byteSize": 74195,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTbn2s6ycmuQ1gLdfONjspoPFoqybR-eAbYiGhL22Y0ZK-ogCMSbfVvNQ&s",
+        "thumbnailHeight": 65,
+        "thumbnailWidth": 146
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Learn the Pros and Cons of Lectures",
+      "htmlTitle": "Learn the Pros and Cons of \u003cb\u003eLectures\u003c/b\u003e",
+      "link": "https://www.thoughtco.com/thmb/TfMrhYM-HWaA9PyRhUirK2cX_aE=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/rear-view-of-a-high-school-teacher-giving-a-lecture--902804880-5c46973b4cedfd0001b35e9d.jpg",
+      "displayLink": "www.thoughtco.com",
+      "snippet": "Learn the Pros and Cons of Lectures",
+      "htmlSnippet": "Learn the Pros and Cons of \u003cb\u003eLectures\u003c/b\u003e",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://www.thoughtco.com/lecture-pros-and-cons-8037",
+        "height": 980,
+        "width": 1500,
+        "byteSize": 134778,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXqk9RQ_9VlJbf9caSyzyxuqaFu2qva7Wl_oYShXhDS7rJkZb66iVkqQ&s",
+        "thumbnailHeight": 98,
+        "thumbnailWidth": 150
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Lectures | Faculty of Philosophy",
+      "htmlTitle": "\u003cb\u003eLectures\u003c/b\u003e | Faculty of Philosophy",
+      "link": "https://www.philosophy.ox.ac.uk/sites/default/files/philosophy/images/media/2016_Locke_Lecture2.jpg",
+      "displayLink": "www.philosophy.ox.ac.uk",
+      "snippet": "Lectures | Faculty of Philosophy",
+      "htmlSnippet": "\u003cb\u003eLectures\u003c/b\u003e | Faculty of Philosophy",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://www.philosophy.ox.ac.uk/lectures",
+        "height": 400,
+        "width": 640,
+        "byteSize": 42117,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRB31bbtPEf1n8o3D3Wn_vumhTsN_8wqfQQPWa-iP9GIvjfpTidUhqZ5A&s",
+        "thumbnailHeight": 86,
+        "thumbnailWidth": 137
+      }
+    },
+    {
+      "kind": "customsearch#result",
+      "title": "Lecture - Wikipedia",
+      "htmlTitle": "\u003cb\u003eLecture\u003c/b\u003e - Wikipedia",
+      "link": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/ADFA_Lecture_Theatres.jpg/1200px-ADFA_Lecture_Theatres.jpg",
+      "displayLink": "en.wikipedia.org",
+      "snippet": "Lecture - Wikipedia",
+      "htmlSnippet": "\u003cb\u003eLecture\u003c/b\u003e - Wikipedia",
+      "mime": "image/jpeg",
+      "fileFormat": "image/jpeg",
+      "image": {
+        "contextLink": "https://en.wikipedia.org/wiki/Lecture",
+        "height": 799,
+        "width": 1200,
+        "byteSize": 1001478,
+        "thumbnailLink": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8DFeRCOoIcOnYqlvO6MA6lWH16EnNbTVeG-E6bpsXPnypIKFVx0R6aA&s",
+        "thumbnailHeight": 100,
+        "thumbnailWidth": 150
+      }
+    }
+  ]
+}

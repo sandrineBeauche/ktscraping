@@ -21,7 +21,7 @@ class ImageDescriptor(val name: String){
 }
 
 
-class ImageMiddleware(scope: CoroutineScope, name: String): SpiderMiddleware(scope, name) {
+class ImageMiddleware(name: String): SpiderMiddleware(name) {
 
     companion object{
         val CSS_SELECTOR_IMAGES: String = "cssSelectorImages"

@@ -48,7 +48,7 @@ interface ResponseDispatcher: Controllable, DIAware {
     }
 
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info{ "Starting the response dispatcher ${name}"}
         this.performRequests()
         this.performResponses()
@@ -64,7 +64,6 @@ interface ResponseDispatcher: Controllable, DIAware {
 }
 
 class SpiderResponseDispatcher(
-    override val scope: CoroutineScope,
     override val name: String = "SpiderResponseDispatcher",
     override val di: DI
 ): ResponseDispatcher{
@@ -86,6 +85,7 @@ class SpiderResponseDispatcher(
 
     var nbItemEnd: Int = 0
 
+    override lateinit var scope: CoroutineScope
 
     suspend fun performItems(){
         for(sender in itemSenders){
@@ -99,20 +99,26 @@ class SpiderResponseDispatcher(
 
     suspend fun performItem(item: Item){
         if(item is ItemEnd){
+            logger.debug { "${name}: received an item end" }
             nbItemEnd++
-            if(nbItemEnd == itemSenders.size){
+            if(nbItemEnd >= itemSenders.size){
+                logger.debug { "${name}: All branches are finished, follows item end "}
                 itemChannelOut.send(item)
+            }
+            else{
+                logger.debug { "${name}: Wait for others item ends"}
             }
         }
         else{
-            logger.debug{ "${name}: Received an item and follows it" }
+            logger.debug{ "${name}: Received an item and follows it: ${item}" }
             itemChannelOut.send(item)
         }
     }
 
-    override suspend fun start() {
+
+    override suspend fun run() {
         this.performItems()
-        super.start()
+        super.run()
     }
 
     override suspend fun stop() {

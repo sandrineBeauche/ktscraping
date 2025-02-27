@@ -14,7 +14,7 @@ import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
 import java.util.*
 
-abstract class ItemDispatcher(override val scope: CoroutineScope, override val name: String, override val di: DI) : ItemReceiver, DIAware {
+abstract class ItemDispatcher(override val name: String, override val di: DI) : ItemReceiver, DIAware {
 
     override lateinit var itemIn: ReceiveChannel<Item>
 
@@ -28,12 +28,14 @@ abstract class ItemDispatcher(override val scope: CoroutineScope, override val n
 
     val itemAckIns: MutableList<ReceiveChannel<ItemAck>> = mutableListOf()
 
+    override lateinit var scope: CoroutineScope
+
     override suspend fun processItem(item: Item): List<Item> {
         return listOf(item)
     }
 
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info { "${name}: starting the item dispatcher" }
         this.performItems()
         this.performAcks()
@@ -56,7 +58,7 @@ abstract class ItemDispatcher(override val scope: CoroutineScope, override val n
     }
 }
 
-class ItemDispatcherAll(scope: CoroutineScope, name: String, di: DI): ItemDispatcher(scope, name, di){
+class ItemDispatcherAll(name: String, di: DI): ItemDispatcher(name, di){
 
     val pendingAcks: MutableMap<UUID, Int> = mutableMapOf()
 
@@ -80,11 +82,14 @@ class ItemDispatcherAll(scope: CoroutineScope, name: String, di: DI): ItemDispat
 
     override suspend fun pushItem(item: Item) {
         pendingAcks.put(item.itemId, 0)
-        itemOuts.forEach { it.send(item.clone()) }
+        itemOuts.forEach {
+            val cl = item.clone()
+            it.send(cl)
+        }
     }
 }
 
-abstract class ItemDispatcherOne(scope: CoroutineScope, name: String, di: DI): ItemDispatcher(scope, name, di){
+abstract class ItemDispatcherOne(name: String, di: DI): ItemDispatcher(name, di){
 
     abstract fun selectChannel(item: Item): SendChannel<Item>
 

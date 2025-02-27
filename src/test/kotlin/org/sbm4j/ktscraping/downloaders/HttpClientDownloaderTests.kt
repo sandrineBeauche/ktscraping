@@ -18,8 +18,8 @@ import kotlin.test.assertNotNull
 
 class HttpClientDownloaderTests: AbstractDownloaderTester() {
 
-    override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
-        return HttpClientDownloader(sc, downloaderName)
+    override fun buildDownloader(downloaderName: String): AbstractDownloader {
+        return HttpClientDownloader(downloaderName)
     }
 
     @Test
@@ -35,7 +35,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
         assertNotNull(response)
         assertThat(response.status, equalTo(Status.OK))
 
-        val imageBytes = response.contents["imagePayload"] as ByteArray
+        val imageBytes = response.contents[AbstractDownloader.PAYLOAD] as ByteArray
 
         val root = this.javaClass.getResource("/")?.file
         val f = File(root, "downloaded_image.png")

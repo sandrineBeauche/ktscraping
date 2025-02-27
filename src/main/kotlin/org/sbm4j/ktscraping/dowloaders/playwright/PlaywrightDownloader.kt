@@ -29,7 +29,7 @@ open class PlaywrightRequest(
 
 }
 
-class PlaywrightDownloader(scope: CoroutineScope, name: String = "Playwright downloader") : AbstractDownloader(scope, name) {
+class PlaywrightDownloader(name: String = "Playwright downloader") : AbstractDownloader(name) {
     companion object{
         val PLAYWRIGHT: String = "playwright"
         val CONTEXT_NAME: String = "contextName"
@@ -44,8 +44,9 @@ class PlaywrightDownloader(scope: CoroutineScope, name: String = "Playwright dow
 
     val namedThreadDispatcher: MutableMap<String, ExecutorCoroutineDispatcher> = mutableMapOf()
 
-    override suspend fun start() {
-        super.start()
+
+    override suspend fun run() {
+        super.run()
         factory = PlaywrightThreadfactory(headless)
         cachedThreadPoolDispatcher = Executors.newCachedThreadPool(factory).asCoroutineDispatcher()
     }

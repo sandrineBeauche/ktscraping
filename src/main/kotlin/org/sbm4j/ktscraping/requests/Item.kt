@@ -10,7 +10,7 @@ import java.util.*
 
 abstract class Item : Channelable{
 
-    val itemId: UUID = UUID.randomUUID()
+    var itemId: UUID = UUID.randomUUID()
 
     abstract fun clone(): Item
 }
@@ -25,6 +25,7 @@ data class ItemError(
     val ex: Exception,
     val controllable: Controllable,
     val level: ErrorLevel,
+    val data: Channelable? = null
 ): Item(){
     override fun clone(): Item {
         return this.copy()
@@ -114,7 +115,9 @@ data class DataItem(
     val label: String = "data"
 ): Item(){
     override fun clone(): Item {
-        return this.copy(data = data.clone() as Data)
+        val result = this.copy(data = data.clone())
+        result.itemId = this.itemId
+        return result
     }
 }
 

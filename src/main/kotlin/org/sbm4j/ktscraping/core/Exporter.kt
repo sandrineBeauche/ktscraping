@@ -8,18 +8,20 @@ import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
 import org.sbm4j.ktscraping.requests.ItemStatus
 
-abstract class AbstractExporter(override val scope: CoroutineScope, override val name: String): ItemReceiver {
+abstract class AbstractExporter(override val name: String): ItemReceiver {
 
     override val mutex: Mutex = Mutex()
     override var state: State = State()
+
+    override lateinit var scope: CoroutineScope
 
     override lateinit var itemIn: ReceiveChannel<Item>
 
     lateinit var itemAckOut: SendChannel<ItemAck>
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info{"${name}: Starting Exporter"}
-        super.start()
+        super.run()
     }
 
     override suspend fun stop() {

@@ -1,8 +1,15 @@
 package org.sbm4j.ktscraping.middleware
 
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.hasSize
+import com.natpryce.hamkrest.isA
+import com.natpryce.hamkrest.startsWith
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.sbm4j.ktscraping.core.AbstractDownloader
+import org.sbm4j.ktscraping.core.ContentType
 
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
@@ -11,10 +18,11 @@ import org.sbm4j.ktscraping.requests.GoogleSearchImageRequest
 import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 import kotlin.test.Test
+import kotlin.test.assertNotNull
 
 class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
-    override fun buildMiddleware(sc: CoroutineScope, middlewareName: String): SpiderMiddleware {
-        val result = ImageMiddleware(sc, middlewareName)
+    override fun buildMiddleware(middlewareName: String): SpiderMiddleware {
+        val result = ImageMiddleware(middlewareName)
         return result
     }
 
@@ -25,7 +33,7 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
         request.parameters["cssSelectorImages"] = mapOf("header" to 0)
 
         val response = Response(request)
-        response.contents["payload"] = html!!
+        response.contents[AbstractDownloader.PAYLOAD] = html!!
 
         lateinit var resp: Response
 
@@ -47,7 +55,15 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
             resp = followOutChannel.receive()
         }
 
-        println(resp)
+        val contents = resp.contents
+        val payload = contents[AbstractDownloader.PAYLOAD] as String
+        assertThat(payload, startsWith("<html>"))
+
+        val images = contents[ImageMiddleware.IMAGES_PAYLOAD] as Map<*,*>
+        assertThat(images.entries, hasSize(equalTo(1)))
+
+        val img = images["/_img/2022/iana-logo-header.svg"] as ImageDescriptor
+        assertThat(img.rawStringData!!, startsWith("<svg"))
     }
 
 
@@ -58,7 +74,7 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
         request.parameters["cssSelectorImages"] = mapOf("div#search g-img" to 1)
 
         val response = Response(request)
-        response.contents["payload"] = html!!
+        response.contents[AbstractDownloader.PAYLOAD] = html!!
 
         lateinit var resp: Response
 
@@ -71,7 +87,15 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
             resp = followOutChannel.receive()
         }
 
-        println(resp)
+        val contents = resp.contents
+        val payload = contents[AbstractDownloader.PAYLOAD] as String
+        assertThat(payload, startsWith("<!DOCTYPE html>"))
+
+        val images = contents[ImageMiddleware.IMAGES_PAYLOAD] as Map<*,*>
+        assertThat(images.entries, hasSize(equalTo(1)))
+
+        val img = images["La stratégie Ender : Card,Orson Scott, Guillot,Sébastien: Amazon.fr: Livres"] as ImageDescriptor
+        assertThat(img.rawStringData!!, startsWith("data:image/"))
     }
 
     @Test
@@ -83,20 +107,36 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
             searchEngine = "lkjmsljdsd"
             )
 
-        val response = Response(request)
-        response.contents["payload"] = json!!
+        val response = Response(request, type = ContentType.JSON)
+        response.contents[AbstractDownloader.PAYLOAD] = json!!
 
         lateinit var resp: Response
+
+        val bytesImage = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/le_mariage_des_lapins.jpg")?.readBytes()!!
 
         withMiddleware {
             inChannel.send(request)
             val req = followInChannel.receive()
-
+            logger.info { "received the followed request, now send response" }
 
             outChannel.send(response)
+
+            val reqImage = followInChannel.receive()
+            val respImage = Response(reqImage, type = ContentType.IMAGE)
+            respImage.contents[AbstractDownloader.PAYLOAD] = bytesImage
+            outChannel.send(respImage)
+
             resp = followOutChannel.receive()
         }
 
-        println(resp)
+        val contents = resp.contents
+        val payload = contents[AbstractDownloader.PAYLOAD] as String
+        assertThat(payload, startsWith("{"))
+
+        val images = contents[ImageMiddleware.IMAGES_PAYLOAD] as Map<*,*>
+        assertThat(images.entries, hasSize(equalTo(1)))
+
+        val img = images["https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_op-v8BH8ofh8ZWs9Dhj15DXdr6axwcZEpMYmCB1_2B_O3HXSl7jzVQ&s"] as ImageDescriptor
+        assertNotNull(img.rawBytesData)
     }
 }

@@ -11,7 +11,7 @@ import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Response
 
-class SchedulerMiddleware(scope: CoroutineScope, name: String = "Scheduler middleware"): DownloaderMiddleware(scope, name) {
+class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMiddleware(name) {
 
     var nbConnexions: Int = 10
         set(value) {
@@ -70,10 +70,10 @@ class SchedulerMiddleware(scope: CoroutineScope, name: String = "Scheduler middl
         ch.send(request)
     }
 
-    override suspend
-    fun start() {
+
+    override suspend fun run() {
         logger.info{"${name}: Starting scheduler middleware"}
-        super.start()
+        super.run()
     }
 
     override suspend fun stop() {

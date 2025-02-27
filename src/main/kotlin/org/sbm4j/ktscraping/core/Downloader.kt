@@ -5,7 +5,6 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 enum class ContentType{
@@ -19,7 +18,6 @@ enum class ContentType{
 }
 
 abstract class AbstractDownloader(
-    override val scope: CoroutineScope,
     override val name: String
 ): RequestReceiver{
 
@@ -35,6 +33,8 @@ abstract class AbstractDownloader(
     override lateinit var requestIn: ReceiveChannel<AbstractRequest>
     override lateinit var responseOut: SendChannel<Response>
 
+    override lateinit var scope: CoroutineScope
+
 
     override suspend fun answerRequest(request: AbstractRequest, result: Any) {
         logger.debug { "$name : answer to ${request.name} with a response"}
@@ -42,9 +42,9 @@ abstract class AbstractDownloader(
     }
 
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info{"${name}: Starting downloader"}
-        super.start()
+        super.run()
     }
 
     override suspend fun stop() {

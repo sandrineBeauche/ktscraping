@@ -22,7 +22,7 @@ fun buildPipelineChannels(): Pair<Channel<Item>, Channel<ItemAck>>{
 
 
 fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
-    val branch = PipelineBranch(this.scope,
+    val branch = PipelineBranch(
         this.channelFactory.itemChannel,
         this.channelFactory.itemAckChannel,
         this.di)
@@ -31,7 +31,7 @@ fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
 }
 
 fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: ItemDispatcherAll.() -> Unit){
-    val dispatcher = ItemDispatcherAll(this.scope, name, this.di)
+    val dispatcher = ItemDispatcherAll(name, this.di)
     dispatcher.itemIn = this.channelFactory.itemChannel
     dispatcher.itemAckOut = this.channelFactory.itemAckChannel
 
@@ -45,7 +45,7 @@ fun Crawler.pipelineDispatcherOne(
     selectChannelFunc: ItemDispatcherOne.(Item) -> SendChannel<Item>,
     init: ItemDispatcherOne.() -> Unit
 ){
-    val dispatcher = object : ItemDispatcherOne(this.scope, name, this.di){
+    val dispatcher = object : ItemDispatcherOne(name, this.di){
         override fun selectChannel(item: Item): SendChannel<Item> {
             return selectChannelFunc(item)
         }
@@ -59,7 +59,6 @@ fun Crawler.pipelineDispatcherOne(
 
 
 class PipelineBranch(
-    val scope: CoroutineScope,
     var pipelineItemIn: Channel<Item>,
     var pipelineItemAckOut: Channel<ItemAck>,
     override val di: DI
@@ -70,7 +69,7 @@ class PipelineBranch(
     inline fun <reified T: AbstractPipeline>pipeline(
                                       name: String? = null,
                                       init: T.() -> Unit = {}): T{
-        val pip = buildControllable<T>(name, scope)
+        val pip = buildControllable<T>(name)
 
         senders.add(pip)
         pip.itemIn = pipelineItemIn
@@ -91,7 +90,7 @@ class PipelineBranch(
     inline fun <reified T: AbstractExporter>exporter(
                                       name: String? = null,
                                       init: T.() -> Unit = {}): T {
-        val exp = buildControllable<T>(name, scope)
+        val exp = buildControllable<T>(name)
 
         senders.add(exp)
         exp.itemIn = pipelineItemIn
@@ -102,7 +101,7 @@ class PipelineBranch(
     }
 
     fun pipelineDispatcherAll(name: String = "dispatcher", init: ItemDispatcherAll.() -> Unit){
-        val dispatcher = ItemDispatcherAll(scope, name, this.di)
+        val dispatcher = ItemDispatcherAll(name, this.di)
         dispatcher.itemIn = pipelineItemIn
         dispatcher.itemAckOut = pipelineItemAckOut
         dispatcher.init()
@@ -115,7 +114,7 @@ class PipelineBranch(
         selectChannelFunc: ItemDispatcherOne.(Item) -> SendChannel<Item>,
         init: ItemDispatcherOne.() -> Unit
     ){
-        val dispatcher = object : ItemDispatcherOne(this.scope, name, this.di){
+        val dispatcher = object : ItemDispatcherOne(name, this.di){
             override fun selectChannel(item: Item): SendChannel<Item> {
                 return selectChannelFunc(item)
             }
@@ -131,7 +130,7 @@ class PipelineBranch(
 inline fun <reified T: AbstractExporter> ItemDispatcher.exporter(
                                                   name: String? = null,
                                                   init: T.() -> Unit = {}): T? {
-    val exp = buildControllable<T>(name, scope)
+    val exp = buildControllable<T>(name)
 
     val crawler: Crawler by di.instance(arg = this.di)
     crawler.controllables.add(exp)
@@ -150,7 +149,7 @@ inline fun <reified T: AbstractExporter> ItemDispatcher.exporter(
 fun ItemDispatcher.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
     val (newItemChannel, newItemAckChannel) = buildPipelineChannels()
     this.addBranch(newItemChannel, newItemAckChannel)
-    val branch = PipelineBranch(this.scope, newItemChannel, newItemAckChannel, this.di)
+    val branch = PipelineBranch(newItemChannel, newItemAckChannel, this.di)
     branch.initBranch()
 
     val crawler : Crawler by this.di.instance(arg = this.di)

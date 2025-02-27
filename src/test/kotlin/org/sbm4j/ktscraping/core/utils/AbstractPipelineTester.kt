@@ -17,7 +17,7 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, ItemAck>() {
 
     val pipelineName: String = "Pipeline"
 
-    abstract fun buildPipeline(sc: CoroutineScope, pipelineName: String): AbstractPipeline
+    abstract fun buildPipeline(pipelineName: String): AbstractPipeline
 
     @BeforeTest
     fun setUp(){
@@ -26,7 +26,7 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, ItemAck>() {
 
         val sc = mockk<CoroutineScope>()
 
-        pipeline = spyk(buildPipeline(sc, pipelineName))
+        pipeline = spyk(buildPipeline(pipelineName))
 
         every { pipeline.itemIn } returns inChannel
         every { pipeline.itemOut } returns followInChannel
@@ -37,7 +37,7 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, ItemAck>() {
     suspend fun withPipeline(func: suspend AbstractPipelineTester.() -> Unit){
         coroutineScope {
             every { pipeline.scope } returns this
-            pipeline.start()
+            pipeline.start(this)
 
             func()
 

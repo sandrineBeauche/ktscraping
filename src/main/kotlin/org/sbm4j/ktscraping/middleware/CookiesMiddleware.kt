@@ -5,7 +5,7 @@ import org.sbm4j.ktscraping.core.DownloaderMiddleware
 import org.sbm4j.ktscraping.requests.AbstractRequest
 import org.sbm4j.ktscraping.requests.Response
 
-class CookiesMiddleware(scope: CoroutineScope, name: String = "Cookies middleware") : DownloaderMiddleware(scope, name) {
+class CookiesMiddleware(name: String = "Cookies middleware") : DownloaderMiddleware(name) {
     companion object{
         val COOKIE_NAME: String = "cookiesName"
         val COOKIE: String = "cookies"

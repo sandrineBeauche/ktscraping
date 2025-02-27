@@ -7,11 +7,13 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.exporters.ItemDelete
+import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.requests.*
-import java.util.UUID
+import org.sbm4j.ktscraping.stats.StatsCrawlerResult
+import java.util.*
 
 abstract class AbstractEngine(
-    final override val scope: CoroutineScope,
     channelFactory: ChannelFactory,
 ) : RequestSender, RequestReceiver, ItemFollower{
 
@@ -38,6 +40,8 @@ abstract class AbstractEngine(
     val pendingItems: MutableList<UUID> = mutableListOf()
 
     val resultChannel: SendChannel<CrawlerResult> = Channel<CrawlerResult>(Channel.RENDEZVOUS)
+
+    override lateinit var scope: CoroutineScope
 
     override suspend fun processItem(item: Item): List<Item> {
         return when(item){
@@ -86,11 +90,12 @@ abstract class AbstractEngine(
         this.responseOut.send(response)
     }
 
-    override suspend fun start() {
+
+    override suspend fun run() {
         logger.info { "${name}: starting engine" }
-        super<RequestSender>.start()
-        super<RequestReceiver>.start()
-        super<ItemFollower>.start()
+        super<RequestSender>.run()
+        super<RequestReceiver>.run()
+        super<ItemFollower>.run()
     }
 
     override suspend fun stop() {
@@ -110,20 +115,11 @@ abstract class AbstractEngine(
 }
 
 
-data class StatsCrawlerResult(
-    var nbRequests: Int = 0,
-    var nbItems: Int = 0,
-    val errors: MutableList<ItemError> = mutableListOf(),
-    var responseOK: Int = 0,
-    var responseError: Int = 0,
-    var nbGoogleAPIRequests: Int = 0
-): CrawlerResult
 
 class Engine(
-    scope: CoroutineScope,
     channelFactory: ChannelFactory,
     val progressMonitor: ProgressMonitor
-) : AbstractEngine(scope, channelFactory){
+) : AbstractEngine(channelFactory){
 
     val stats: StatsCrawlerResult = StatsCrawlerResult()
 
@@ -160,8 +156,17 @@ class Engine(
             is ItemProgress -> {
                 progressMonitor.processItemProgress(item)
             }
-            else -> {
+            is DataItem -> {
                 this.stats.nbItems++
+                this.stats.incrNew(item.label)
+            }
+            is ItemUpdate -> {
+                this.stats.nbItems++
+                this.stats.incrUpdate(item.label)
+            }
+            is ItemDelete -> {
+                this.stats.nbItems++
+                this.stats.incrDelete(item.label)
             }
         }
         return super.processItem(item)

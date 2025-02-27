@@ -22,8 +22,8 @@ class AbstractSpiderTest: AbstractSpiderTester() {
 
     var expectedItem = DataItem(data)
 
-    override fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSimpleSpider {
-        return object: AbstractSimpleSpider(sc,  spiderName){
+    override fun buildSpider(spiderName: String): AbstractSimpleSpider {
+        return object: AbstractSimpleSpider(spiderName){
             override suspend fun parse(resp: Response) {
                 this.itemsOut.send(expectedItem)
             }

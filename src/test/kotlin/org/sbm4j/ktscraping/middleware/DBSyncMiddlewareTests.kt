@@ -12,8 +12,8 @@ import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.requests.*
 
 class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
-    override fun buildMiddleware(sc: CoroutineScope, middlewareName: String): SpiderMiddleware {
-        val result = DBSyncMiddleware(sc, middlewareName)
+    override fun buildMiddleware(middlewareName: String): SpiderMiddleware {
+        val result = DBSyncMiddleware(middlewareName)
         result.keys = setOf(1,2,3)
         result.classObject = Contact::class.java
         result.keyProperty = Contact::contactId

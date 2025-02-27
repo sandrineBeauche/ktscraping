@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.*
 
@@ -12,11 +13,10 @@ interface CrawlerResult{
 
 }
 
-fun defaultDIModule(scope: CoroutineScope, name: String): DI.Module {
+fun defaultDIModule(name: String): DI.Module {
     val mod = DI.Module(name = "defaultDIModule"){
-            bindSingleton<CoroutineScope> { scope }
-            bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(), instance(), name, instance(), di) }}
-            bindSingleton<Engine> { Engine(instance(), instance(), instance()) }
+            bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(), name, instance(), di) }}
+            bindSingleton<Engine> { Engine(instance(), instance()) }
             bindSingleton<ChannelFactory> { ChannelFactory() }
             bindSingleton<ProgressMonitor> { ProgressMonitor() }
         }
@@ -31,9 +31,9 @@ interface Crawler : Controllable, DIAware{
     val channelFactory : ChannelFactory
 
 
-    override suspend fun start() {
+    override suspend fun run() {
         for(cont in controllables){
-            cont.start()
+            cont.start(this.scope)
         }
     }
 
@@ -55,7 +55,6 @@ interface Crawler : Controllable, DIAware{
 
 
 abstract class AbstractCrawler(
-    override val scope: CoroutineScope,
     override val name: String = "AbstractCrawler",
     override val channelFactory: ChannelFactory,
 ): Crawler {
@@ -65,22 +64,22 @@ abstract class AbstractCrawler(
 
     override var state: State = State()
 
+    override lateinit var scope: CoroutineScope
 }
 
 
 class DefaultCrawler(
-    scope: CoroutineScope,
     channelFactory: ChannelFactory,
     name: String = "MainCrawler",
     val engine: Engine,
     override val di: DI
-    ) : AbstractCrawler(scope, name, channelFactory) {
+    ) : AbstractCrawler(name, channelFactory) {
 
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info{"${name}: Starting crawler"}
-        engine.start()
-        super.start()
+        engine.start(this.scope)
+        super.run()
     }
 
     override suspend fun stop() {

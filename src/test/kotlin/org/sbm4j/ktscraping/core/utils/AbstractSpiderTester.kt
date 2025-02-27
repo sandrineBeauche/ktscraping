@@ -23,7 +23,7 @@ abstract class AbstractSpiderTester: ScrapingTest<Response,
 
     val spiderName: String = "Spider"
 
-    abstract fun buildSpider(sc: CoroutineScope, spiderName: String): AbstractSpider
+    abstract fun buildSpider(spiderName: String): AbstractSpider
 
     @BeforeTest
     fun setUp(){
@@ -32,7 +32,7 @@ abstract class AbstractSpiderTester: ScrapingTest<Response,
 
         val sc = mockk<CoroutineScope>()
 
-        spider = spyk(buildSpider(sc, spiderName))
+        spider = spyk(buildSpider(spiderName))
 
         every { spider.requestOut } returns outChannel
         every { spider.responseIn } returns inChannel
@@ -42,7 +42,7 @@ abstract class AbstractSpiderTester: ScrapingTest<Response,
     suspend fun withSpider(func: suspend AbstractSpiderTester.() -> Unit){
         coroutineScope {
             every { spider.scope } returns this
-            spider.start()
+            spider.start(this)
 
             func()
 

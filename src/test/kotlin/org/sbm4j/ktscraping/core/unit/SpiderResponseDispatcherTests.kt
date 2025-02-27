@@ -72,7 +72,7 @@ class ResponseDispatcherTest: ScrapingTest<Response, AbstractRequest>(){
                 every { dispatcher.scope } returns this
                 every { dispatcher.senders } returns this@ResponseDispatcherTest.senders
 
-                dispatcher.start()
+                dispatcher.start(this)
             }
             launch{
                 reqChannel1.send(req1)
@@ -101,7 +101,7 @@ class ResponseDispatcherTest: ScrapingTest<Response, AbstractRequest>(){
                 every { dispatcher.scope } returns this
                 every { dispatcher.senders } returns this@ResponseDispatcherTest.senders
 
-                dispatcher.start()
+                dispatcher.start(this)
             }
             launch{
                 reqChannel1.send(req1)

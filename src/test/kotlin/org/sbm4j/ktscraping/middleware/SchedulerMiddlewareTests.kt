@@ -17,8 +17,8 @@ import kotlin.test.Test
 
 class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
 
-    override fun buildMiddleware(sc: CoroutineScope, middlewareName: String): AbstractMiddleware {
-        val result = SchedulerMiddleware(sc, middlewareName)
+    override fun buildMiddleware(middlewareName: String): AbstractMiddleware {
+        val result = SchedulerMiddleware(middlewareName)
         result.nbConnexions = 1
         return result
     }

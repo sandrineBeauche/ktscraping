@@ -2,6 +2,9 @@ package org.sbm4j.ktscraping.core
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import java.util.concurrent.ConcurrentHashMap
 
@@ -29,15 +32,22 @@ interface Controllable {
 
     var state: State
 
-    val scope: CoroutineScope
+    var scope: CoroutineScope
 
     /**
      * Starts the kt scraping line object
      */
-    suspend fun start()
+    suspend fun start(scope: CoroutineScope){
+        scope.launch {
+            this@Controllable.scope = this
+            run()
+        }
+    }
+
+    suspend fun run()
 
     /**
-     * Stops ths kt scraping line object
+     * Stops the kt scraping line object
      */
     suspend fun stop(){
         try {

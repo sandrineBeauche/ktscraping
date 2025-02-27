@@ -9,8 +9,9 @@ import org.sbm4j.ktscraping.requests.*
 import kotlin.coroutines.CoroutineContext
 
 
-abstract class AbstractSpider(override val scope: CoroutineScope,
-                              override val name: String = "Spider"): RequestSender{
+abstract class AbstractSpider(
+     override val name: String = "Spider"
+): RequestSender{
 
      override val mutex: Mutex = Mutex()
      override var state: State = State()
@@ -23,10 +24,12 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
 
      abstract suspend fun performScraping(subScope: CoroutineScope)
 
+     override lateinit var scope: CoroutineScope
 
-     override suspend fun start() {
+
+     override suspend fun run() {
           logger.info{"${name}: Starting spider"}
-          super.start()
+          super.run()
           scope.launch {
                logger.info{"${name}: Start performing scraping"}
                performScraping(this)
@@ -146,9 +149,8 @@ abstract class AbstractSpider(override val scope: CoroutineScope,
 
 
 abstract class AbstractSimpleSpider(
-     scope: CoroutineScope,
      name: String = "Spider"
-) : AbstractSpider(scope, name) {
+) : AbstractSpider(name) {
 
      lateinit var urlRequest: String
 

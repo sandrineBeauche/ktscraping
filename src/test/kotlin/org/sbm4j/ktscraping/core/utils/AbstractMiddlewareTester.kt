@@ -23,7 +23,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Respo
     val middlewareName: String = "Middleware"
 
 
-    abstract fun buildMiddleware(sc: CoroutineScope, middlewareName: String): AbstractMiddleware
+    abstract fun buildMiddleware(middlewareName: String): AbstractMiddleware
 
     @BeforeTest
     fun setUp(){
@@ -32,7 +32,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Respo
 
         val sc = mockk<CoroutineScope>()
 
-        middleware = spyk(buildMiddleware(sc, middlewareName))
+        middleware = spyk(buildMiddleware(middlewareName))
 
         every { middleware.requestIn } returns inChannel
         every { middleware.requestOut } returns followInChannel
@@ -43,7 +43,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Respo
     suspend fun withMiddleware(func: suspend AbstractMiddlewareTester.() -> Unit){
         coroutineScope {
             every { middleware.scope } returns this
-            middleware.start()
+            middleware.start(this)
 
             func()
 

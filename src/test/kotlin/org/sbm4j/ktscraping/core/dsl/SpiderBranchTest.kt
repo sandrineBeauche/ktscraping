@@ -9,6 +9,7 @@ import com.natpryce.hamkrest.isA
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
@@ -19,7 +20,7 @@ import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.Response
 
-class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSimpleSpider(scope, name){
+class SpiderClassTest(name:String): AbstractSimpleSpider(name){
     override suspend fun parse(resp: Response) {
         logger.debug { "Building a new item for request ${resp.request.name}"}
         val data = DataItemTest(state["returnValue"] as String, resp.request.name, resp.request.url)
@@ -32,7 +33,7 @@ class SpiderClassTest(scope: CoroutineScope, name:String): AbstractSimpleSpider(
 
 }
 
-class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMiddleware(scope, name) {
+class SpiderMiddlewareClassTest(name: String) : SpiderMiddleware(name) {
     override suspend fun processResponse(response: Response): Boolean {
         return true
     }
@@ -50,12 +51,12 @@ class SpiderMiddlewareClassTest(scope: CoroutineScope, name: String) : SpiderMid
 class SpiderBranchTest: CrawlerTest() {
 
     @Test
-    fun testBuildCrawlerWithBranch() = scope.runTest{
+    fun testBuildCrawlerWithBranch() = TestScope().runTest{
         val expectedUrl = "une url"
         val spiderName = "Spider1"
 
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                 spiderBranch {
                     spiderMiddleware<SpiderMiddlewareClassTest>()
                     spider<SpiderClassTest>(spiderName){
@@ -66,7 +67,7 @@ class SpiderBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch{
                 logger.debug { "interacting with crawler" }
@@ -76,8 +77,9 @@ class SpiderBranchTest: CrawlerTest() {
                 val response = Response(request)
                 channelFactory.spiderResponseChannel.send(response)
 
-                val item = channelFactory.spiderItemChannel.receive() as DataItemTest
-                assertThat(item.value, equalTo(spiderName))
+                val item = channelFactory.spiderItemChannel.receive() as DataItem
+                val data = item.data as DataItemTest
+                assertThat(data.value, equalTo(spiderName))
                 logger.debug { "Received the final item" }
 
                 c.stop()
@@ -89,7 +91,7 @@ class SpiderBranchTest: CrawlerTest() {
 
 
     @Test
-    fun testBuildCrawlerWithDispatcher() = scope.runTest{
+    fun testBuildCrawlerWithDispatcher() = TestScope().runTest{
         val url1 = "une url 1"
         val url2 = "une url 2"
         val value1 = "value1"
@@ -99,7 +101,7 @@ class SpiderBranchTest: CrawlerTest() {
         lateinit var item2: DataItemTest
 
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                 spiderDispatcher {
                     spider<SpiderClassTest>(name = "spider1"){
                         urlRequest = url1
@@ -113,7 +115,7 @@ class SpiderBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch{
                 logger.debug { "interacting with crawler" }
@@ -126,8 +128,8 @@ class SpiderBranchTest: CrawlerTest() {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                item1 = channelFactory.spiderItemChannel.receive() as DataItemTest
-                item2 = channelFactory.spiderItemChannel.receive() as DataItemTest
+                item1 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
+                item2 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
 
                 val itemEnd = channelFactory.spiderItemChannel.receive()
 
@@ -150,7 +152,7 @@ class SpiderBranchTest: CrawlerTest() {
 
 
     @Test
-    fun testBuildCrawlerWithDispatcherAndBranch() = scope.runTest{
+    fun testBuildCrawlerWithDispatcherAndBranch() = TestScope().runTest{
         val url1 = "une url 1"
         val url2 = "une url 2"
         val value1 = "value1"
@@ -160,7 +162,7 @@ class SpiderBranchTest: CrawlerTest() {
         lateinit var item2: DataItemTest
 
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler( "MainCrawler", ::testDIModule){
                 spiderBranch {
                     spiderMiddleware<SpiderMiddlewareClassTest>()
                     spiderDispatcher {
@@ -183,7 +185,7 @@ class SpiderBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch{
                 logger.debug { "interacting with crawler" }
@@ -196,8 +198,8 @@ class SpiderBranchTest: CrawlerTest() {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                item1 = channelFactory.spiderItemChannel.receive() as DataItemTest
-                item2 = channelFactory.spiderItemChannel.receive() as DataItemTest
+                item1 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
+                item2 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
                 val itemEnd = channelFactory.spiderItemChannel.receive()
 
                 logger.debug { "Received the final items" }

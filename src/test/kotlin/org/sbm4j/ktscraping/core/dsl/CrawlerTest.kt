@@ -22,14 +22,14 @@ data class DataItemTest(
 
 
 class EmptyTestingCrawler(
-    scope: CoroutineScope,
     name: String = "TestCrawler",
     channelFactory: ChannelFactory,
     override val di: DI
-) : AbstractCrawler(scope, name, channelFactory){
-    override suspend fun start() {
+) : AbstractCrawler(name, channelFactory){
+
+    override suspend fun run() {
         logger.info{"Starting testing crawler ${name}"}
-        super.start()
+        super.run()
     }
 
     override suspend fun stop() {
@@ -51,10 +51,9 @@ abstract class CrawlerTest {
 
     val channelFactory : ChannelFactory = ChannelFactory()
 
-    fun testDIModule(scope: CoroutineScope, name: String): DI.Module {
+    fun testDIModule(name: String): DI.Module {
         val mod = DI.Module(name = "testDIModule"){
-            bindSingleton<CoroutineScope> { scope }
-            bind<Crawler> { multiton { di: DI -> EmptyTestingCrawler(instance(), name, instance(), di) }}
+            bind<Crawler> { multiton { di: DI -> EmptyTestingCrawler(name, instance(), di) }}
             bindSingleton<ChannelFactory> { channelFactory }
         }
         return mod

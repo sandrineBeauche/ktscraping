@@ -18,7 +18,7 @@ enum class BodyType{
     FILE
 }
 
-class HttpClientDownloader(scope: CoroutineScope, name: String = "HTTP Client downloader"): AbstractDownloader(scope, name) {
+class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDownloader(name) {
 
 
     override suspend fun processRequest(request: AbstractRequest): Any? {

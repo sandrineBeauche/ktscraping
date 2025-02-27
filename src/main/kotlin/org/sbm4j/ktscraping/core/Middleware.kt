@@ -51,9 +51,10 @@ interface Middleware : RequestSender, RequestReceiver {
      */
     suspend fun processResponse(response: Response): Boolean
 
-    override suspend fun start() {
-        super<RequestReceiver>.start()
-        super<RequestSender>.start()
+
+    override suspend fun run() {
+        super<RequestReceiver>.run()
+        super<RequestSender>.run()
     }
 
     override suspend fun stop() {
@@ -63,7 +64,7 @@ interface Middleware : RequestSender, RequestReceiver {
 }
 
 
-abstract class AbstractMiddleware(override val scope: CoroutineScope, override val name: String): Middleware{
+abstract class AbstractMiddleware(override val name: String): Middleware{
     override val mutex: Mutex = Mutex()
     override var state: State = State()
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
@@ -74,20 +75,22 @@ abstract class AbstractMiddleware(override val scope: CoroutineScope, override v
     override lateinit var requestOut: SendChannel<AbstractRequest>
     override lateinit var responseIn: ReceiveChannel<Response>
 
+    override lateinit var scope: CoroutineScope
+
 }
 /**
  *
  */
-abstract class SpiderMiddleware(scope: CoroutineScope, name:String):
-    AbstractMiddleware(scope, name), ItemFollower {
+abstract class SpiderMiddleware(name:String):
+    AbstractMiddleware(name), ItemFollower {
 
     override lateinit var itemIn: ReceiveChannel<Item>
     override lateinit var itemOut: SendChannel<Item>
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info{"${name}: Starting spider middleware"}
-        super<AbstractMiddleware>.start()
-        super<ItemFollower>.start()
+        super<AbstractMiddleware>.run()
+        super<ItemFollower>.run()
     }
 
     override suspend fun stop() {
@@ -97,11 +100,7 @@ abstract class SpiderMiddleware(scope: CoroutineScope, name:String):
     }
 }
 
-abstract class DownloaderMiddleware(scope: CoroutineScope, name: String): AbstractMiddleware(scope, name){
-
-    override suspend fun start() {
-        super.start()
-    }
+abstract class DownloaderMiddleware(name: String): AbstractMiddleware(name){
 
     override suspend fun stop() {
         super.stop()

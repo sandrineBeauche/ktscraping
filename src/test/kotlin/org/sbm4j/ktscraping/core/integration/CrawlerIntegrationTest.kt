@@ -23,9 +23,8 @@ data class IntegrationTestItem(val value: String, ): Item() {
 }
 
 class IntegrationTestSpider(
-    scope: CoroutineScope,
     name: String
-): AbstractSpider(scope, name){
+): AbstractSpider(name){
     override suspend fun performScraping(subScope: CoroutineScope) {
         val req1 = Request(this, "request1")
         val resp1 = sendSync(req1)
@@ -37,9 +36,8 @@ class IntegrationTestSpider(
 
 
 class IntegrationTestDownloader(
-    scope: CoroutineScope,
     name: String = "TestDownloader"
-): AbstractDownloader(scope, name){
+): AbstractDownloader(name){
     override suspend fun processRequest(request: AbstractRequest): Any? {
         val response = Response(request, Status.OK)
         response.contents["prop1"] = "value1"
@@ -49,9 +47,8 @@ class IntegrationTestDownloader(
 }
 
 class IntegrationTestExporter(
-    scope: CoroutineScope,
     name: String
-): AbstractExporter(scope, name){
+): AbstractExporter(name){
     override fun exportItem(item: Item) {
         println(item)
     }
@@ -62,7 +59,7 @@ class CrawlerIntegrationTest {
 
     @Test
     fun integrationTest1() = TestScope().runTest{
-        val crawler = crawler(this, "TestCrawler", {scope, name -> defaultDIModule(scope, name) }){
+        val crawler = crawler("TestCrawler", {name -> defaultDIModule(name) }){
             spiderBranch {
                 spider<IntegrationTestSpider>("spider")
             }
@@ -74,7 +71,7 @@ class CrawlerIntegrationTest {
             }
         }
 
-        crawler.start()
+        crawler.start(this)
         val result = crawler.waitFinished()
         crawler.stop()
 

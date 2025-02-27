@@ -73,7 +73,8 @@ interface RequestReceiver: Controllable{
      */
     suspend fun answerRequest(request: AbstractRequest, result: Any)
 
-    override suspend fun start() {
+
+    override suspend fun run() {
         this.performRequests()
     }
 

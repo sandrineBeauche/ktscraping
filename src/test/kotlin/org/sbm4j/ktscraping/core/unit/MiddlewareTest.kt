@@ -16,8 +16,8 @@ import kotlin.test.assertEquals
 
 class MiddlewareTest: AbstractMiddlewareTester() {
 
-    override fun buildMiddleware(sc: CoroutineScope, middlewareName: String): AbstractMiddleware {
-        return object: AbstractMiddleware(sc, middlewareName){
+    override fun buildMiddleware(middlewareName: String): AbstractMiddleware {
+        return object: AbstractMiddleware(middlewareName){
             override suspend fun processResponse(response: Response): Boolean {
                 return true
             }

@@ -2,7 +2,6 @@ package org.sbm4j.ktscraping.exporters
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -48,8 +47,8 @@ class NitriteExporterTests: AbstractExporterTester() {
         Address("rue des coquelicots", 3, 30000, "MickeyVille")
     )
 
-    override fun buildExporter(sc: CoroutineScope, exporterName: String): AbstractExporter {
-        val result = NitriteExporter(sc, exporterName)
+    override fun buildExporter(exporterName: String): AbstractExporter {
+        val result = NitriteExporter(exporterName)
         result.db = db
         return result
     }

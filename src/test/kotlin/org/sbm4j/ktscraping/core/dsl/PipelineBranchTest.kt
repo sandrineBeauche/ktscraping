@@ -5,6 +5,7 @@ import com.natpryce.hamkrest.equalTo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractExporter
@@ -14,7 +15,7 @@ import org.sbm4j.ktscraping.requests.DataItem
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
 
-class PipelineClassTest(scope: CoroutineScope, name: String): AbstractPipeline(scope, name){
+class PipelineClassTest(name: String): AbstractPipeline(name){
     override suspend fun performAck(itemAck: ItemAck) {
     }
 
@@ -23,7 +24,7 @@ class PipelineClassTest(scope: CoroutineScope, name: String): AbstractPipeline(s
     }
 }
 
-class ExporterClassTest(scope: CoroutineScope, name: String): AbstractExporter(scope, name){
+class ExporterClassTest(name: String): AbstractExporter(name){
     override fun exportItem(item: Item) {
         logger.info{"Item ${item} is exported"}
     }
@@ -32,9 +33,9 @@ class ExporterClassTest(scope: CoroutineScope, name: String): AbstractExporter(s
 class PipelineBranchTest: CrawlerTest() {
 
     @Test
-    fun testBuildCrawlerWithPipelineBranch() = scope.runTest{
+    fun testBuildCrawlerWithPipelineBranch() = TestScope().runTest{
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                 pipelineBranch {
                     pipeline<PipelineClassTest>()
                     exporter<ExporterClassTest>()
@@ -42,7 +43,7 @@ class PipelineBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch {
                 logger.debug { "interacting with crawler" }
@@ -62,9 +63,9 @@ class PipelineBranchTest: CrawlerTest() {
 
 
     @Test
-    fun testBuildCrawlerWithItemDispatcherAll() = scope.runTest{
+    fun testBuildCrawlerWithItemDispatcherAll() = TestScope().runTest{
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                  pipelineDispatcherAll{
                     exporter<ExporterClassTest>("exporter1")
                     exporter<ExporterClassTest>("exporter2")
@@ -72,7 +73,7 @@ class PipelineBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch {
                 logger.debug { "interacting with crawler" }
@@ -92,13 +93,14 @@ class PipelineBranchTest: CrawlerTest() {
 
 
     @Test
-    fun testBuildCrawlerWithItemDispatcherOne() = scope.runTest{
+    fun testBuildCrawlerWithItemDispatcherOne() = TestScope().runTest{
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler( "MainCrawler", ::testDIModule){
                 pipelineDispatcherOne("dispatcher1",
                     {item: Item ->
-                        val it = item as DataItemTest
-                        if(it.value == "value1") itemOuts[0]
+                        val it = item as DataItem
+                        val data = (it.data) as DataItemTest
+                        if(data.value == "value1") itemOuts[0]
                         else itemOuts[1]
                     })
                 {
@@ -108,7 +110,7 @@ class PipelineBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch {
                 logger.debug { "interacting with crawler" }

@@ -16,8 +16,8 @@ import org.sbm4j.ktscraping.requests.ItemAck
 import org.sbm4j.ktscraping.requests.ItemStatus
 
 class AbstractPipelineTest: AbstractPipelineTester() {
-    override fun buildPipeline(sc: CoroutineScope, pipelineName: String): AbstractPipeline {
-        return object: AbstractPipeline(sc, pipelineName){
+    override fun buildPipeline(pipelineName: String): AbstractPipeline {
+        return object: AbstractPipeline(pipelineName){
             override suspend fun processItem(item: Item): List<Item> {
                 return listOf(item)
             }

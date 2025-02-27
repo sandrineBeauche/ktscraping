@@ -12,6 +12,7 @@ data class ItemUpdate(
     val keyName: KProperty<*>,
     val keyValue: Any,
     val values: Map<String, Any>,
+    val label: String = "update"
 ): Item() {
     override fun clone(): Item {
         return this.copy()
@@ -22,6 +23,7 @@ data class ItemDelete(
     val entityType: Class<*>,
     val keyName: KProperty<*>,
     val keyValue: Any,
+    val label: String = "delete"
 ): Item() {
     override fun clone(): Item {
         return this.copy()
@@ -30,7 +32,7 @@ data class ItemDelete(
 
 
 
-abstract class DBExporter(scope: CoroutineScope, name: String): AbstractExporter(scope, name) {
+abstract class DBExporter(name: String): AbstractExporter(name) {
     override fun exportItem(item: Item) {
         when(item){
             is ItemUpdate -> {

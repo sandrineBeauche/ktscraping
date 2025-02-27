@@ -22,7 +22,7 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>
 
     val downloaderName: String = "Downloader"
 
-    abstract fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader
+    abstract fun buildDownloader(downloaderName: String): AbstractDownloader
 
     @BeforeTest
     fun setUp(){
@@ -31,7 +31,7 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>
 
         val sc = mockk<CoroutineScope>()
 
-        downloader = spyk(buildDownloader(sc, downloaderName))
+        downloader = spyk(buildDownloader(downloaderName))
 
         every { downloader.requestIn } returns inChannel
         every { downloader.responseOut } returns outChannel
@@ -41,7 +41,7 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>
         coroutineScope {
             launch {
                 every { downloader.scope } returns this
-                downloader.start()
+                downloader.start(this)
             }
             launch {
                 func()
@@ -64,8 +64,8 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>
 
 abstract class AbstractPlaywrightRequestDownloadTester(val headless: Boolean): AbstractDownloaderTester(){
 
-    override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
-        val play = PlaywrightDownloader(sc, downloaderName)
+    override fun buildDownloader(downloaderName: String): AbstractDownloader {
+        val play = PlaywrightDownloader(downloaderName)
         play.headless = headless
         return play
     }

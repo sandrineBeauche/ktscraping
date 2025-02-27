@@ -18,7 +18,7 @@ abstract class AbstractExporterTester: ScrapingTest<Item, ItemAck>(){
 
     val exporterName: String = "Exporter"
 
-    abstract fun buildExporter(sc: CoroutineScope, exporterName: String): AbstractExporter
+    abstract fun buildExporter(exporterName: String): AbstractExporter
 
     @BeforeTest
     open fun setUp(){
@@ -28,7 +28,7 @@ abstract class AbstractExporterTester: ScrapingTest<Item, ItemAck>(){
 
         val sc = mockk<CoroutineScope>()
 
-        exporter = spyk(buildExporter(sc, exporterName))
+        exporter = spyk(buildExporter(exporterName))
 
         every { exporter.itemIn } returns inChannel
         every { exporter.itemAckOut } returns outChannel
@@ -37,7 +37,7 @@ abstract class AbstractExporterTester: ScrapingTest<Item, ItemAck>(){
     suspend fun withExporter(func: suspend AbstractExporterTester.() -> Unit){
         coroutineScope {
             every { exporter.scope } returns this
-            exporter.start()
+            exporter.start(this)
 
             func()
 

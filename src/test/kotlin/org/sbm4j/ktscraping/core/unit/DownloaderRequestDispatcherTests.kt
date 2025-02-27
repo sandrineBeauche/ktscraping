@@ -27,7 +27,7 @@ class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response>() {
 
     val sender1 : RequestSender = mockk<RequestSender>()
 
-    val dispatcher = spyk(object: DownloaderRequestDispatcher(mockk<CoroutineScope>(), di = mockk<DI>()){
+    val dispatcher = spyk(object: DownloaderRequestDispatcher(di = mockk<DI>()){
         override fun selectChannel(request: AbstractRequest): SendChannel<AbstractRequest> {
             return when(request.url){
                 "url1" -> senders[0]
@@ -70,7 +70,7 @@ class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response>() {
         coroutineScope {
             launch {
                 every{ dispatcher.scope } returns this
-                dispatcher.start()
+                dispatcher.start(this)
             }
             launch {
                 inChannel.send(req1)

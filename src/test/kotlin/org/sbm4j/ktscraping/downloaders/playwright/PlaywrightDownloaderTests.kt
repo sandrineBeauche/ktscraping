@@ -16,8 +16,8 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 class PlaywrightDownloaderTests: AbstractDownloaderTester() {
-    override fun buildDownloader(sc: CoroutineScope, downloaderName: String): AbstractDownloader {
-        val result = PlaywrightDownloader(sc, downloaderName)
+    override fun buildDownloader(downloaderName: String): AbstractDownloader {
+        val result = PlaywrightDownloader(downloaderName)
         result.headless = false
         return result
     }

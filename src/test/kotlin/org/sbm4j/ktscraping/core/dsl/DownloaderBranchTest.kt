@@ -4,9 +4,7 @@ import com.natpryce.hamkrest.allOf
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractDownloader
@@ -17,7 +15,7 @@ import org.sbm4j.ktscraping.requests.Request
 import org.sbm4j.ktscraping.requests.Response
 
 
-class MiddlewareClassTest(scope: CoroutineScope, name: String): AbstractMiddleware(scope, name){
+class MiddlewareClassTest(name: String): AbstractMiddleware(name){
     override suspend fun processResponse(response: Response): Boolean {
         return true
     }
@@ -27,7 +25,7 @@ class MiddlewareClassTest(scope: CoroutineScope, name: String): AbstractMiddlewa
     }
 }
 
-class DownloaderClassTest(scope: CoroutineScope, name: String) : AbstractDownloader(scope, name){
+class DownloaderClassTest(name: String) : AbstractDownloader(name){
     override suspend fun processRequest(request: AbstractRequest): Any? {
         val resp = Response(request)
         resp.contents["downloader"] = name
@@ -44,7 +42,7 @@ class DownloaderBranchTest: CrawlerTest() {
         lateinit var response: Response
 
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                 downloaderBranch {
                     middleware<MiddlewareClassTest>()
                     downloader<DownloaderClassTest>(name = "Downloader1")
@@ -52,7 +50,7 @@ class DownloaderBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch {
                 logger.debug { "interacting with crawler" }
@@ -81,7 +79,7 @@ class DownloaderBranchTest: CrawlerTest() {
         lateinit var response2: Response
 
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                 downloaderDispatcher("dispatcher1",
                     {req: AbstractRequest ->
                         if(req.url == url1) senders[0]
@@ -94,7 +92,7 @@ class DownloaderBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch {
                 logger.debug { "interacting with crawler" }
@@ -135,7 +133,7 @@ class DownloaderBranchTest: CrawlerTest() {
         lateinit var response2: Response
 
         coroutineScope {
-            val c = crawler(this, "MainCrawler", ::testDIModule){
+            val c = crawler("MainCrawler", ::testDIModule){
                 downloaderDispatcher("dispatcher1",
                     {req: AbstractRequest ->
                         if(req.url == url1) senders[0]
@@ -154,7 +152,7 @@ class DownloaderBranchTest: CrawlerTest() {
             }
 
             launch {
-                c.start()
+                c.start(this)
             }
             launch {
                 logger.debug { "interacting with crawler" }

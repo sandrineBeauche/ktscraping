@@ -125,7 +125,6 @@ interface  RequestSender: Controllable {
                             }
                             catch(ex: Exception){
                                 logger.error(ex){ "${name}: Error while processing response - ${ex.message}"}
-
                             }
                         }
                     }
@@ -141,7 +140,8 @@ interface  RequestSender: Controllable {
      */
     suspend fun performResponse(response: Response)
 
-    override suspend fun start() {
+
+    override suspend fun run() {
         this.receiveResponses()
     }
 

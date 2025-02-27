@@ -47,7 +47,7 @@ interface RequestDispatcher: Controllable, DIAware {
         }
     }
 
-    override suspend fun start() {
+    override suspend fun run() {
         logger.info{ "Starting the request dispatcher ${name}"}
         performRequests()
         performResponses()
@@ -63,7 +63,6 @@ interface RequestDispatcher: Controllable, DIAware {
 }
 
 abstract class DownloaderRequestDispatcher(
-    override val scope: CoroutineScope,
     override val name: String = "DownloaderRequestDispatcher",
     override val di: DI
 ): RequestDispatcher{
@@ -76,6 +75,8 @@ abstract class DownloaderRequestDispatcher(
 
     override val mutex: Mutex = Mutex()
     override var state: State = State()
+
+    override lateinit var scope: CoroutineScope
 
     fun addBranch(reqChannel: Channel<AbstractRequest>, respChannel: Channel<Response>){
         this.senders.add(reqChannel)
