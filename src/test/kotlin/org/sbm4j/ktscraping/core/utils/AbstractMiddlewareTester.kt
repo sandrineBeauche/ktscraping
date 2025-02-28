@@ -42,7 +42,6 @@ abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Respo
 
     suspend fun withMiddleware(func: suspend AbstractMiddlewareTester.() -> Unit){
         coroutineScope {
-            every { middleware.scope } returns this
             middleware.start(this)
 
             func()

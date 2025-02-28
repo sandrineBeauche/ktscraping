@@ -5,9 +5,10 @@ import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.middleware.ImageMiddleware
 
+
 class GoogleSearchImageRequest(
     sender: RequestSender,
-    researchText: String,
+    val researchText: String,
     val key: String,
     val searchEngine: String,
     nbResults: Int = 1
@@ -24,6 +25,11 @@ class GoogleSearchImageRequest(
             .toMap()
         parameters[ImageMiddleware.JSON_PATH_IMAGES] = paths
         parameters[AbstractDownloader.CONTENT_TYPE] = ContentType.JSON
+    }
+
+
+    override fun toCacheKey(): String {
+        return "google:${researchText}"
     }
 
 }

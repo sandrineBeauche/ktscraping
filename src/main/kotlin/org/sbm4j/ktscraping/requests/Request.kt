@@ -1,8 +1,8 @@
 package org.sbm4j.ktscraping.requests
 
-import com.microsoft.playwright.Page
 import org.sbm4j.ktscraping.core.RequestSender
 import java.util.concurrent.atomic.AtomicInteger
+
 
 open class AbstractRequest(open val sender: RequestSender, open var url: String ): Channelable {
     companion object {
@@ -30,9 +30,19 @@ open class AbstractRequest(open val sender: RequestSender, open var url: String 
         val extension = url.split(".").last()
         return rawExtensions.contains(extension)
     }
+
+    open fun toCacheKey(): String {
+        val stringParams = "[${parameters}]"
+        return "url:${url}${stringParams}"
+    }
 }
 
 data class Request(
     override val sender: RequestSender,
     override var url: String
-): AbstractRequest(sender, url)
+): AbstractRequest(sender, url){
+
+    override fun toCacheKey(): String {
+        return "url:${url}"
+    }
+}

@@ -1,6 +1,5 @@
 package org.sbm4j.ktscraping.exporters
 
-import kotlinx.coroutines.CoroutineScope
 import org.dizitart.kno2.documentOf
 import org.dizitart.kno2.filters.eq
 import org.dizitart.kno2.nitrite

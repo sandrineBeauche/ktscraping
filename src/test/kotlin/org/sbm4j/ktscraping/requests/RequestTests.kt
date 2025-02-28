@@ -16,4 +16,5 @@ class RequestTests {
         val server = req.extractServerFromUrl()
         assertThat(server, equalTo("server1"))
     }
+
 }
