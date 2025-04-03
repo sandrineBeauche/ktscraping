@@ -67,6 +67,10 @@ enum class CacheAvailability{
     abstract fun duration(): Long
 }
 
+val jsonCacheMiddleware = Json {
+    prettyPrint = true
+}
+
 @Serializable
 data class CacheEntry(
     val key: String = UUID.randomUUID().toString(),
@@ -112,7 +116,7 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
             if (avail != CacheAvailability.NEVER) {
                 val cacheKey = request.parameters.getOrDefault(CACHE_KEY, request.toCacheKey()) as String
                 val timestamp = now().epochSeconds
-                val contentType = response.contents[AbstractDownloader.CONTENT_TYPE] as ContentType
+                val contentType = response.type
 
                 val fileId = UUID.randomUUID()
 
@@ -145,7 +149,6 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
     }
 
     override suspend fun processRequest(request: AbstractRequest): Any? {
-        println(request)
         val cacheKey = request.parameters.getOrDefault(CACHE_KEY, request.toCacheKey()) as String
 
         val cacheValue = cacheMap[cacheKey]
@@ -190,7 +193,7 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
     fun loadCache(jsonFile: File){
         try {
             val jsonText = jsonFile.readText()
-            val entries = Json.decodeFromString<List<CacheEntry>>(jsonText)
+            val entries = jsonCacheMiddleware.decodeFromString<List<CacheEntry>>(jsonText)
                 .filter { !it.isOutOfDate() }
                 .associateBy { it.key }
             cacheMap.putAll(entries)
@@ -200,7 +203,6 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
     }
 
     fun loadCache(filename: String){
-        println(filename)
         val jsonFile = File(root, filename)
         if(jsonFile.exists()) {
             logger.info { "${name}: retrieve cache from file ${jsonFile.absolutePath}" }
@@ -209,7 +211,6 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
     }
 
     fun saveCache(filename: String){
-        println(filename)
         val jsonFile = File(root, filename)
         try {
             logger.info { "${name}: save cache to the file ${jsonFile.absolutePath}" }
@@ -218,7 +219,7 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
                 value.availability != CacheAvailability.NEVER &&
                 value.availability != CacheAvailability.EXECUTION
             }.values.toList()
-            val json = Json.encodeToString(entries)
+            val json = jsonCacheMiddleware.encodeToString(entries)
             jsonFile.writeText(json)
         }
         catch(ex: Exception){

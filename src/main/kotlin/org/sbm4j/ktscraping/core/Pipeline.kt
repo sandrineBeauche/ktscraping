@@ -18,7 +18,7 @@ interface ItemReceiver: Controllable{
         scope.launch(CoroutineName("${name}-performItems")){
             logger.debug { "${name}: Waiting for items to process" }
             for(item in itemIn){
-                logger.debug{ "${name}: Received an item to process: ${item}" }
+                logger.trace{ "${name}: Received an item to process: ${item}" }
                 //mutex.withLock {
                     val resultItem = processItem(item)
                     resultItem.forEach {
@@ -77,7 +77,7 @@ interface Pipeline : ItemFollower {
         scope.launch(CoroutineName("${name}-performAcks")){
             logger.debug { "${name}: Waiting for items acks to follow" }
             for(itemAck in itemAckIn){
-                logger.debug{ "${name}: Received an item ack to process" }
+                logger.trace{ "${name}: Received an item ack to process" }
                 performAck(itemAck)
                 itemAckOut.send(itemAck)
             }

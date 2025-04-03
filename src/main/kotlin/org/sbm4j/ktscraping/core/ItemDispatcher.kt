@@ -67,7 +67,7 @@ class ItemDispatcherAll(name: String, di: DI): ItemDispatcher(name, di){
             scope.launch(CoroutineName("${name}-performAcks-${index}")) {
                 logger.debug { "Waiting for acks" }
                 for(ack in current){
-                    logger.debug{ "Received the ack ${ack}" }
+                    logger.trace{ "Received the ack ${ack}" }
                     mutex.withLock {
                         pendingAcks[ack.itemId] = pendingAcks[ack.itemId] as Int + 1
                         if(pendingAcks[ack.itemId] == itemAckIns.size){

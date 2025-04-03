@@ -32,8 +32,7 @@ open class AbstractRequest(open val sender: RequestSender, open var url: String 
     }
 
     open fun toCacheKey(): String {
-        val stringParams = "[${parameters}]"
-        return "url:${url}${stringParams}"
+        return "url:${url}"
     }
 }
 
@@ -41,8 +40,4 @@ data class Request(
     override val sender: RequestSender,
     override var url: String
 ): AbstractRequest(sender, url){
-
-    override fun toCacheKey(): String {
-        return "url:${url}"
-    }
 }

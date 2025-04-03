@@ -76,7 +76,7 @@ abstract class AbstractEngine(
         scope.launch(CoroutineName("${name}-performAcks")){
             logger.debug { "${name}: Waiting for items acks to follow" }
             for(itemAck in itemAckIn){
-                logger.debug{ "${name}: Received an item ack to process" }
+                logger.trace{ "${name}: Received an item ack to process" }
                 performAck(itemAck)
             }
         }

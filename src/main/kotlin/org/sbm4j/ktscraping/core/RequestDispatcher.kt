@@ -28,7 +28,7 @@ interface RequestDispatcher: Controllable, DIAware {
         scope.launch(CoroutineName("${name}-performRequests")){
             for(request in channelIn){
                 val channel = selectChannel(request)
-                logger.debug { "Received request ${request.name} and dispatch it" }
+                logger.trace { "Received request ${request.name} and dispatch it" }
                 channel.send(request)
             }
         }
@@ -40,7 +40,7 @@ interface RequestDispatcher: Controllable, DIAware {
         for((index, receiver) in receivers.withIndex()) {
             scope.launch(CoroutineName("${name}-performResponses-${index}")) {
                 for (response in receiver) {
-                    logger.debug { "Received response for the request ${response.request.name} and follows it" }
+                    logger.trace { "Received response for the request ${response.request.name} and follows it" }
                     channelOut.send(response)
                 }
             }

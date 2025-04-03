@@ -9,6 +9,10 @@ import org.sbm4j.ktscraping.requests.*
 import kotlin.coroutines.CoroutineContext
 
 
+class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {
+     constructor(cause: Throwable) : this(null, cause)
+}
+
 abstract class AbstractSpider(
      override val name: String = "Spider"
 ): RequestSender{
@@ -96,13 +100,15 @@ abstract class AbstractSpider(
                     func(scrapingStep)
                }
                catch(ex: Exception){
+                    val message = "in task ${slotId}-${taskName}, step ${stepMessage}: ${ex.message}"
+                    val newEx = SpiderStepException(message, ex)
                     if(optional){
-                         logger.error(ex){"${ex.message}"}
-                         val error = ItemError(ex, this@AbstractSpider, ErrorLevel.MINOR)
+                         logger.error(newEx){"${name}: ${message}"}
+                         val error = ItemError(newEx, this@AbstractSpider, ErrorLevel.MINOR)
                          itemsOut.send(error)
                     }
                     else{
-                         throw ex
+                         throw newEx
                     }
                }
                finally {

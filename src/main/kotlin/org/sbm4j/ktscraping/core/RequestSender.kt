@@ -48,11 +48,11 @@ interface  RequestSender: Controllable {
     private suspend fun peformSend(request: AbstractRequest, callback: Callback, callbackError: CallbackError? = null){
         val respChannel = Channel<Response>(Channel.RENDEZVOUS)
         pendingRequests[request.reqId] = respChannel
-        logger.debug { "${name}: sends the request ${request.name} and waits for a response" }
+        logger.trace { "${name}: sends the request ${request.name} and waits for a response" }
         requestOut.send(request)
         val response = respChannel.receive()
         respChannel.close()
-        logger.debug { "${name}: received the response for the request ${response.request.name} and call callback" }
+        logger.trace { "${name}: received the response for the request ${response.request.name} and call callback" }
 
         try {
             when (response.status) {
@@ -108,17 +108,17 @@ interface  RequestSender: Controllable {
         scope.launch(CoroutineName("${name}-performResponses")) {
             logger.debug { "${name}: Waits for responses to process" }
             for (resp in responseIn) {
-                logger.debug { "${name}: received a response for the request ${resp.request.name}" }
+                logger.trace { "${name}: received a response for the request ${resp.request.name}" }
                 scope.launch(CoroutineName("${name}-performResponse-${resp.request.name}")) {
                     val req = resp.request
                     val reqId = req.reqId
                     if (req.sender == this@RequestSender && reqId in pendingRequests.keys) {
-                        logger.debug{ "${name}: Dispatch response for the request ${resp.request.name} to the request coroutine" }
+                        logger.trace{ "${name}: Dispatch response for the request ${resp.request.name} to the request coroutine" }
                         val respChannel = pendingRequests[reqId]
                         pendingRequests.remove(reqId)
                         respChannel?.send(resp)
                     } else {
-                        logger.debug{"${name}: Process response for the request ${resp.request.name}"}
+                        logger.trace{"${name}: Process response for the request ${resp.request.name}"}
                         mutex.withLock {
                             try{
                                 performResponse(resp)

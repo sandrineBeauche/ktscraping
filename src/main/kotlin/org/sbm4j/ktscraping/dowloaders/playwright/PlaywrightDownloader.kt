@@ -100,7 +100,7 @@ class PlaywrightDownloader(name: String = "Playwright downloader") : AbstractDow
             response.contents[CookiesMiddleware.COOKIE] = th.context.cookies()
 
             page.close()
-            logger.debug { "${this@PlaywrightDownloader.name}: finished process request on thread ${th.name}" }
+            logger.trace { "${this@PlaywrightDownloader.name}: finished process request on thread ${th.name}" }
             response
         }
         return result

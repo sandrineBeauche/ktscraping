@@ -43,12 +43,12 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
         scope.launch {
             for(req in ch){
                 requestSemaphore.acquire()
-                logger.debug { "${name}: Sending request ${req.name}" }
+                logger.trace { "${name}: Sending request ${req.name}" }
                 requestOut.send(req)
                 if(autoThrottle > 0){
-                    logger.debug { "${name}: delai of ${autoThrottle}ms for auto-throttle"}
+                    logger.trace { "${name}: delai of ${autoThrottle}ms for auto-throttle"}
                     delay(autoThrottle.toLong())
-                    logger.debug { "${name}: ready to send another request" }
+                    logger.trace { "${name}: ready to send another request" }
                 }
             }
         }
@@ -59,7 +59,7 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
         val server = request.extractServerFromUrl()
         var ch: Channel<AbstractRequest>
         mutex.withLock {
-            logger.debug { "${name}: Scheduling request ${request.name} on server ${server}" }
+            logger.trace { "${name}: Scheduling request ${request.name} on server ${server}" }
             ch = if(!pendingRequest.containsKey(server)){
                 createServerChannel(server)
             }

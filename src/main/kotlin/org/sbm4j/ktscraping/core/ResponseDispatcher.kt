@@ -27,7 +27,7 @@ interface ResponseDispatcher: Controllable, DIAware {
             val (receiver, sender) = entry
             scope.launch(CoroutineName("${name}-performRequests-${index}")) {
                 for(request in receiver) {
-                    logger.debug { "Received request ${request.name} and follows it" }
+                    logger.trace { "Received request ${request.name} and follows it" }
                     pendingRequests[request.reqId] = sender as Channel<Response>
                     channelOut.send(request)
                 }
@@ -40,7 +40,7 @@ interface ResponseDispatcher: Controllable, DIAware {
         scope.launch(CoroutineName("${name}-performResponses")) {
             for(response in channelIn){
                 val req = response.request
-                logger.debug{ "Received response for the request ${req.name} and dispatch it"}
+                logger.trace{ "Received response for the request ${req.name} and dispatch it"}
                 val channel = pendingRequests.remove(req.reqId)
                 channel?.send(response)
             }
@@ -110,7 +110,7 @@ class SpiderResponseDispatcher(
             }
         }
         else{
-            logger.debug{ "${name}: Received an item and follows it: ${item}" }
+            logger.trace{ "${name}: Received an item and follows it: ${item}" }
             itemChannelOut.send(item)
         }
     }

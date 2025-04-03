@@ -36,7 +36,7 @@ interface RequestReceiver: Controllable{
             for(req in requestIn){
                 this.launch() {
                     try {
-                        logger.debug { "${name}: received request ${req.name}" }
+                        logger.trace { "${name}: received request ${req.name}" }
                         var result: Any? = processRequest(req)
 
                         if ((result is Boolean && result == true) || result != null) {
@@ -52,7 +52,7 @@ interface RequestReceiver: Controllable{
                         responseOut.send(response)
                     }
                 }
-                logger.debug { "${name}: ready to receive another request" }
+                logger.trace { "${name}: ready to receive another request" }
             }
             logger.debug{"${name}: Finished to receive requests"}
         }
