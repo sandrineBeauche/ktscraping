@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.0.20"
     application
     kotlin("plugin.serialization") version "1.8.0"
+    id("com.vanniktech.maven.publish") version "0.31.0-rc2"
 }
 
 group = "org.sbm4j"
@@ -33,11 +34,11 @@ dependencies {
 
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
-    implementation("org.kodein.di:kodein-di:$kodeinVersion")
-    implementation("org.kodein.di:kodein-di-jvm:$kodeinVersion")
-    implementation("com.microsoft.playwright:playwright:$playwrightVersion")
+    api ("org.kodein.di:kodein-di:$kodeinVersion")
+    api("org.kodein.di:kodein-di-jvm:$kodeinVersion")
+    api("com.microsoft.playwright:playwright:$playwrightVersion")
 
-    implementation("it.skrape:skrapeit:1.2.2")
+    api("it.skrape:skrapeit:1.2.2")
     implementation("com.fleeksoft.ksoup:ksoup:0.2.1")
     implementation("io.ktor:ktor-client-core:$ktorVersion")
     implementation("io.ktor:ktor-client-cio:$ktorVersion")
@@ -56,7 +57,7 @@ dependencies {
     testImplementation("com.natpryce:hamkrest:$hamkrestVersion")
 
 
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 }
 
@@ -77,4 +78,18 @@ task("codegen", JavaExec::class) {
     mainClass = "com.microsoft.playwright.CLI"
     classpath = sourceSets["main"].runtimeClasspath
     args = mutableListOf("codegen")
+}
+
+publishing{
+    repositories {
+        maven {
+            name = "githubPackages"
+            url = uri("https://maven.pkg.github.com/sandrineBeauche/ktscraping")
+            // username and password (a personal Github access token) should be specified as
+            // `githubPackagesUsername` and `githubPackagesPassword` Gradle properties or alternatively
+            // as `ORG_GRADLE_PROJECT_githubPackagesUsername` and `ORG_GRADLE_PROJECT_githubPackagesPassword`
+            // environment variables
+            credentials(PasswordCredentials::class)
+        }
+    }
 }
