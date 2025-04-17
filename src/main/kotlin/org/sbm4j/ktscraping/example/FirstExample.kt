@@ -3,20 +3,18 @@ package org.sbm4j.ktscraping.example
 import it.skrape.core.htmlDocument
 import it.skrape.selects.html5.div
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import org.sbm4j.ktscraping.core.*
 import org.sbm4j.ktscraping.core.dsl.crawler
 import org.sbm4j.ktscraping.core.dsl.downloaderBranch
 import org.sbm4j.ktscraping.core.dsl.pipelineBranch
 import org.sbm4j.ktscraping.core.dsl.spiderBranch
 import org.sbm4j.ktscraping.dowloaders.HttpClientDownloader
-import org.sbm4j.ktscraping.exporters.JSONExporter
+import org.sbm4j.ktscraping.exporters.StdOutExporter
+import org.sbm4j.ktscraping.pipeline.JSONPipeline
 import org.sbm4j.ktscraping.requests.Data
 import org.sbm4j.ktscraping.requests.Request
 
@@ -55,8 +53,7 @@ class FirstExampleSpider(name: String
 }
 
 
-@OptIn(InternalSerializationApi::class)
-fun buildCrawler(channelResult: Channel<String>): Crawler{
+fun buildCrawler(): Crawler{
     return crawler("Crawler", {name -> defaultDIModule(name) }){
         spiderBranch {
             spider<FirstExampleSpider>("FirstExampleSpider")
@@ -65,21 +62,17 @@ fun buildCrawler(channelResult: Channel<String>): Crawler{
             downloader<HttpClientDownloader>()
         }
         pipelineBranch {
-            exporter<JSONExporter<BoardgameEvent>>{
-                out = channelResult
-                serializer = BoardgameEvent::class.serializer()
-            }
+            pipeline<JSONPipeline>{ accumulate = true }
+            exporter<StdOutExporter>()
         }
     }
 }
 
-suspend fun executeCrawler(crawler: Crawler, channelResult: Channel<String>){
+suspend fun executeCrawler(crawler: Crawler){
     lateinit var result: CrawlerResult
     coroutineScope {
         launch {
             crawler.start(this@launch)
-            val json = channelResult.receive()
-            println(json)
         }
         launch{
             result = crawler.waitFinished()
@@ -90,7 +83,6 @@ suspend fun executeCrawler(crawler: Crawler, channelResult: Channel<String>){
 }
 
 fun main(args: Array<String>) = runBlocking{
-    val channelResult: Channel<String> = Channel(Channel.RENDEZVOUS)
-    val crawler = buildCrawler(channelResult)
-    executeCrawler(crawler, channelResult)
+    val crawler = buildCrawler()
+    executeCrawler(crawler)
 }

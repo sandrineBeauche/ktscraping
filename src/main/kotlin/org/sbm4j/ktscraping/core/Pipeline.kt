@@ -8,25 +8,26 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.requests.Item
 import org.sbm4j.ktscraping.requests.ItemAck
+import org.sbm4j.ktscraping.requests.ItemStatus
 
 
-interface ItemReceiver: Controllable{
+interface ItemReceiver : Controllable {
     var itemIn: ReceiveChannel<Item>
 
-
-    suspend fun performItems(){
-        scope.launch(CoroutineName("${name}-performItems")){
+    suspend fun performItems() {
+        scope.launch(CoroutineName("${name}-performItems")) {
             logger.debug { "${name}: Waiting for items to process" }
-            for(item in itemIn){
-                logger.trace{ "${name}: Received an item to process: ${item}" }
-                //mutex.withLock {
-                    val resultItem = processItem(item)
-                    resultItem.forEach {
-                        pushItem(it)
-                    }
-                //}
-
+            for (item in itemIn) {
+                performItem(item)
             }
+        }
+    }
+
+    suspend fun performItem(item: Item){
+        logger.trace { "${name}: Received an item to process: $item" }
+        val resultItem = processItem(item)
+        resultItem.forEach {
+            pushItem(it)
         }
     }
 
@@ -40,7 +41,7 @@ interface ItemReceiver: Controllable{
 
 }
 
-interface ItemFollower: ItemReceiver{
+interface ItemFollower : ItemReceiver {
 
 
     var itemOut: SendChannel<Item>
@@ -60,9 +61,9 @@ interface ItemFollower: ItemReceiver{
         performAcks()
     }
 
-    suspend fun performAck(itemAck: ItemAck): Unit{}
+    suspend fun performAck(itemAck: ItemAck): Unit {}
 
-    suspend fun performAcks(){}
+    suspend fun performAcks() {}
 
 }
 
@@ -73,32 +74,42 @@ interface Pipeline : ItemFollower {
 
     var itemAckOut: SendChannel<ItemAck>
 
-    override suspend fun performAcks(){
-        scope.launch(CoroutineName("${name}-performAcks")){
+    override suspend fun performAcks() {
+        scope.launch(CoroutineName("${name}-performAcks")) {
             logger.debug { "${name}: Waiting for items acks to follow" }
-            for(itemAck in itemAckIn){
-                logger.trace{ "${name}: Received an item ack to process" }
+            for (itemAck in itemAckIn) {
+                logger.trace { "${name}: Received an item ack to process" }
                 performAck(itemAck)
                 itemAckOut.send(itemAck)
             }
         }
     }
 
+    override suspend fun performItem(item: Item) {
+        try {
+            super.performItem(item)
+        }
+        catch(ex: Exception){
+            val ack = ItemAck(item.itemId, ItemStatus.ERROR, ex)
+            itemAckOut.send(ack)
+        }
+    }
+
 
     override suspend fun run() {
-        logger.info{"${name}: Starting pipeline"}
+        logger.info { "${name}: Starting pipeline" }
         super.run()
     }
 
     override suspend fun stop() {
-        logger.info{"${name}: Stopping pipeline"}
+        logger.info { "${name}: Stopping pipeline" }
         itemAckOut.close()
         super.stop()
     }
 
 }
 
-abstract class AbstractPipeline(override val name: String): Pipeline{
+abstract class AbstractPipeline(override val name: String) : Pipeline {
     override val mutex: Mutex = Mutex()
 
     override var state: State = State()
@@ -113,6 +124,4 @@ abstract class AbstractPipeline(override val name: String): Pipeline{
     override lateinit var itemAckOut: SendChannel<ItemAck>
 
     override lateinit var scope: CoroutineScope
-
-
 }

@@ -67,7 +67,7 @@ class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
             response = followOutChannel.receive()
             logger.debug { "Received a response: $response" }
 
-            itemChannelIn.send(ItemError(Exception(), sender, ErrorLevel.MINOR))
+            itemChannelIn.send(ItemError(Exception(), sender, ErrorLevel.MAJOR))
             itemChannelOut.receive()
 
             logger.debug { "send item end" }

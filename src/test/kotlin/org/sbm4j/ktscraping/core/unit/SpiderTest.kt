@@ -24,7 +24,7 @@ class SpiderTest: AbstractSpiderTester() {
         }
     }
 
-    var expectedItem = DataItem(data)
+    var expectedItem = DataItem.build(data, "test")
 
     override fun buildSpider(spiderName: String): AbstractSpider {
         return object: AbstractSpider(spiderName){

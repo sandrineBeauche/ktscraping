@@ -47,7 +47,7 @@ abstract class AbstractEngine(
         return when(item){
             is ItemEnd -> {
                 receivedItemEnd = true
-                listOf()
+                listOf(item)
             }
             is ItemProgress -> {
                 listOf()
@@ -156,7 +156,7 @@ class Engine(
             is ItemProgress -> {
                 progressMonitor.processItemProgress(item)
             }
-            is DataItem -> {
+            is DataItem<*> -> {
                 this.stats.nbItems++
                 this.stats.incrNew(item.label)
             }

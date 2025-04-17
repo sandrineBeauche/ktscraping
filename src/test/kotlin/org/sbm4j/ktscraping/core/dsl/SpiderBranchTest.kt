@@ -6,7 +6,6 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.natpryce.hamkrest.isA
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -25,7 +24,7 @@ class SpiderClassTest(name:String): AbstractSimpleSpider(name){
         logger.debug { "Building a new item for request ${resp.request.name}"}
         val data = DataItemTest(state["returnValue"] as String, resp.request.name, resp.request.url)
 
-        this.itemsOut.send(DataItem(data))
+        this.itemsOut.send(DataItem.build(data, "itemTest"))
     }
 
     override suspend fun callbackError(ex: Throwable) {
@@ -77,7 +76,7 @@ class SpiderBranchTest: CrawlerTest() {
                 val response = Response(request)
                 channelFactory.spiderResponseChannel.send(response)
 
-                val item = channelFactory.spiderItemChannel.receive() as DataItem
+                val item = channelFactory.spiderItemChannel.receive() as DataItem<*>
                 val data = item.data as DataItemTest
                 assertThat(data.value, equalTo(spiderName))
                 logger.debug { "Received the final item" }
@@ -128,8 +127,8 @@ class SpiderBranchTest: CrawlerTest() {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                item1 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
-                item2 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
+                item1 = (channelFactory.spiderItemChannel.receive() as DataItem<*>).data as DataItemTest
+                item2 = (channelFactory.spiderItemChannel.receive() as DataItem<*>).data as DataItemTest
 
                 val itemEnd = channelFactory.spiderItemChannel.receive()
 
@@ -198,8 +197,8 @@ class SpiderBranchTest: CrawlerTest() {
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
 
-                item1 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
-                item2 = (channelFactory.spiderItemChannel.receive() as DataItem).data as DataItemTest
+                item1 = (channelFactory.spiderItemChannel.receive() as DataItem<*>).data as DataItemTest
+                item2 = (channelFactory.spiderItemChannel.receive() as DataItem<*>).data as DataItemTest
                 val itemEnd = channelFactory.spiderItemChannel.receive()
 
                 logger.debug { "Received the final items" }

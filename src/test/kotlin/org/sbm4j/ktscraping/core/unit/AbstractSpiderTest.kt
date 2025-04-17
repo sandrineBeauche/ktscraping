@@ -1,7 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
 import io.mockk.coVerify
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
@@ -20,7 +19,7 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         }
     }
 
-    var expectedItem = DataItem(data)
+    var expectedItem = DataItem.build(data, "test")
 
     override fun buildSpider(spiderName: String): AbstractSimpleSpider {
         return object: AbstractSimpleSpider(spiderName){

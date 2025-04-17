@@ -25,7 +25,7 @@ class PlaywrightThreadPoolTests {
             true
         }
 
-        val factory = PlaywrightThreadfactory(false)
+        val factory = PlaywrightThreadfactory(true)
 
         val fixedThreadPool = Executors.newCachedThreadPool(factory).asCoroutineDispatcher()
 

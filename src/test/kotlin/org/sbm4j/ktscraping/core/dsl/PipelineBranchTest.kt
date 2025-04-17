@@ -2,7 +2,6 @@ package org.sbm4j.ktscraping.core.dsl
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -49,7 +48,7 @@ class PipelineBranchTest: CrawlerTest() {
                 logger.debug { "interacting with crawler" }
 
                 val data1 = DataItemTest("value1", "request1")
-                val item1 = DataItem(data1)
+                val item1 = DataItem.build(data1, "data1")
                 channelFactory.itemChannel.send(item1)
 
                 val ack = channelFactory.itemAckChannel.receive()
@@ -79,7 +78,7 @@ class PipelineBranchTest: CrawlerTest() {
                 logger.debug { "interacting with crawler" }
 
                 val data1 = DataItemTest("value1", "request1")
-                val item1 = DataItem(data1)
+                val item1 = DataItem.build(data1, "data1")
                 channelFactory.itemChannel.send(item1)
 
                 val ack = channelFactory.itemAckChannel.receive()
@@ -98,7 +97,7 @@ class PipelineBranchTest: CrawlerTest() {
             val c = crawler( "MainCrawler", ::testDIModule){
                 pipelineDispatcherOne("dispatcher1",
                     {item: Item ->
-                        val it = item as DataItem
+                        val it = item as DataItem<*>
                         val data = (it.data) as DataItemTest
                         if(data.value == "value1") itemOuts[0]
                         else itemOuts[1]
@@ -116,7 +115,7 @@ class PipelineBranchTest: CrawlerTest() {
                 logger.debug { "interacting with crawler" }
 
                 val data1 = DataItemTest("value1", "request1")
-                val item1 = DataItem(data1)
+                val item1 = DataItem.build(data1, "data1")
                 channelFactory.itemChannel.send(item1)
 
                 val ack = channelFactory.itemAckChannel.receive()

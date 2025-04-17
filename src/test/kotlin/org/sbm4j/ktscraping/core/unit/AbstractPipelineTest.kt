@@ -3,7 +3,6 @@ package org.sbm4j.ktscraping.core.unit
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import io.mockk.coVerify
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -29,7 +28,7 @@ class AbstractPipelineTest: AbstractPipelineTester() {
     fun testPipeline() = TestScope().runTest {
 
         val dataVal = DataItemTest("coucou", "request1")
-        val itemVal = DataItem(dataVal)
+        val itemVal = DataItem.build(dataVal, "itemTest")
 
         withPipeline {
             inChannel.send(itemVal)

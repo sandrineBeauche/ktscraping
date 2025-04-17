@@ -43,7 +43,7 @@ abstract class DBExporter(name: String): AbstractExporter(name) {
                 logger.debug { "${name}: delete item ${item}"}
                 performItemDelete(item)
             }
-            is DataItem -> {
+            is DataItem<*> -> {
                 logger.debug { "${name}: insert item ${item}"}
                 perfomInsertItem(item)
             }
@@ -54,5 +54,5 @@ abstract class DBExporter(name: String): AbstractExporter(name) {
 
     abstract fun performItemDelete(item: ItemDelete)
 
-    abstract fun perfomInsertItem(item: DataItem)
+    abstract fun perfomInsertItem(item: DataItem<*>)
 }

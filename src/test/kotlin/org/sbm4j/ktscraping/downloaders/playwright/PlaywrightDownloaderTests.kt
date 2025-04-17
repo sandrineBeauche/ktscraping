@@ -18,7 +18,7 @@ import kotlin.test.assertNotNull
 class PlaywrightDownloaderTests: AbstractDownloaderTester() {
     override fun buildDownloader(downloaderName: String): AbstractDownloader {
         val result = PlaywrightDownloader(downloaderName)
-        result.headless = false
+        result.headless = true
         return result
     }
 

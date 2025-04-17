@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "org.sbm4j"
-version = "1.0-SNAPSHOT"
+version = "1.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -85,11 +85,10 @@ publishing{
         maven {
             name = "githubPackages"
             url = uri("https://maven.pkg.github.com/sandrineBeauche/ktscraping")
-            // username and password (a personal Github access token) should be specified as
-            // `githubPackagesUsername` and `githubPackagesPassword` Gradle properties or alternatively
-            // as `ORG_GRADLE_PROJECT_githubPackagesUsername` and `ORG_GRADLE_PROJECT_githubPackagesPassword`
-            // environment variables
-            credentials(PasswordCredentials::class)
+            credentials{
+                username = System.getenv("GITHUB_PACKAGE_REGISTRY_USER")
+                password = System.getenv("GITHUB_PACKAGE_REGISTRY_TOKEN")
+            }
         }
     }
 }

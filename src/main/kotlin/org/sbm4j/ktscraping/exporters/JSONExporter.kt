@@ -18,7 +18,9 @@ class JSONExporter<T: Data>(name: String = "JSONExporter"): AbstractExporter(nam
 
     val documents: MutableList<JsonElement> = mutableListOf()
 
-    lateinit var out: Channel<String>
+    var out: Channel<String>? = null
+
+
 
     lateinit var serializer: KSerializer<T>
 
@@ -29,14 +31,15 @@ class JSONExporter<T: Data>(name: String = "JSONExporter"): AbstractExporter(nam
     override suspend fun stop() {
         val resultElt = JsonArray(documents)
         val result = json.encodeToString(JsonElement.serializer(), resultElt)
-        out.send(result)
+        out?.send(result)
         super.stop()
         documents.removeAll { true }
     }
 
 
     override fun exportItem(item: Item) {
-        val dataItem = item as DataItem
+
+        val dataItem = item as DataItem<*>
         val elt = Json.encodeToJsonElement(serializer, dataItem.data as T)
         documents.add(elt)
     }

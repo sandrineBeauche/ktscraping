@@ -6,7 +6,6 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.requests.*
-import kotlin.coroutines.CoroutineContext
 
 
 class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {
@@ -132,8 +131,8 @@ abstract class AbstractSpider(
 
 
 
-          suspend fun sendData(data: Data, label: String = "data"){
-               val item = DataItem(data, label)
+          suspend inline fun <reified T: Data> sendData(data: T, label: String = "data"){
+               val item = DataItem.build(data, label)
                itemsOut.send(item)
           }
 
@@ -141,7 +140,7 @@ abstract class AbstractSpider(
 
      inner class ScrapingStep(){
           suspend fun sendData(data: Data, label: String = "data"){
-               val item = DataItem(data, label)
+               val item = DataItem.build(data, label)
                itemsOut.send(item)
           }
 

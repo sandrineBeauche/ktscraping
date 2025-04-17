@@ -73,7 +73,7 @@ class NitriteExporterTests: AbstractExporterTester() {
     @Test
     fun testExportItem1() = TestScope().runTest{
 
-        val item = DataItem(data1)
+        val item = DataItem.build(data1, "test")
 
         withExporter {
             inChannel.send(item)
@@ -92,7 +92,7 @@ class NitriteExporterTests: AbstractExporterTester() {
     @Test
     fun testExportItem2() = TestScope().runTest{
 
-        val item = DataItem(data2)
+        val item = DataItem.build(data2, "test")
 
         withExporter {
             inChannel.send(item)
@@ -110,7 +110,7 @@ class NitriteExporterTests: AbstractExporterTester() {
 
     @Test
     fun testUpdateItem() = TestScope().runTest {
-        val item = DataItem(data1)
+        val item = DataItem.build(data1, "test")
 
         val updateItem = ItemUpdate(
             Contact::class.java,
@@ -136,7 +136,7 @@ class NitriteExporterTests: AbstractExporterTester() {
 
     @Test
     fun testUpdateItem2() = TestScope().runTest {
-        val item = DataItem(data2)
+        val item = DataItem.build(data2, "test")
 
         val updateItem = ItemUpdate(
             Contact::class.java,
@@ -169,10 +169,10 @@ class NitriteExporterTests: AbstractExporterTester() {
         )
 
         withExporter {
-            inChannel.send(DataItem(data1))
+            inChannel.send(DataItem.build(data1, "test"))
             val itemAck1 = outChannel.receive()
 
-            inChannel.send(DataItem(data2))
+            inChannel.send(DataItem.build(data2, "test"))
             val itemAck2 = outChannel.receive()
 
             inChannel.send(deleteItem)

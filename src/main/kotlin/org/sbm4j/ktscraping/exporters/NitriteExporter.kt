@@ -45,7 +45,7 @@ class NitriteExporter(name: String): DBExporter(name) {
         repository.remove(item.keyName eq item.keyValue)
     }
 
-    override fun perfomInsertItem(item: DataItem) {
+    override fun perfomInsertItem(item: DataItem<*>) {
         val data = item.data
         val repository = db.getRepository(data.javaClass)
         repository.insert(data)

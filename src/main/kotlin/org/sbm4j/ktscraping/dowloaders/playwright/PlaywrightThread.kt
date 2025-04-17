@@ -32,12 +32,14 @@ class PlaywrightThread(val headless: Boolean, val runnable: Runnable): Thread(){
 
             runnable.run()
 
-            try {
-                context.close()
-                browser.close()
+
+            context.close()
+            browser.close()
+            try{
                 playwright.close()
             }
             catch(ex: PlaywrightException){
+                ex.printStackTrace()
                 logger.warn { "Playwright is already shutdown" }
             }
         }
