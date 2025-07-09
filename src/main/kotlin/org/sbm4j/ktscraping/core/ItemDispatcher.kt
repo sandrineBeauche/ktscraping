@@ -10,8 +10,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.kodein.di.DI
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import java.util.*
 
 abstract class ItemDispatcher(override val name: String, override val di: DI) : ItemReceiver, DIAware {

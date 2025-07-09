@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.stats
 
 import org.sbm4j.ktscraping.core.CrawlerResult
-import org.sbm4j.ktscraping.requests.ItemError
+import org.sbm4j.ktscraping.data.item.ItemError
 
 data class StatsCrawlerResult(
     var nbRequests: Int = 0,
@@ -37,8 +37,9 @@ data class StatsCrawlerResult(
         if(errors.size > 0){
             builder.append("\nerrors:\n")
             errors.forEach {
-                builder.append("${it.level}: error in ${it.controllable.name} for the data ${it.data}\n")
-                builder.append(it.ex.printStackTrace())
+                val infos = it.errorInfo
+                builder.append("${infos.level}: error in ${infos.controllable.name} for the data ${it.data}\n")
+                builder.append(infos.ex.printStackTrace())
                 builder.append("\n")
             }
         }

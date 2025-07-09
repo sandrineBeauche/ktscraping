@@ -8,14 +8,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractSpider
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.request.EventRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.EventResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractSpiderTester: ScrapingTest<Response,
-        AbstractRequest>(){
+abstract class AbstractSpiderTester: ScrapingTest<Response<*>, AbstractRequest>(){
 
     lateinit var spider: AbstractSpider
 
@@ -44,7 +45,15 @@ abstract class AbstractSpiderTester: ScrapingTest<Response,
             every { spider.scope } returns this
             spider.start(this)
 
+            val startReq = outChannel.receive() as EventRequest
+            val startResp = EventResponse(startReq)
+            inChannel.send(startResp)
+
             func()
+
+            val endReq = outChannel.receive() as EventRequest
+            val endResp = EventResponse(endReq)
+            inChannel.send(endResp)
 
             outChannel.close()
             inChannel.close()

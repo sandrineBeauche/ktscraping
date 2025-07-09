@@ -9,9 +9,9 @@ import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
 import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
 import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Status
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
@@ -25,11 +25,11 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
     @Test
     fun testSimpleDownload() = TestScope().runTest {
         val request = Request(sender, "https://playwright.dev")
-        lateinit var response: Response
+        lateinit var response: DownloadingResponse
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive()
+            response = outChannel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -38,11 +38,11 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
     @Test
     fun testSVGImageDownload() = TestScope().runTest {
         val request = Request(sender, "https://www.iana.org/_img/2022/iana-logo-header.svg")
-        lateinit var response: Response
+        lateinit var response: DownloadingResponse
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive()
+            response = outChannel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -51,11 +51,11 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
     @Test
     fun testPNGImageDownload() = TestScope().runTest {
         val request = Request(sender, "https://fr.wikipedia.org/static/images/icons/wikipedia.png")
-        lateinit var response: Response
+        lateinit var response: DownloadingResponse
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive()
+            response = outChannel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -69,15 +69,15 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
             }
         }
 
-        lateinit var response1: Response
-        lateinit var response2: Response
+        lateinit var response1: DownloadingResponse
+        lateinit var response2: DownloadingResponse
 
         withDownloader {
             coroutineScope {
                 request.forEach{
                     launch {
                         inChannel.send(it)
-                        response1 = outChannel.receive()
+                        response1 = outChannel.receive() as DownloadingResponse
                     }
                 }
             }
@@ -99,8 +99,8 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
             waitForTimeout(3000.0)
         }
 
-        lateinit var response1: Response
-        lateinit var response2: Response
+        lateinit var response1: DownloadingResponse
+        lateinit var response2: DownloadingResponse
 
         request1.parameters["contextName"] = "context1"
         request2.parameters["contextName"] = "context1"
@@ -108,11 +108,11 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         withDownloader {
             val job1 =launch {
                 inChannel.send(request1)
-                response1 = outChannel.receive()
+                response1 = outChannel.receive() as DownloadingResponse
             }
             val job2 = launch {
                 inChannel.send(request2)
-                response2 = outChannel.receive()
+                response2 = outChannel.receive() as DownloadingResponse
             }
             joinAll(job1, job2)
 

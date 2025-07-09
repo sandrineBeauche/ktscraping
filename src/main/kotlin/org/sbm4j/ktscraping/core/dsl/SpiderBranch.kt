@@ -5,13 +5,14 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 
-fun buildSpiderChannels(): Triple<Channel<Response>, Channel<AbstractRequest>, Channel<Item>>{
+fun buildSpiderChannels(): Triple<Channel<Response<*>>, Channel<AbstractRequest>, Channel<Item>>{
     return Triple(
-        Channel<Response>(Channel.UNLIMITED),
+        Channel(Channel.UNLIMITED),
         Channel<AbstractRequest>(Channel.UNLIMITED),
         Channel<Item>(Channel.UNLIMITED)
     )
@@ -41,7 +42,7 @@ fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: Spider
 
 class SpiderBranch(
     var spiderIn: Channel<AbstractRequest>,
-    var spiderOut: Channel<Response>,
+    var spiderOut: Channel<Response<*>>,
     var spiderItemIn: Channel<Item>,
     override val di: DI
 ) : DIAware {

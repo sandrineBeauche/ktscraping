@@ -1,6 +1,5 @@
 package org.sbm4j.ktscraping.middleware
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -8,8 +7,9 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import org.sbm4j.ktscraping.core.DownloaderMiddleware
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
 class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMiddleware(name) {
 
@@ -24,17 +24,17 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
 
     val pendingRequest: MutableMap<String, Channel<AbstractRequest>> = mutableMapOf()
 
-    override suspend fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         requestSemaphore.release()
         return true
     }
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         return true
     }
 
     override suspend fun answerRequest(request: AbstractRequest, result: Any) {
-        submitRequest(request)
+        submitRequest(request as DownloadingRequest)
     }
 
     private fun createServerChannel(server: String): Channel<AbstractRequest>{
@@ -55,7 +55,7 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
         return ch
     }
 
-    suspend fun submitRequest(request: AbstractRequest) {
+    suspend fun submitRequest(request: DownloadingRequest) {
         val server = request.extractServerFromUrl()
         var ch: Channel<AbstractRequest>
         mutex.withLock {

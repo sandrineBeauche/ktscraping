@@ -3,7 +3,6 @@ package org.sbm4j.ktscraping.middleware
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.sameInstance
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -11,8 +10,8 @@ import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.assertThrows
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import kotlin.test.Test
 
 class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
@@ -26,17 +25,17 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
     @Test
     fun testSchedulerMiddleware1() = TestScope().runTest{
         val request = Request(sender, "http://server1/add1")
-        val response = Response(request)
+        val response = DownloadingResponse(request)
 
         lateinit var req: Request
-        lateinit var resp: Response
+        lateinit var resp: DownloadingResponse
 
         withMiddleware {
             inChannel.send(request)
-            req = followInChannel.receive() as Request
+            req = forwardInChannel.receive() as Request
 
             outChannel.send(response)
-            resp = followOutChannel.receive()
+            resp = forwardOutChannel.receive() as DownloadingResponse
         }
 
         assertThat(req, sameInstance(request))
@@ -47,25 +46,25 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
     fun testSchedulerMiddleware2() = TestScope().runTest{
         val request1 = Request(sender, "http://server1/add1")
         val request2 = Request(sender, "http://server1/add1")
-        val response1 = Response(request1)
-        val response2 = Response(request2)
+        val response1 = DownloadingResponse(request1)
+        val response2 = DownloadingResponse(request2)
 
         lateinit var req1: Request
-        lateinit var resp1: Response
+        lateinit var resp1: DownloadingResponse
         lateinit var req2: Request
-        lateinit var resp2: Response
+        lateinit var resp2: DownloadingResponse
 
         withMiddleware {
             inChannel.send(request1)
             inChannel.send(request2)
 
-            req1 = followInChannel.receive() as Request
+            req1 = forwardInChannel.receive() as Request
             outChannel.send(response1)
-            resp1 = followOutChannel.receive()
+            resp1 = forwardOutChannel.receive() as DownloadingResponse
 
-            req2 = followInChannel.receive() as Request
+            req2 = forwardInChannel.receive() as Request
             outChannel.send(response2)
-            resp2 = followOutChannel.receive()
+            resp2 = forwardOutChannel.receive() as DownloadingResponse
         }
 
         assertThat(req1, sameInstance(request1))
@@ -79,8 +78,8 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
     fun testSchedulerMiddleware3() = TestScope().runTest {
         val request1 = Request(sender, "http://server1/add1")
         val request2 = Request(sender, "http://server1/add1")
-        val response1 = Response(request1)
-        val response2 = Response(request2)
+        val response1 = DownloadingResponse(request1)
+        val response2 = DownloadingResponse(request2)
 
         assertThrows<TimeoutCancellationException> {
             withTimeout(5000L) {
@@ -88,14 +87,14 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
                     inChannel.send(request1)
                     inChannel.send(request2)
 
-                    followInChannel.receive() as Request
-                    followInChannel.receive() as Request
+                    forwardInChannel.receive() as Request
+                    forwardInChannel.receive() as Request
 
                     outChannel.send(response1)
-                    followOutChannel.receive()
+                    forwardOutChannel.receive()
 
                     outChannel.send(response2)
-                    followOutChannel.receive()
+                    forwardOutChannel.receive()
                 }
             }
         }

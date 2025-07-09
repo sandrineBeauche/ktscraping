@@ -9,7 +9,7 @@
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
-    <logger name="org.sbm4j.ktscraping.core" level="DEBUG"/>
+    <logger name="org.sbm4j.ktscraping.core" level="TRACE"/>
     <logger name="io.mockk.impl.recording.states" level="WARN"/>
     <logger name="io.mockk.impl.instantiation" level="WARN"/>
 </configuration>

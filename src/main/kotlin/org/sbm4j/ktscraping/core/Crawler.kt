@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.*
 
@@ -89,7 +90,10 @@ class DefaultCrawler(
     }
 
     override suspend fun waitFinished(): CrawlerResult {
-        val result = (engine.resultChannel as ReceiveChannel<*>).receive()
-        return result as CrawlerResult
+        controllables.filterIsInstance<AbstractSpider>()
+            .map { it.job }
+            .joinAll()
+        val result = engine.computeResult()
+        return result
     }
 }

@@ -1,11 +1,22 @@
 package org.sbm4j.ktscraping.core
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.data.item.*
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.request.EndRequest
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.request.StartRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.EventResponse
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.requests.*
+import java.util.concurrent.ConcurrentHashMap
+import org.sbm4j.ktscraping.data.response.Response
 
 
 class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {
@@ -19,30 +30,52 @@ abstract class AbstractSpider(
      override val mutex: Mutex = Mutex()
      override var state: State = State()
      override var pendingRequests: PendingRequestMap = PendingRequestMap()
+     override val pendingEvent: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
 
      override lateinit var requestOut: SendChannel<AbstractRequest>
-     override lateinit var responseIn: ReceiveChannel<Response>
+     override lateinit var responseIn: ReceiveChannel<Response<*>>
 
      lateinit var itemsOut: SendChannel<Item>
 
+     /**
+      * Performs the scraping logic. Here the user writes his code to scrape what he wants
+      * @param subScope the subscope where the scraping should be executed
+      * @throws RequestException if there is a exception during the scraping
+      */
      abstract suspend fun performScraping(subScope: CoroutineScope)
 
      override lateinit var scope: CoroutineScope
 
+     lateinit var job: Job
 
      override suspend fun run() {
           logger.info{"${name}: Starting spider"}
           super.run()
-          scope.launch {
-               logger.info{"${name}: Start performing scraping"}
-               performScraping(this)
-               logger.info{"${name}: finished performing scraping"}
-               itemsOut.send(ItemEnd())
+          job = scope.launch {
+               try{
+                    logger.info{ "${name}: send start event request to initialize the crawler"}
+                    val startRequest = StartRequest(this@AbstractSpider)
+                    sendSync(startRequest, this)
+
+                    logger.info{"${name}: Crawler initialized with success... start performing scraping"}
+                    performScraping(this)
+               }
+               catch (ex: RequestException){
+                    logger.error { "${name}: Error when running the spider -> ${ex.message}" }
+                    val error = ItemError(ErrorInfo(ex, this@AbstractSpider, ErrorLevel.MAJOR))
+                    itemsOut.send(error)
+               }
+               finally {
+                    logger.info{"${name}: finished performing scraping... send end event request"}
+
+                    val endRequest = EndRequest(this@AbstractSpider)
+                    sendSync(endRequest, this)
+               }
           }
      }
 
 
-     override suspend fun performResponse(response: Response) {
+     override suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest) {
           throw NoRequestSenderException("${name}: request ${response.request.name} is not correlated to a sender")
      }
 
@@ -63,7 +96,7 @@ abstract class AbstractSpider(
      ): T? {
           val task = ScrapingTask(taskSlot, taskName, nbSteps)
           try{
-               val itemStart = ItemStartTaskProgress(taskSlot, taskMessage, nbSteps, slotMode)
+               val itemStart = StartTaskProgressItem(taskSlot, taskMessage, nbSteps, slotMode)
                itemsOut.send(itemStart)
                val result = func(task)
                return result
@@ -71,7 +104,7 @@ abstract class AbstractSpider(
           catch(ex: Exception){
                if(optional){
                     logger.error(ex){"${ex.message}"}
-                    val error = ItemError(ex, this, ErrorLevel.MINOR)
+                    val error = ItemError(ErrorInfo(ex, this, ErrorLevel.MINOR))
                     itemsOut.send(error)
                }
                else{
@@ -94,7 +127,7 @@ abstract class AbstractSpider(
           ){
                val scrapingStep = ScrapingStep()
                try{
-                    val itemStart = ItemStartStepProgress(slotId, stepMessage)
+                    val itemStart = StartStepProgressItem(slotId, stepMessage)
                     itemsOut.send(itemStart)
                     func(scrapingStep)
                }
@@ -103,7 +136,7 @@ abstract class AbstractSpider(
                     val newEx = SpiderStepException(message, ex)
                     if(optional){
                          logger.error(newEx){"${name}: ${message}"}
-                         val error = ItemError(newEx, this@AbstractSpider, ErrorLevel.MINOR)
+                         val error = ItemError(ErrorInfo(newEx, this@AbstractSpider, ErrorLevel.MINOR))
                          itemsOut.send(error)
                     }
                     else{
@@ -111,7 +144,7 @@ abstract class AbstractSpider(
                     }
                }
                finally {
-                    val itemDone = ItemStepDoneProgress(slotId, step)
+                    val itemDone = StepDoneProgressItem(slotId, step)
                     itemsOut.send(itemDone)
                }
           }
@@ -124,7 +157,7 @@ abstract class AbstractSpider(
                }
                catch(ex: Exception){
                     logger.error(ex){"${ex.message}"}
-                    val error = ItemError(ex, this@AbstractSpider, ErrorLevel.MINOR)
+                    val error = ItemError(ErrorInfo(ex, this@AbstractSpider, ErrorLevel.MINOR))
                     itemsOut.send(error)
                }
           }
@@ -164,14 +197,14 @@ abstract class AbstractSimpleSpider(
           logger.info { "${name} sends a new request ${req.name}" }
           try {
                val resp = this.sendSync(req)
-               parse(resp)
+               parse(resp as DownloadingResponse)
           }
           catch(ex: Throwable){
                callbackError(ex)
           }
      }
 
-     abstract suspend fun parse(resp: Response)
+     abstract suspend fun parse(resp: DownloadingResponse)
 
      abstract suspend fun callbackError(ex: Throwable)
 }

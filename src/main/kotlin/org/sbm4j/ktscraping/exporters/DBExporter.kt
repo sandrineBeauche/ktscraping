@@ -1,10 +1,9 @@
 package org.sbm4j.ktscraping.exporters
 
-import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
+import org.sbm4j.ktscraping.db.DBConnexion
+import org.sbm4j.ktscraping.db.DBControllable
+import org.sbm4j.ktscraping.data.item.Item
 import kotlin.reflect.KProperty
 
 data class ItemUpdate(
@@ -32,27 +31,16 @@ data class ItemDelete(
 
 
 
-abstract class DBExporter(name: String): AbstractExporter(name) {
+class DBExporter(name: String): AbstractExporter(name), DBControllable {
+
+    override lateinit var db: DBConnexion
+
     override fun exportItem(item: Item) {
-        when(item){
-            is ItemUpdate -> {
-                logger.debug { "${name}: update item ${item}" }
-                performItemUpdate(item)
-            }
-            is ItemDelete -> {
-                logger.debug { "${name}: delete item ${item}"}
-                performItemDelete(item)
-            }
-            is DataItem<*> -> {
-                logger.debug { "${name}: insert item ${item}"}
-                perfomInsertItem(item)
-            }
-        }
+        performDBItem(item)
     }
 
-    abstract fun performItemUpdate(item: ItemUpdate)
-
-    abstract fun performItemDelete(item: ItemDelete)
-
-    abstract fun perfomInsertItem(item: DataItem<*>)
+    override suspend fun stop() {
+        super.stop()
+        db.commit()
+    }
 }

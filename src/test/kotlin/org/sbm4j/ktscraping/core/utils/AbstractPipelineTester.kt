@@ -7,8 +7,8 @@ import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import kotlin.test.BeforeTest
 
 abstract class AbstractPipelineTester: DualScrapingTest<Item, ItemAck>() {
@@ -20,7 +20,7 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, ItemAck>() {
     abstract fun buildPipeline(pipelineName: String): AbstractPipeline
 
     @BeforeTest
-    fun setUp(){
+    open fun setUp(){
         initChannels()
         clearAllMocks()
 
@@ -29,9 +29,9 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, ItemAck>() {
         pipeline = spyk(buildPipeline(pipelineName))
 
         every { pipeline.itemIn } returns inChannel
-        every { pipeline.itemOut } returns followInChannel
+        every { pipeline.itemOut } returns forwardInChannel
         every { pipeline.itemAckIn } returns outChannel
-        every { pipeline.itemAckOut } returns followOutChannel
+        every { pipeline.itemAckOut } returns forwardOutChannel
     }
 
     suspend fun withPipeline(func: suspend AbstractPipelineTester.() -> Unit){

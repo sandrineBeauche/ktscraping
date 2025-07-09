@@ -1,11 +1,11 @@
 package org.sbm4j.ktscraping.pipeline
 
 import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.requests.Data
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import org.sbm4j.ktscraping.requests.ItemStatus
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemStatus
 
 class FilterPipeline(name: String) : AbstractPipeline(name) {
 

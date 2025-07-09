@@ -5,13 +5,12 @@ import com.natpryce.hamkrest.equalTo
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
-import org.dizitart.kno2.filters.eq
-import org.dizitart.no2.Nitrite
 import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
-import org.sbm4j.ktscraping.requests.Data
-import org.sbm4j.ktscraping.requests.DataItem
+import org.sbm4j.ktscraping.db.NitriteDBConnexion
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.DataItem
 import java.io.File
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -38,9 +37,18 @@ data class Contact(
     }
 }
 
-class NitriteExporterTests: AbstractExporterTester() {
+class DBExporterTests: AbstractExporterTester() {
 
-    lateinit var db: Nitrite
+    lateinit var db: NitriteDBConnexion
+
+    lateinit var dbFile: File
+
+    init {
+        logger.debug { "setup nitrite exporter tester" }
+        val uri = this.javaClass.getResource("/org.sbm4j.ktscraping/exporters/nitriteDB.db")?.toURI()!!
+        dbFile = File(uri)
+        db = NitriteDBConnexion(dbFile)
+    }
 
     val data1 = Contact(1,"John", "Doe", 30)
     val data2 = Contact(2,"Mickey", "Mouse", 60,
@@ -48,7 +56,7 @@ class NitriteExporterTests: AbstractExporterTester() {
     )
 
     override fun buildExporter(exporterName: String): AbstractExporter {
-        val result = NitriteExporter(exporterName)
+        val result = DBExporter(exporterName)
         result.db = db
         return result
     }
@@ -56,18 +64,18 @@ class NitriteExporterTests: AbstractExporterTester() {
 
     @BeforeTest
     override fun setUp(){
-        logger.debug { "setup nitrite exporter tester" }
-        val uri = this.javaClass.getResource("/org.sbm4j.ktscraping/exporters/nitriteDB.db")?.toURI()!!
-        val dbFile = File(uri)
-        db = buildNitriteDB(dbFile)
-        val repository = db.getRepository(Contact::class.java)
-        repository.clear()
+        db.clear(Contact::class.java)
         super.setUp()
+    }
+
+    fun getFirstContact(): Contact{
+        val contacts = db.getObjects(Contact::class.java)
+        return contacts[0] as Contact
     }
 
     @AfterTest
     fun tearDown(){
-        db.close()
+        //db.close()
     }
 
     @Test
@@ -80,10 +88,10 @@ class NitriteExporterTests: AbstractExporterTester() {
             val itemAck = outChannel.receive()
         }
 
-        val repository = db.getRepository(Contact::class.java)
-        assertThat(repository.size(), equalTo(1))
+        val size = db.getSize(Contact::class.java)
+        assertThat(size, equalTo(1))
 
-        val cursor = repository.find(Contact::contactId eq 1)
+        val cursor = db.getObjects(Contact::class.java)
         cursor.forEach {
             println(it)
         }
@@ -99,10 +107,10 @@ class NitriteExporterTests: AbstractExporterTester() {
             val itemAck = outChannel.receive()
         }
 
-        val repository = db.getRepository(Contact::class.java)
-        assertThat(repository.size(), equalTo(1))
+        val size = db.getSize(Contact::class.java)
+        assertThat(size, equalTo(1))
 
-        val cursor = repository.find(Contact::contactId eq 2)
+        val cursor = db.getObjects(Contact::class.java)
         cursor.forEach {
             println(it)
         }
@@ -127,9 +135,7 @@ class NitriteExporterTests: AbstractExporterTester() {
             val itemAck2 = outChannel.receive()
         }
 
-        val repository = db.getRepository(Contact::class.java)
-        val cursor = repository.find(Contact::contactId eq 1)
-        val cont = cursor.first()
+        val cont = getFirstContact()
         assertThat(cont.years, equalTo(20))
         println(cont)
     }
@@ -153,9 +159,7 @@ class NitriteExporterTests: AbstractExporterTester() {
             val itemAck2 = outChannel.receive()
         }
 
-        val repository = db.getRepository(Contact::class.java)
-        val cursor = repository.find(Contact::contactId eq 2)
-        val cont = cursor.first()
+        val cont = getFirstContact()
         assertThat(cont.address?.number, equalTo(4))
         println(cont)
     }
@@ -173,16 +177,16 @@ class NitriteExporterTests: AbstractExporterTester() {
             val itemAck1 = outChannel.receive()
 
             inChannel.send(DataItem.build(data2, "test"))
+
             val itemAck2 = outChannel.receive()
 
             inChannel.send(deleteItem)
             val itemAck3 = outChannel.receive()
         }
 
-        val repository = db.getRepository(Contact::class.java)
-        assertThat(repository.size(), equalTo(1))
-        val cursor = repository.find(Contact::contactId eq 2)
-        cursor.forEach {
+        val size = db.getSize(Contact::class.java)
+        val contacts = db.getObjects(Contact::class.java)
+        contacts.forEach {
             println(it)
         }
 

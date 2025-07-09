@@ -1,13 +1,13 @@
-package org.sbm4j.ktscraping.requests
+package org.sbm4j.ktscraping.data.request
 
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.data.Channelable
 import java.util.concurrent.atomic.AtomicInteger
 
 
-open class AbstractRequest(open val sender: RequestSender, open var url: String ): Channelable {
+open class AbstractRequest(open val sender: RequestSender): Channelable {
     companion object {
         val lastId = AtomicInteger(0)
-        val rawExtensions: List<String> = listOf("png", "bmp", "jpg", "jpeg")
     }
 
     val reqId = lastId.getAndIncrement()
@@ -15,6 +15,17 @@ open class AbstractRequest(open val sender: RequestSender, open var url: String 
     val name = "Request-${reqId}"
 
     val parameters: MutableMap<String, Any> = mutableMapOf()
+
+}
+
+abstract class DownloadingRequest(
+    sender: RequestSender,
+    open var url: String
+): AbstractRequest(sender){
+
+    companion object{
+        val rawExtensions: List<String> = listOf("png", "bmp", "jpg", "jpeg")
+    }
 
     fun extractServerFromUrl(): String{
         val start = url.indexOf("://")
@@ -39,5 +50,6 @@ open class AbstractRequest(open val sender: RequestSender, open var url: String 
 data class Request(
     override val sender: RequestSender,
     override var url: String
-): AbstractRequest(sender, url){
+): DownloadingRequest(sender, url){
 }
+

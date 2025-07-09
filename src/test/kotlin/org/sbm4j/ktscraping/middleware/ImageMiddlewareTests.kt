@@ -3,9 +3,7 @@ package org.sbm4j.ktscraping.middleware
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.hasSize
-import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.startsWith
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractDownloader
@@ -14,9 +12,10 @@ import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
-import org.sbm4j.ktscraping.requests.GoogleSearchImageRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
@@ -32,27 +31,27 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
         val request = Request(sender, "server1")
         request.parameters["cssSelectorImages"] = mapOf("header" to 0)
 
-        val response = Response(request)
+        val response = DownloadingResponse(request)
         response.contents[AbstractDownloader.PAYLOAD] = html!!
 
-        lateinit var resp: Response
+        lateinit var resp: DownloadingResponse
 
         withMiddleware {
             inChannel.send(request)
-            val req = followInChannel.receive()
+            val req = forwardInChannel.receive()
 
             outChannel.send(response)
 
-            val reqImage = followInChannel.receive()
+            val reqImage = forwardInChannel.receive() as DownloadingRequest
             logger.debug { "Tester: received the request ${reqImage.name} for the image ${reqImage.url}" }
 
-            val respImage = Response(reqImage)
+            val respImage = DownloadingResponse(reqImage)
             val svgImage = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/iana-logo-header.svg")?.readText()
             respImage.contents["payload"] = svgImage!!
             outChannel.send(respImage)
             logger.debug { "Tester: sent the response for the request ${respImage.request.name}" }
 
-            resp = followOutChannel.receive()
+            resp = forwardOutChannel.receive() as DownloadingResponse
         }
 
         val contents = resp.contents
@@ -73,18 +72,18 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
         val request = Request(sender, "server1")
         request.parameters["cssSelectorImages"] = mapOf("div#search g-img" to 1)
 
-        val response = Response(request)
+        val response = DownloadingResponse(request)
         response.contents[AbstractDownloader.PAYLOAD] = html!!
 
-        lateinit var resp: Response
+        lateinit var resp: DownloadingResponse
 
         withMiddleware {
             inChannel.send(request)
-            val req = followInChannel.receive()
+            val req = forwardInChannel.receive()
 
             outChannel.send(response)
 
-            resp = followOutChannel.receive()
+            resp = forwardOutChannel.receive() as DownloadingResponse
         }
 
         val contents = resp.contents
@@ -107,26 +106,26 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
             searchEngine = "lkjmsljdsd"
             )
 
-        val response = Response(request, type = ContentType.JSON)
+        val response = DownloadingResponse(request, type = ContentType.JSON)
         response.contents[AbstractDownloader.PAYLOAD] = json!!
 
-        lateinit var resp: Response
+        lateinit var resp: DownloadingResponse
 
         val bytesImage = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/le_mariage_des_lapins.jpg")?.readBytes()!!
 
         withMiddleware {
             inChannel.send(request)
-            val req = followInChannel.receive()
+            val req = forwardInChannel.receive()
             logger.info { "received the followed request, now send response" }
 
             outChannel.send(response)
 
-            val reqImage = followInChannel.receive()
-            val respImage = Response(reqImage, type = ContentType.IMAGE)
+            val reqImage = forwardInChannel.receive() as DownloadingRequest
+            val respImage = DownloadingResponse(reqImage, type = ContentType.IMAGE)
             respImage.contents[AbstractDownloader.PAYLOAD] = bytesImage
             outChannel.send(respImage)
 
-            resp = followOutChannel.receive()
+            resp = forwardOutChannel.receive() as DownloadingResponse
         }
 
         val contents = resp.contents

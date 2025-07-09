@@ -5,12 +5,11 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.util.network.*
-import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Status
 
 enum class BodyType{
     TEXT,
@@ -21,12 +20,12 @@ enum class BodyType{
 class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDownloader(name) {
 
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
 
         val client = HttpClient(CIO)
 
         try{
-            val response = Response(request)
+            val response = DownloadingResponse(request)
             val resp: HttpResponse = client.get(request.url)
             val bodyType = getBodyType(request)
             when(bodyType){
@@ -39,12 +38,12 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
             return response
         }
         catch(ex: UnresolvedAddressException){
-            val response = Response(request, Status.NOT_FOUND)
+            val response = DownloadingResponse(request, status =Status.NOT_FOUND)
             response.contents["error"] = "Address ${request.url} not found for request ${request.name}"
             return response
         }
         catch(ex: Exception){
-            val response = Response(request, Status.ERROR)
+            val response = DownloadingResponse(request, status = Status.ERROR)
             response.contents["error"] = ex
             return response
         }
@@ -53,7 +52,7 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
         }
     }
 
-    fun getBodyType(request: AbstractRequest): BodyType{
+    fun getBodyType(request: DownloadingRequest): BodyType{
         val expected = request.parameters.get(CONTENT_TYPE)
         return if(expected != null){
             when(expected as ContentType){
@@ -61,6 +60,7 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
                 ContentType.BITMAP_IMAGE -> BodyType.IMAGE
                 ContentType.IMAGE -> BodyType.IMAGE
                 ContentType.FILE -> BodyType.FILE
+                ContentType.NOTHING -> TODO()
             }
         }
         else{
@@ -73,7 +73,7 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
         }
     }
 
-    fun getResponseType(request: AbstractRequest, bodyType: BodyType): ContentType{
+    fun getResponseType(request: DownloadingRequest, bodyType: BodyType): ContentType{
         val expectedType = request.parameters.get(CONTENT_TYPE)
         return if(expectedType == null){
             when(bodyType){

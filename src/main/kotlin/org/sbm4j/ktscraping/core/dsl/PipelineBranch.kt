@@ -1,16 +1,13 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 
 
 fun buildPipelineChannels(): Pair<Channel<Item>, Channel<ItemAck>>{

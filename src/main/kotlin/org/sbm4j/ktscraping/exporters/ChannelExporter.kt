@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.exporters
 
 import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.requests.Item
+import org.sbm4j.ktscraping.data.item.Item
 
 class ChannelExporter(name: String) : AbstractExporter(name) {
 

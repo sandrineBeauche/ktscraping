@@ -9,9 +9,10 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.RequestReceiver
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -26,7 +27,7 @@ abstract class RequestReceiverMock(): RequestReceiver {
 }
 
 
-class RequestReceiverTest: ScrapingTest<Request, Response>(){
+class RequestReceiverTest: ScrapingTest<Request, Response<*>>(){
 
     val sender : RequestSender = mockk<RequestSender>()
     val receiver: RequestReceiverMock = spyk<RequestReceiverMock>()
@@ -47,7 +48,7 @@ class RequestReceiverTest: ScrapingTest<Request, Response>(){
 
         coroutineScope {
             every { receiver.scope } returns this
-            coEvery { receiver.processRequest(req) } returns resp
+            coEvery { receiver.processDataRequest(req) } returns resp
 
             receiver.performRequests()
             inChannel.send(req)

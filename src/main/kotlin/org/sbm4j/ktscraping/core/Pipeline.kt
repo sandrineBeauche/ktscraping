@@ -2,13 +2,19 @@ package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import org.sbm4j.ktscraping.requests.ItemStatus
+import org.sbm4j.ktscraping.data.item.ErrorInfo
+import org.sbm4j.ktscraping.data.item.ErrorLevel
+import org.sbm4j.ktscraping.data.item.EventItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.item.ItemStatus
+import java.util.concurrent.ConcurrentHashMap
 
 
 interface ItemReceiver : Controllable {
@@ -41,9 +47,8 @@ interface ItemReceiver : Controllable {
 
 }
 
-interface ItemFollower : ItemReceiver {
-
-
+interface ItemForwarder : ItemReceiver, EventConsumer {
+    
     var itemOut: SendChannel<Item>
 
     override suspend fun pushItem(item: Item) {
@@ -68,7 +73,7 @@ interface ItemFollower : ItemReceiver {
 }
 
 
-interface Pipeline : ItemFollower {
+interface Pipeline : ItemForwarder {
 
     var itemAckIn: ReceiveChannel<ItemAck>
 
@@ -85,12 +90,22 @@ interface Pipeline : ItemFollower {
         }
     }
 
+    override suspend fun performAck(itemAck: ItemAck) {
+        itemAckOut.send(itemAck)
+    }
+
+    fun buildItemError(ex: Exception, level: ErrorLevel = ErrorLevel.MAJOR): ItemError{
+        return ItemError(ErrorInfo(ex, this, level))
+    }
+
+
     override suspend fun performItem(item: Item) {
         try {
             super.performItem(item)
         }
         catch(ex: Exception){
-            val ack = ItemAck(item.itemId, ItemStatus.ERROR, ex)
+            val errors = listOf(buildItemError(ex))
+            val ack = ItemAck(item.itemId, ItemStatus.ERROR, errors)
             itemAckOut.send(ack)
         }
     }
@@ -124,4 +139,6 @@ abstract class AbstractPipeline(override val name: String) : Pipeline {
     override lateinit var itemAckOut: SendChannel<ItemAck>
 
     override lateinit var scope: CoroutineScope
+
+    override val pendingEvent: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
 }

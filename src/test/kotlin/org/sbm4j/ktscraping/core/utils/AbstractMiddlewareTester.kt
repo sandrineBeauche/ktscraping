@@ -6,15 +6,14 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Response>() {
+abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Response<*>>() {
 
     val sender: RequestSender = mockk<RequestSender>()
 
@@ -35,9 +34,9 @@ abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Respo
         middleware = spyk(buildMiddleware(middlewareName))
 
         every { middleware.requestIn } returns inChannel
-        every { middleware.requestOut } returns followInChannel
+        every { middleware.requestOut } returns forwardInChannel
         every { middleware.responseIn } returns outChannel
-        every { middleware.responseOut } returns followOutChannel
+        every { middleware.responseOut } returns forwardOutChannel
     }
 
     suspend fun withMiddleware(func: suspend AbstractMiddlewareTester.() -> Unit){

@@ -4,9 +4,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import org.sbm4j.ktscraping.requests.ItemStatus
+import org.sbm4j.ktscraping.data.item.ErrorInfo
+import org.sbm4j.ktscraping.data.item.ErrorLevel
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.item.ItemStatus
 
 abstract class AbstractExporter(override val name: String): ItemReceiver {
 
@@ -44,7 +47,8 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
             ack = ItemAck(item.itemId, ItemStatus.PROCESSED)
         }
         catch(ex: Exception){
-            ack = ItemAck(item.itemId, ItemStatus.ERROR)
+            val error = ItemError(ErrorInfo(ex, this, ErrorLevel.MAJOR))
+            ack = ItemAck(item.itemId, ItemStatus.ERROR, listOf(error))
         }
         finally {
             itemAckOut.send(ack)

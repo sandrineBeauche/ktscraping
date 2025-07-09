@@ -2,7 +2,6 @@ package org.sbm4j.ktscraping.dowloaders.playwright
 
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.options.Cookie
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -11,9 +10,10 @@ import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.middleware.CookiesMiddleware
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Status
 import java.util.concurrent.Executors
 
 
@@ -21,7 +21,7 @@ open class PlaywrightRequest(
     override val sender: RequestSender,
     override var url: String,
     func: Page.(results: MutableMap<String, Any>) -> Unit
-): AbstractRequest(sender, url){
+): DownloadingRequest(sender, url){
 
     init {
         parameters[PlaywrightDownloader.PLAYWRIGHT] = func
@@ -57,7 +57,7 @@ class PlaywrightDownloader(name: String = "Playwright downloader") : AbstractDow
         super.stop()
     }
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         val dispatcher = getDispatcher(request)
         val result = withContext(dispatcher){
             val th = (Thread.currentThread() as PlaywrightThread)
@@ -77,7 +77,7 @@ class PlaywrightDownloader(name: String = "Playwright downloader") : AbstractDow
 
             page.navigate(request.url)
 
-            val response = Response(request, Status.OK)
+            val response = DownloadingResponse(request)
 
             if(request.parameters.containsKey(PLAYWRIGHT)){
                 val results = mutableMapOf<String, Any>()

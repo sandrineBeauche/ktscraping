@@ -11,8 +11,8 @@ import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
 import org.sbm4j.ktscraping.middleware.CacheAvailability
 import org.sbm4j.ktscraping.middleware.CacheEntry
 import org.sbm4j.ktscraping.middleware.CacheMiddleware
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import java.io.File
 import kotlin.test.Test
 
@@ -121,25 +121,25 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
     @Test
     fun testCacheMiddlewareEmpty() = TestScope().runTest {
         val request = Request(sender, "http://www.exemple.com")
-        val response = Response(request)
+        val response = DownloadingResponse(request)
 
         val respFilename = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/example-domains.html")!!.file
         response.contents[AbstractDownloader.PAYLOAD] = File(respFilename).readText()
         response.contents[AbstractDownloader.CONTENT_TYPE] = ContentType.HTML
 
         lateinit var req: Request
-        lateinit var resp: Response
-        lateinit var resp2: Response
+        lateinit var resp: DownloadingResponse
+        lateinit var resp2: DownloadingResponse
 
         withMiddleware {
             inChannel.send(request)
-            req = followInChannel.receive() as Request
+            req = forwardInChannel.receive() as Request
 
             outChannel.send(response)
-            resp = followOutChannel.receive()
+            resp = forwardOutChannel.receive() as DownloadingResponse
 
             inChannel.send(request)
-            resp2 = followOutChannel.receive()
+            resp2 = forwardOutChannel.receive() as DownloadingResponse
         }
 
         val contentType = resp2.type
@@ -152,11 +152,11 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
         (middleware as CacheMiddleware).root = File(cacheDir)
 
         val request = Request(sender, "http://www.exemple.com")
-        lateinit var resp: Response
+        lateinit var resp: DownloadingResponse
 
         withMiddleware {
             inChannel.send(request)
-            resp = followOutChannel.receive()
+            resp = forwardOutChannel.receive() as DownloadingResponse
         }
 
         val contentType = resp.type

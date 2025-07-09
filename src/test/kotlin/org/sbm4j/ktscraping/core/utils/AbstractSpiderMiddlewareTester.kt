@@ -9,13 +9,13 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.SpiderMiddleware
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest, Response>() {
+abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest, Response<*>>() {
 
     val sender: RequestSender = mockk<RequestSender>()
 
@@ -39,9 +39,9 @@ abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest,
         middleware = spyk(buildMiddleware(middlewareName))
 
         every { middleware.requestIn } returns inChannel
-        every { middleware.requestOut } returns followInChannel
+        every { middleware.requestOut } returns forwardInChannel
         every { middleware.responseIn } returns outChannel
-        every { middleware.responseOut } returns followOutChannel
+        every { middleware.responseOut } returns forwardOutChannel
         every { middleware.itemIn } returns itemChannelIn
         every { middleware.itemOut } returns itemChannelOut
     }

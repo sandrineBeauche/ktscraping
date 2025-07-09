@@ -4,19 +4,19 @@ import kotlinx.coroutines.channels.Channel
 
 abstract class DualScrapingTest<IN, OUT>: ScrapingTest<IN, OUT>() {
 
-    lateinit var followInChannel: Channel<IN>
+    lateinit var forwardInChannel: Channel<IN>
 
-    lateinit var followOutChannel: Channel<OUT>
+    lateinit var forwardOutChannel: Channel<OUT>
 
     override fun initChannels(){
         super.initChannels()
-        followInChannel = Channel<IN>(Channel.UNLIMITED)
-        followOutChannel = Channel<OUT>(Channel.UNLIMITED)
+        forwardInChannel = Channel<IN>(Channel.UNLIMITED)
+        forwardOutChannel = Channel<OUT>(Channel.UNLIMITED)
     }
 
     override fun closeChannels(){
         super.closeChannels()
-        followInChannel.close()
-        followOutChannel.close()
+        forwardInChannel.close()
+        forwardOutChannel.close()
     }
 }

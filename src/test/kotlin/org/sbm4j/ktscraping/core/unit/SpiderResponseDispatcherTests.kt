@@ -17,9 +17,9 @@ import org.sbm4j.ktscraping.core.PendingRequestMap
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.ResponseDispatcher
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -28,7 +28,7 @@ abstract class ResponseDispatcherMock: ResponseDispatcher{
     override val name: String = "ResponseDispatcherMock"
 }
 
-class ResponseDispatcherTest: ScrapingTest<Response, AbstractRequest>(){
+class ResponseDispatcherTest: ScrapingTest<DownloadingResponse, AbstractRequest>(){
 
     val sender1 : RequestSender = mockk<RequestSender>()
 
@@ -36,13 +36,13 @@ class ResponseDispatcherTest: ScrapingTest<Response, AbstractRequest>(){
 
     val reqChannel1: Channel<Request> = Channel(Channel.UNLIMITED)
 
-    val respChannel1: Channel<Response> = Channel(Channel.UNLIMITED)
+    val respChannel1: Channel<DownloadingResponse> = Channel(Channel.UNLIMITED)
 
     val reqChannel2: Channel<Request> = Channel(Channel.UNLIMITED)
 
-    val respChannel2: Channel<Response> = Channel(Channel.UNLIMITED)
+    val respChannel2: Channel<DownloadingResponse> = Channel(Channel.UNLIMITED)
 
-    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response>> = mutableMapOf(
+    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<DownloadingResponse>> = mutableMapOf(
         reqChannel1 to respChannel1,
         reqChannel2 to respChannel2
     )

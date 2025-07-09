@@ -10,9 +10,9 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.AbstractPipeline
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 
 class PipelineClassTest(name: String): AbstractPipeline(name){
     override suspend fun performAck(itemAck: ItemAck) {

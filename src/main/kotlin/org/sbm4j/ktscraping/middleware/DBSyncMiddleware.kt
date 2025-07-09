@@ -1,11 +1,20 @@
 package org.sbm4j.ktscraping.middleware
 
 import kotlinx.coroutines.CoroutineScope
+import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.requests.*
-import kotlin.reflect.KProperty
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.ErrorLevel
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.EndItem
+import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Status
+import kotlin.reflect.KProperty1
 
 
 enum class DBSyncState{
@@ -13,35 +22,44 @@ enum class DBSyncState{
     NEW
 }
 
-class DBSyncMiddleware(name: String): SpiderMiddleware(name) {
+class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
     companion object{
         val DBSYNC_STATE: String = "DBSyncState"
         val DBSYNC_KEY: String = "DBSyncKey"
         val DBSYNC: String = "DBSync"
     }
 
-    lateinit var keys: Set<Any>
+    var keys: Set<*>? = null
 
     val updatedKeys: MutableSet<Any> = mutableSetOf()
 
-    lateinit var classObject: Class<*>
+    lateinit var classObject: Class<T>
 
-    lateinit var keyProperty: KProperty<*>
+    lateinit var keyProperty: KProperty1<T, *>
+
+    lateinit var dbConnexion: DBConnexion
 
     var errorOccured: Boolean = false
 
-    override suspend fun processResponse(response: Response): Boolean {
+    override suspend fun start(scope: CoroutineScope) {
+        if(keys == null) {
+            keys = dbConnexion.getKeys(classObject, keyProperty)
+        }
+        super.start(scope)
+    }
+
+    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         if(response.request.parameters.getOrDefault(DBSYNC_STATE, null) == DBSyncState.NEW){
             response.contents[DBSYNC_STATE] = DBSyncState.NEW
         }
         return true
     }
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         if(request.parameters.containsKey(DBSYNC_KEY)){
             val key = request.parameters[DBSYNC_KEY]
-            if(keys.contains(key)){
-                val result = Response(request, Status.OK)
+            if(keys?.contains(key) == true){
+                val result = DownloadingResponse(request)
                 result.contents[DBSYNC] = DBSyncState.UPTODATE
                 updatedKeys.add(key!!)
                 return result
@@ -57,25 +75,25 @@ class DBSyncMiddleware(name: String): SpiderMiddleware(name) {
     override suspend fun processItem(item: Item): List<Item> {
         when(item){
             is ItemError -> {
-                if(item.level == ErrorLevel.MAJOR || item.level == ErrorLevel.FATAL) {
+                if(item.errorInfo.level == ErrorLevel.MAJOR || item.errorInfo.level == ErrorLevel.FATAL) {
                     errorOccured = true
                 }
                 return listOf(item)
             }
-            is ItemEnd -> return processItemEnd(item)
+            is EndItem -> return processItemEnd(item)
             else -> return listOf(item)
         }
     }
 
-    fun processItemEnd(item: ItemEnd): List<Item>{
+    fun processItemEnd(item: EndItem): List<Item>{
         val result: MutableList<Item> = mutableListOf()
 
         if(!errorOccured) {
             logger.debug { "${name}: get keys to delete to update database" }
-            val keyToDelete = keys - updatedKeys
-            val itemDeletes = keyToDelete.map {
-                ItemDelete(classObject, keyProperty, it)
-            }
+            val keyToDelete = keys?.minus(updatedKeys)
+            val itemDeletes = keyToDelete?.map {
+                ItemDelete(classObject, keyProperty, classObject.cast(it))
+            }!!
             result.addAll(itemDeletes)
         }
 

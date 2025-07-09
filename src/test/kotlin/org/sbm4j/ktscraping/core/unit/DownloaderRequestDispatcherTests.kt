@@ -6,7 +6,6 @@ import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.coroutineScope
@@ -17,18 +16,20 @@ import org.kodein.di.DI
 import org.sbm4j.ktscraping.core.DownloaderRequestDispatcher
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response>() {
+class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response<*>>() {
 
     val sender1 : RequestSender = mockk<RequestSender>()
 
     val dispatcher = spyk(object: DownloaderRequestDispatcher(di = mockk<DI>()){
-        override fun selectChannel(request: AbstractRequest): SendChannel<AbstractRequest> {
+        override fun selectChannel(request: DownloadingRequest): SendChannel<AbstractRequest> {
             return when(request.url){
                 "url1" -> senders[0]
                 else -> senders[1]
@@ -38,11 +39,11 @@ class DownloaderRequestDispatcherTests: ScrapingTest<Request, Response>() {
 
     val reqChannel1: Channel<AbstractRequest> = Channel(Channel.UNLIMITED)
 
-    val respChannel1: Channel<Response> = Channel(Channel.UNLIMITED)
+    val respChannel1: Channel<DownloadingResponse> = Channel(Channel.UNLIMITED)
 
     val reqChannel2: Channel<AbstractRequest> = Channel(Channel.UNLIMITED)
 
-    val respChannel2: Channel<Response> = Channel(Channel.UNLIMITED)
+    val respChannel2: Channel<DownloadingResponse> = Channel(Channel.UNLIMITED)
 
     override fun closeChannels(){
         reqChannel1.close()

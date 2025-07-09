@@ -1,11 +1,10 @@
 package org.sbm4j.ktscraping.core.dsl
 
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.requests.Data
+import org.sbm4j.ktscraping.data.item.Data
 
 
 data class DataItemTest(

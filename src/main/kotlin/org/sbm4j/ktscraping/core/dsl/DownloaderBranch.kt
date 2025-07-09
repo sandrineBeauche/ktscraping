@@ -1,22 +1,20 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
-import kotlin.reflect.KClass
-import kotlin.reflect.full.primaryConstructor
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 
-fun buildDownloaderChannels(): Pair<Channel<AbstractRequest>, Channel<Response>>{
+fun buildDownloaderChannels(): Pair<Channel<AbstractRequest>, Channel<Response<*>>>{
     return Pair(
-        Channel<AbstractRequest>(Channel.UNLIMITED),
-        Channel<Response>(Channel.UNLIMITED),
+        Channel(Channel.UNLIMITED),
+        Channel(Channel.UNLIMITED),
     )
 }
 
@@ -32,11 +30,11 @@ fun Crawler.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
 
 fun Crawler.downloaderDispatcher(
     name: String = "dispatcher",
-    selectChannelFunc: DownloaderRequestDispatcher.(AbstractRequest) -> SendChannel<AbstractRequest>,
+    selectChannelFunc: DownloaderRequestDispatcher.(DownloadingRequest) -> SendChannel<AbstractRequest>,
     initDispatcher: DownloaderRequestDispatcher.() -> Unit
 ){
     val dispatcher = object : DownloaderRequestDispatcher(name, this.di){
-        override fun selectChannel(request: AbstractRequest): SendChannel<AbstractRequest> {
+        override fun selectChannel(request: DownloadingRequest): SendChannel<AbstractRequest> {
             return selectChannelFunc(request)
         }
     }
@@ -49,7 +47,7 @@ fun Crawler.downloaderDispatcher(
 
 
 class DownloaderBranch(
-    var downloaderIn: Channel<Response>,
+    var downloaderIn: Channel<Response<*>>,
     var downloaderOut: Channel<AbstractRequest>,
     override val di: DI
 ): DIAware{
@@ -94,7 +92,7 @@ class DownloaderBranch(
         init: DownloaderRequestDispatcher.() -> Unit
     ){
         val dispatcher = object : DownloaderRequestDispatcher(name, this.di){
-            override fun selectChannel(request: AbstractRequest): SendChannel<AbstractRequest> {
+            override fun selectChannel(request: DownloadingRequest): SendChannel<AbstractRequest> {
                 return selectChannelFunc(request)
             }
         }

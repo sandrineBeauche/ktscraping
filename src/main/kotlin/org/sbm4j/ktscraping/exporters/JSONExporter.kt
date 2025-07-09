@@ -6,9 +6,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.requests.Data
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
 
 
 class JSONExporter<T: Data>(name: String = "JSONExporter"): AbstractExporter(name) {

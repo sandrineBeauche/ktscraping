@@ -8,9 +8,9 @@ import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.DownloaderMiddleware
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Status
 import java.io.File
 import java.util.UUID
 import kotlin.time.Duration
@@ -109,9 +109,8 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
     lateinit var root: File
 
 
-    override suspend fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         if(response.status == Status.OK) {
-            val request = response.request
             val avail = request.parameters[CACHE_AVAILABILITY] as CacheAvailability
             if (avail != CacheAvailability.NEVER) {
                 val cacheKey = request.parameters.getOrDefault(CACHE_KEY, request.toCacheKey()) as String
@@ -148,7 +147,7 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
         return true
     }
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         val cacheKey = request.parameters.getOrDefault(CACHE_KEY, request.toCacheKey()) as String
 
         val cacheValue = cacheMap[cacheKey]
@@ -164,7 +163,7 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
         else{
             try {
                 val entry = cacheValue
-                val response = Response(request, Status.OK, entry.contentType)
+                val response = DownloadingResponse(request, entry.contentType)
                 val payload = File(root, entry.payload).readText()
                 response.contents[AbstractDownloader.PAYLOAD] = payload
 

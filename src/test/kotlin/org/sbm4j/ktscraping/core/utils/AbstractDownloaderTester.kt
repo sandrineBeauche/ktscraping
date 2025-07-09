@@ -10,11 +10,14 @@ import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.EndRequest
+import org.sbm4j.ktscraping.data.request.StartRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>() {
+abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response<*>>() {
 
     lateinit var downloader: AbstractDownloader
 
@@ -39,24 +42,28 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response>
 
     suspend fun withDownloader(func: suspend AbstractDownloaderTester.() -> Unit){
         coroutineScope {
-            launch {
-                every { downloader.scope } returns this
-                downloader.start(this)
-            }
-            launch {
-                func()
+            downloader.start(this@coroutineScope)
 
-                closeChannels()
-                downloader.stop()
-            }
+            val startEventReq = StartRequest(sender)
+            inChannel.send(startEventReq)
+            outChannel.receive()
+
+            func()
+
+            val endEventReq = EndRequest(sender)
+            inChannel.send(endEventReq)
+            outChannel.receive()
+            
+            closeChannels()
+            downloader.stop()
         }
     }
 
-    protected suspend fun sendRequest(request: AbstractRequest): Response?{
-        var response: Response? = null
+    protected suspend fun sendRequest(request: AbstractRequest): DownloadingResponse?{
+        var response: DownloadingResponse? = null
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive()
+            response = outChannel.receive() as DownloadingResponse
         }
         return response
     }

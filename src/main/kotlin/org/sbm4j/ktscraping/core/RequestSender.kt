@@ -5,30 +5,32 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.EventResponse
+import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.ktscraping.data.response.Status
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
-typealias Callback = suspend (Response) -> Unit
+typealias Callback = suspend (Response<*>) -> Unit
 typealias CallbackError = suspend (Throwable) -> Unit
-typealias PendingRequestMap = ConcurrentHashMap<Int, Channel<Response>>
+typealias PendingRequestMap = ConcurrentHashMap<Int, Channel<Response<*>>>
 
 class NoRequestSenderException(message: String) : Exception(message)
 
-class RequestException(message: String, val resp: Response, cause: Throwable? = null) :
+class RequestException(message: String, val resp: Response<*>, cause: Throwable? = null) :
     Exception(message, cause)
 
 
 
 /**
- * An object from the kt scraping line that can send requests and receive responses.
+ * A component from the kt scraping line that can send requests and receive responses.
  * The object is fully asynchronous, so the requests are sent in a coroutine while the
  * responses are received in another coroutine.
  * @property mutex a mutex that allows to safely executes callbacks and process response as they can modify the shared state
@@ -37,16 +39,16 @@ class RequestException(message: String, val resp: Response, cause: Throwable? = 
  * @property responseIn the channel used to receive the responses
  * @author Sandrine Ben Mabrouk
  */
-interface  RequestSender: Controllable {
+interface  RequestSender: Controllable, EventConsumer {
 
     var pendingRequests: PendingRequestMap
 
     val requestOut: SendChannel<AbstractRequest>
 
-    val responseIn: ReceiveChannel<Response>
+    val responseIn: ReceiveChannel<Response<*>>
 
     private suspend fun peformSend(request: AbstractRequest, callback: Callback, callbackError: CallbackError? = null){
-        val respChannel = Channel<Response>(Channel.RENDEZVOUS)
+        val respChannel = Channel<Response<*>>(Channel.RENDEZVOUS)
         pendingRequests[request.reqId] = respChannel
         logger.trace { "${name}: sends the request ${request.name} and waits for a response" }
         requestOut.send(request)
@@ -74,17 +76,24 @@ interface  RequestSender: Controllable {
 
     }
 
+    /**
+     * sends synchronously a request and returns the response. This exchange with the request and the response
+     * is done in a dedicated scope, that is a subscope of the given coroutine scope.
+     * @param request the request to be sent
+     * @param subScope the parent scope of the scope where the request is sent and the response is received
+     * @throws RequestException if the response status is not OK
+     */
     suspend fun sendSync(
         request: AbstractRequest,
         subScope: CoroutineScope = scope
-    ) = suspendCoroutine<Response> { continuation ->
+    ) = suspendCoroutine<Response<*>> { continuation ->
         subScope.launch(CoroutineName("${name}-${request.name}")) {
             this@RequestSender.peformSend(request, continuation::resume, continuation::resumeWithException)
         }
     }
 
     /**
-     * Sends a new created request in a new coroutine and executes the callback when receiving the response
+     * Sends a request in a new coroutine and executes the callback when receiving the response
      * @param request the request to be sent
      * @param callback the callback to be executed
      */
@@ -101,7 +110,7 @@ interface  RequestSender: Controllable {
 
     /**
      * Receive all the responses.
-     * If the response corresponds to a new created requests sent by this object, the response is sent
+     * If the response corresponds to a new created requests sent by this component, the response is sent
      * to the corresponding coroutine in order to execute the callback, otherwise the response is processed.
      */
     suspend fun receiveResponses() {
@@ -113,15 +122,15 @@ interface  RequestSender: Controllable {
                     val req = resp.request
                     val reqId = req.reqId
                     if (req.sender == this@RequestSender && reqId in pendingRequests.keys) {
-                        logger.trace{ "${name}: Dispatch response for the request ${resp.request.name} to the request coroutine" }
-                        val respChannel = pendingRequests[reqId]
-                        pendingRequests.remove(reqId)
-                        respChannel?.send(resp)
+                        dispatchResponse(resp)
                     } else {
                         logger.trace{"${name}: Process response for the request ${resp.request.name}"}
                         mutex.withLock {
                             try{
-                                performResponse(resp)
+                                when(resp){
+                                    is EventResponse -> resumeEvent(resp)
+                                    is DownloadingResponse -> performResponse(resp, resp.request)
+                                }
                             }
                             catch(ex: Exception){
                                 logger.error(ex){ "${name}: Error while processing response - ${ex.message}"}
@@ -134,11 +143,17 @@ interface  RequestSender: Controllable {
         }
     }
 
+    suspend fun dispatchResponse(response: Response<*>){
+        logger.trace{ "${name}: Dispatch response for the request ${response.request.name} to the request coroutine" }
+        val respChannel = pendingRequests.remove(response.request.reqId)
+        respChannel?.send(response)
+    }
+
     /**
      * Processes a response
      * @param response the response to be processed
      */
-    suspend fun performResponse(response: Response)
+    suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest)
 
 
     override suspend fun run() {

@@ -1,11 +1,9 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import kotlinx.coroutines.CoroutineScope
 import org.kodein.di.DI
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.Crawler
-import org.sbm4j.ktscraping.core.DefaultCrawler
 import kotlin.reflect.full.primaryConstructor
 
 

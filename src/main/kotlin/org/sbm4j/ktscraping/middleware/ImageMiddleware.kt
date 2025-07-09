@@ -3,12 +3,16 @@ package org.sbm4j.ktscraping.middleware
 import com.nfeld.jsonpathkt.JsonPath
 import com.nfeld.jsonpathkt.extension.read
 import it.skrape.core.htmlDocument
-import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.SpiderMiddleware
-import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
-import org.sbm4j.ktscraping.requests.*
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.ResponseException
+import org.sbm4j.ktscraping.data.response.Status
 import java.io.File
 
 class ImageDescriptor(val name: String){
@@ -31,7 +35,7 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
         val IMAGES_ROOT: String = "imagesRoot"
     }
 
-    override suspend fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         if(response.status == Status.OK &&
             (response.request.parameters.contains(CSS_SELECTOR_IMAGES) ||
                     response.request.parameters.containsKey(JSON_PATH_IMAGES))){
@@ -65,7 +69,7 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
         return true
     }
 
-    fun getPayload(response: Response): String{
+    fun getPayload(response: DownloadingResponse): String{
         return when(response.type){
             ContentType.XML, ContentType.HTML, ContentType.JSON -> {
                 val payload = response.contents[AbstractDownloader.PAYLOAD]
@@ -74,7 +78,7 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
                 }
                 else payload as String
             }
-            else -> throw  ResponseException("try to extract images on a non-string payload")
+            else -> throw ResponseException("try to extract images on a non-string payload")
         }
     }
 
@@ -115,10 +119,10 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
         }
     }
 
-    suspend fun downloadImage(name:String, link: String, request: AbstractRequest): ImageDescriptor? {
+    suspend fun downloadImage(name:String, link: String, request: DownloadingRequest): ImageDescriptor? {
         val req = Request(this@ImageMiddleware, link)
         req.parameters[AbstractDownloader.CONTENT_TYPE] = ContentType.IMAGE
-        val response = this.sendSync(req)
+        val response = this.sendSync(req) as DownloadingResponse
         if(response.status == Status.OK) {
             val result = ImageDescriptor(name)
             val payload: Any = response.contents[AbstractDownloader.PAYLOAD]!!
@@ -154,7 +158,7 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
 
 
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         return true
     }
 

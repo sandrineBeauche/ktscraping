@@ -7,12 +7,12 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
 import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import org.sbm4j.ktscraping.requests.ItemEnd
-import org.sbm4j.ktscraping.requests.ItemStatus
-import org.sbm4j.ktscraping.requests.StandardFormatItem
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.EndItem
+import org.sbm4j.ktscraping.data.item.ItemStatus
+import org.sbm4j.ktscraping.data.item.StandardFormatItem
 import kotlin.reflect.cast
 
 
@@ -77,7 +77,7 @@ class JSONPipeline(name: String = "JSONPipeline") : AbstractPipeline(name) {
                 }
             }
 
-            is ItemEnd -> {
+            is EndItem -> {
                 return if (accumulate) {
                     val json = JsonArray(documents)
                     val elt = JsonItem(json)

@@ -1,5 +1,7 @@
-package org.sbm4j.ktscraping.requests
+package org.sbm4j.ktscraping.data
 
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.DataItem
 import kotlin.test.Test
 
 data class DataTestType(val value: String): Data() {

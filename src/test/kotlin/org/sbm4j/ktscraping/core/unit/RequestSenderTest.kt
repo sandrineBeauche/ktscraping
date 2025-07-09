@@ -7,16 +7,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.assertThrows
 import org.sbm4j.ktscraping.core.PendingRequestMap
 import org.sbm4j.ktscraping.core.RequestException
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.ktscraping.data.response.Status
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,25 +36,27 @@ abstract class RequestSenderMock() : RequestSender {
         }
     }
 
-    suspend fun callback(response: Response){
-        if(response.contents["close"] == true)
+    suspend fun callback(response: Response<*>){
+        if(response is DownloadingResponse && response.contents["close"] == true)
             closeChannels()
     }
 
-    suspend fun callbackErr(ex: Throwable){
+    suspend fun callbackErr(ex: Throwable) {
         val exRequest = ex as RequestException
-        if(exRequest.resp.contents["close"] == true)
+        val response = exRequest.resp
+        if (response is DownloadingResponse && response.contents["close"] == true) {
             closeChannels()
+        }
     }
 
-    override suspend fun performResponse(response: Response){
+    override suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest){
         if(response.contents["close"] == true)
             closeChannels()
     }
 }
 
 
-class RequestSenderTest: ScrapingTest<Response, AbstractRequest>() {
+class RequestSenderTest: ScrapingTest<DownloadingResponse, AbstractRequest>() {
 
 
     val sender: RequestSenderMock = spyk<RequestSenderMock>()
@@ -109,7 +111,7 @@ class RequestSenderTest: ScrapingTest<Response, AbstractRequest>() {
 
     @Test
     fun testWithoutCallback() = TestScope().runTest {
-        val (_, resp) = generateRequestResponse(sender)
+        val (req, resp) = generateRequestResponse(sender)
         resp.contents["close"] = true
 
         coroutineScope {
@@ -119,7 +121,7 @@ class RequestSenderTest: ScrapingTest<Response, AbstractRequest>() {
             inChannel.send(resp)
         }
 
-        coVerify { sender.performResponse(resp) }
+        coVerify { sender.performResponse(resp, req) }
     }
 
     @Test
@@ -144,12 +146,12 @@ class RequestSenderTest: ScrapingTest<Response, AbstractRequest>() {
 
     @Test
     fun testWithoutCallbackException() = TestScope().runTest {
-        val (_, resps) = generateRequestResponses(sender)
+        val (reqs, resps) = generateRequestResponses(sender)
         resps[0].contents["close"] = false
         resps[1].contents["close"] = true
 
         every { sender.scope } returns this
-        coEvery { sender.performResponse(resps[0]) } throws Exception("Here is an exception")
+        coEvery { sender.performResponse(resps[0], reqs[0]) } throws Exception("Here is an exception")
 
         repeat(2){
             inChannel.send(resps[it])

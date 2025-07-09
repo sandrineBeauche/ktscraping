@@ -9,10 +9,10 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractPipeline
 import org.sbm4j.ktscraping.core.dsl.DataItemTest
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.ItemAck
-import org.sbm4j.ktscraping.requests.ItemStatus
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemStatus
 
 class AbstractPipelineTest: AbstractPipelineTester() {
     override fun buildPipeline(pipelineName: String): AbstractPipeline {
@@ -32,11 +32,11 @@ class AbstractPipelineTest: AbstractPipelineTester() {
 
         withPipeline {
             inChannel.send(itemVal)
-            val processed = followInChannel.receive()
+            val processed = forwardInChannel.receive()
 
             val ack = ItemAck(processed.itemId, ItemStatus.PROCESSED)
             outChannel.send(ack)
-            val receivedAck = followOutChannel.receive()
+            val receivedAck = forwardOutChannel.receive()
 
             assertThat(receivedAck.itemId, equalTo(itemVal.itemId))
         }

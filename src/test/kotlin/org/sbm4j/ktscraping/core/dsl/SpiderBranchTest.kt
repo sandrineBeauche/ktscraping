@@ -14,15 +14,16 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.requests.AbstractRequest
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.Response
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
 class SpiderClassTest(name:String): AbstractSimpleSpider(name){
-    override suspend fun parse(resp: Response) {
+    override suspend fun parse(resp: DownloadingResponse) {
         logger.debug { "Building a new item for request ${resp.request.name}"}
-        val data = DataItemTest(state["returnValue"] as String, resp.request.name, resp.request.url)
+        val req = resp.request as DownloadingRequest
+        val data = DataItemTest(state["returnValue"] as String, req.name, req.url)
 
         this.itemsOut.send(DataItem.build(data, "itemTest"))
     }
@@ -33,11 +34,11 @@ class SpiderClassTest(name:String): AbstractSimpleSpider(name){
 }
 
 class SpiderMiddlewareClassTest(name: String) : SpiderMiddleware(name) {
-    override suspend fun processResponse(response: Response): Boolean {
+    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         return true
     }
 
-    override suspend fun processRequest(request: AbstractRequest): Any? {
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         return true
     }
 
@@ -70,10 +71,10 @@ class SpiderBranchTest: CrawlerTest() {
             }
             launch{
                 logger.debug { "interacting with crawler" }
-                val request = channelFactory.spiderRequestChannel.receive()
+                val request = channelFactory.spiderRequestChannel.receive() as DownloadingRequest
                 assertThat(request.url, equalTo(expectedUrl))
 
-                val response = Response(request)
+                val response = DownloadingResponse(request)
                 channelFactory.spiderResponseChannel.send(response)
 
                 val item = channelFactory.spiderItemChannel.receive() as DataItem<*>
@@ -121,8 +122,8 @@ class SpiderBranchTest: CrawlerTest() {
                 val request1 = channelFactory.spiderRequestChannel.receive()
                 val request2 = channelFactory.spiderRequestChannel.receive()
 
-                val response1 = Response(request1)
-                val response2 = Response(request2)
+                val response1 = DownloadingResponse(request1 as DownloadingRequest)
+                val response2 = DownloadingResponse(request2 as DownloadingRequest)
 
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)
@@ -191,8 +192,8 @@ class SpiderBranchTest: CrawlerTest() {
                 val request1 = channelFactory.spiderRequestChannel.receive()
                 val request2 = channelFactory.spiderRequestChannel.receive()
 
-                val response1 = Response(request1)
-                val response2 = Response(request2)
+                val response1 = DownloadingResponse(request1 as DownloadingRequest)
+                val response2 = DownloadingResponse(request2 as DownloadingRequest)
 
                 channelFactory.spiderResponseChannel.send(response1)
                 channelFactory.spiderResponseChannel.send(response2)

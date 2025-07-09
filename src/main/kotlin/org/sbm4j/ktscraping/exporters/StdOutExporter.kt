@@ -1,9 +1,9 @@
 package org.sbm4j.ktscraping.exporters
 
 import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.requests.DataItem
-import org.sbm4j.ktscraping.requests.Item
-import org.sbm4j.ktscraping.requests.StandardFormatItem
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.StandardFormatItem
 
 class StdOutExporter(name: String = "StdOutExporter") : AbstractExporter(name) {
     override fun exportItem(item: Item) {

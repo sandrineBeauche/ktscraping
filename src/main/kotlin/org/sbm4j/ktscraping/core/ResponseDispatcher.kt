@@ -9,30 +9,58 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.DI
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.requests.*
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.EndItem
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.EventRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import java.util.concurrent.ConcurrentHashMap
+import org.sbm4j.ktscraping.data.response.Response
 
 interface ResponseDispatcher: Controllable, DIAware {
 
-    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response>>
+    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<DownloadingResponse>>
 
     val channelOut: SendChannel<AbstractRequest>
 
-    val channelIn: ReceiveChannel<Response>
+    val channelIn: ReceiveChannel<Response<*>>
 
     val pendingRequests: PendingRequestMap
 
+
+    val pendingRequestEvent: ConcurrentHashMap<String, Int>
 
     suspend fun performRequests(){
         for ((index, entry) in senders.entries.withIndex()) {
             val (receiver, sender) = entry
             scope.launch(CoroutineName("${name}-performRequests-${index}")) {
                 for(request in receiver) {
-                    logger.trace { "Received request ${request.name} and follows it" }
-                    pendingRequests[request.reqId] = sender as Channel<Response>
-                    channelOut.send(request)
+                    if(request is EventRequest){
+                        performEventRequest(request)
+                    }
+                    else {
+                        performRequest(request, sender as Channel<Response<*>>)
+                    }
                 }
             }
         }
+    }
+
+    suspend fun performEventRequest(request: EventRequest){
+        val event = request.eventName
+        logger.debug { "${name}: received event request with name $event"}
+        var nb = pendingRequestEvent.getOrPut(event) { 0 }
+        nb++
+        pendingRequestEvent[event] = nb
+        if(nb >= senders.size){
+            channelOut.send(request)
+        }
+    }
+
+    suspend fun performRequest(request: AbstractRequest, sender: Channel<Response<*>>){
+        logger.trace { "Received request ${request.name} and forwards it" }
+        pendingRequests[request.reqId] = sender
+        channelOut.send(request)
     }
 
 
@@ -68,17 +96,19 @@ class SpiderResponseDispatcher(
     override val di: DI
 ): ResponseDispatcher{
 
-    override val senders: MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response>> = mutableMapOf()
+    override val senders: MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<DownloadingResponse>> = mutableMapOf()
 
     val itemSenders: MutableList<ReceiveChannel<Item>> = mutableListOf()
 
     override lateinit var channelOut: SendChannel<AbstractRequest>
 
-    override lateinit var channelIn: ReceiveChannel<Response>
+    override lateinit var channelIn: ReceiveChannel<Response<*>>
 
     lateinit var itemChannelOut: SendChannel<Item>
 
     override val pendingRequests: PendingRequestMap = PendingRequestMap()
+    override val pendingRequestEvent: ConcurrentHashMap<String, Int> = ConcurrentHashMap()
+
     override val mutex: Mutex = Mutex()
 
     override var state: State = State()
@@ -88,8 +118,8 @@ class SpiderResponseDispatcher(
     override lateinit var scope: CoroutineScope
 
     suspend fun performItems(){
-        for(sender in itemSenders){
-            scope.launch(CoroutineName("${name}-performItems")) {
+        for((index, sender) in itemSenders.withIndex()){
+            scope.launch(CoroutineName("${name}-performItems-${index}")) {
                 for(item in sender){
                     performItem(item)
                 }
@@ -98,7 +128,7 @@ class SpiderResponseDispatcher(
     }
 
     suspend fun performItem(item: Item){
-        if(item is ItemEnd){
+        if(item is EndItem){
             logger.debug { "${name}: received an item end" }
             nbItemEnd++
             if(nbItemEnd >= itemSenders.size){
@@ -126,7 +156,7 @@ class SpiderResponseDispatcher(
         super.stop()
     }
 
-    fun addBranch(reqChannel: Channel<AbstractRequest>, respChannel: Channel<Response>, itemChannel: Channel<Item>){
+    fun addBranch(reqChannel: Channel<AbstractRequest>, respChannel: Channel<Response<*>>, itemChannel: Channel<Item>){
         this.senders.put(reqChannel, respChannel)
         this.itemSenders.add(itemChannel)
     }

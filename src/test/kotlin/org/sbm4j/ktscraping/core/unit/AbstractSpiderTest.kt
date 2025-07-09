@@ -5,7 +5,12 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
-import org.sbm4j.ktscraping.requests.*
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -13,7 +18,7 @@ import kotlin.test.assertTrue
 
 class AbstractSpiderTest: AbstractSpiderTester() {
 
-    val data = object:Data(){
+    val data = object: Data(){
         override fun clone(): Data {
             return this
         }
@@ -23,7 +28,7 @@ class AbstractSpiderTest: AbstractSpiderTester() {
 
     override fun buildSpider(spiderName: String): AbstractSimpleSpider {
         return object: AbstractSimpleSpider(spiderName){
-            override suspend fun parse(resp: Response) {
+            override suspend fun parse(resp: DownloadingResponse) {
                 this.itemsOut.send(expectedItem)
             }
 
@@ -39,17 +44,17 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         val url = "an url"
 
         lateinit var req: AbstractRequest
-        lateinit var resp: Response
+        lateinit var resp: DownloadingResponse
         lateinit var receivedItem: Item
 
         (spider as AbstractSimpleSpider).urlRequest = url
 
         withSpider {
-            req = outChannel.receive()
+            req = outChannel.receive() as DownloadingRequest
             assertTrue{req.url == url}
 
 
-            resp = Response(req)
+            resp = DownloadingResponse(req)
             inChannel.send(resp)
             receivedItem = itemChannel.receive()
         }

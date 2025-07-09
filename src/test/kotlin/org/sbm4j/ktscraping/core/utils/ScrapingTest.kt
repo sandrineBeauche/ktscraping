@@ -2,9 +2,9 @@ package org.sbm4j.ktscraping.core.utils
 
 import kotlinx.coroutines.channels.Channel
 import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.requests.Request
-import org.sbm4j.ktscraping.requests.Response
-import org.sbm4j.ktscraping.requests.Status
+import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Status
 
 abstract class ScrapingTest<IN, OUT> {
 
@@ -25,17 +25,17 @@ abstract class ScrapingTest<IN, OUT> {
 
     fun generateRequestResponse(sender: RequestSender,
                                 url: String = "an url",
-                                status: Status = Status.OK): Pair<Request, Response> {
+                                status: Status = Status.OK): Pair<Request, DownloadingResponse> {
         val req = Request(sender, url)
-        val resp = Response(req, status)
-        return Pair<Request, Response>(req, resp)
+        val resp = DownloadingResponse(req, status =status)
+        return Pair<Request, DownloadingResponse>(req, resp)
     }
 
     fun generateRequestResponses(sender: RequestSender,
                                  urls: List<String> = listOf("an url", "another url"),
-                                 status: Status = Status.OK): Pair<List<Request>, List<Response>> {
+                                 status: Status = Status.OK): Pair<List<Request>, List<DownloadingResponse>> {
         val reqs = urls.map { url -> Request(sender, url) }
-        val resps = reqs.map { r -> Response(r, status) }
+        val resps = reqs.map { r -> DownloadingResponse(r, status = status) }
         return Pair(reqs, resps)
     }
 }
