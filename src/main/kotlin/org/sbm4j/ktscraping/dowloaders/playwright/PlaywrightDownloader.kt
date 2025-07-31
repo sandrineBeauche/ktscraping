@@ -9,11 +9,10 @@ import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.middleware.CookiesMiddleware
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
+import org.sbm4j.ktscraping.middleware.CookiesMiddleware
 import java.util.concurrent.Executors
 
 

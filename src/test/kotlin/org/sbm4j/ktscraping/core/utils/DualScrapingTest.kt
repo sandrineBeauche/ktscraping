@@ -19,4 +19,6 @@ abstract class DualScrapingTest<IN, OUT>: ScrapingTest<IN, OUT>() {
         forwardInChannel.close()
         forwardOutChannel.close()
     }
+
+
 }

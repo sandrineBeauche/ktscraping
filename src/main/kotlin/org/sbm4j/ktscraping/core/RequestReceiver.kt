@@ -5,15 +5,15 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.item.ErrorLevel
+import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.EventRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.EventResponse
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.ktscraping.data.response.Status
 
 
 /**
@@ -38,24 +38,7 @@ interface RequestReceiver: Controllable, EventConsumer{
             logger.debug { "${name}: Waits for requests to process" }
             for(req in requestIn){
                 this.launch() {
-                    try {
-                        logger.trace { "${name}: received request ${req.name}" }
-                        val result: Any? = if(req is EventRequest) {
-                            consumeEvent(req)
-                        }
-                        else{
-                            processDataRequest(req as DownloadingRequest)
-                        }
-
-                        if ((result is Boolean && result) || result != null) {
-                            answerRequest(req, result)
-                        }
-                    }
-                    catch(ex: Exception){
-                        logger.error{ "${this@RequestReceiver.name}: error when processing request ${req.name} - ${ex.message}" }
-                        val response = buildErrorResponse(req, ex)
-                        responseOut.send(response)
-                    }
+                    processRequest(req)
                 }
                 logger.trace { "${name}: ready to receive another request" }
             }
@@ -63,18 +46,36 @@ interface RequestReceiver: Controllable, EventConsumer{
         }
     }
 
+
+    suspend fun processRequest(request: AbstractRequest){
+        try {
+            logger.trace { "${name}: received request ${request.name}: ${request}" }
+            val result: Any? = when(request){
+                is EventRequest -> consumeEvent(request)
+                is DownloadingRequest -> processDataRequest(request)
+                else -> null
+            }
+
+            if ((result is Boolean && result) || result != null) {
+                answerRequest(request, result)
+            }
+        }
+        catch(ex: Exception){
+            logger.error{ "${this@RequestReceiver.name}: error when processing request ${request.name} - ${ex.message}" }
+            val response = buildErrorResponse(request, ex)
+            responseOut.send(response)
+        }
+    }
+
     fun buildErrorResponse(request: AbstractRequest, ex: Exception): Response<*>{
         val infos = ErrorInfo(ex, this@RequestReceiver, ErrorLevel.MAJOR)
         val result =  when(request){
             is DownloadingRequest -> {
-                val response = DownloadingResponse(request, status = Status.ERROR)
-                response.contents["level"] = ErrorLevel.MAJOR
-                response.contents["exception"] = ex
-                response.contents["controllableName"] = this@RequestReceiver.name
-                response
+                DownloadingResponse(request, ContentType.NOTHING,
+                    Status.ERROR, mutableListOf(infos))
             }
             is EventRequest -> {
-                EventResponse(request, Status.ERROR)
+                EventResponse(request.eventName, request, Status.ERROR, mutableListOf(infos))
             }
             else -> {
                null

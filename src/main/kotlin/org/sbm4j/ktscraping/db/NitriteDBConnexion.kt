@@ -9,7 +9,7 @@ import org.dizitart.no2.common.module.NitriteModule.module
 import org.dizitart.no2.mvstore.MVStoreModule
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import java.io.File
 import kotlin.reflect.KProperty1
 
@@ -52,7 +52,7 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
         repository.clear()
     }
 
-    override fun perfomInsertItem(item: DataItem<*>) {
+    override fun perfomInsertItem(item: ObjectDataItem<*>) {
         val data = item.data
         val repository = db.getRepository(data.javaClass)
         repository.insert(data)

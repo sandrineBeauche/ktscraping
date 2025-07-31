@@ -10,17 +10,11 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.AbstractPipeline
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.data.item.DataItem
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
+import org.sbm4j.ktscraping.core.utils.isOKStartItemAck
+import org.sbm4j.ktscraping.data.item.*
 
 class PipelineClassTest(name: String): AbstractPipeline(name){
-    override suspend fun performAck(itemAck: ItemAck) {
-    }
-
-    override suspend fun processItem(item: Item): List<Item> {
-        return listOf(item)
-    }
 }
 
 class ExporterClassTest(name: String): AbstractExporter(name){
@@ -29,101 +23,120 @@ class ExporterClassTest(name: String): AbstractExporter(name){
     }
 }
 
+
+
 class PipelineBranchTest: CrawlerTest() {
 
+    suspend fun sendStartItem(){
+        val startItem = StartItem()
+        channelFactory.itemChannel.send(startItem)
+        val startAck = channelFactory.itemAckChannel.receive() as EventItemAck
+        logger.info{ "received ack for the start event item " }
+
+        assertThat(startAck, isOKStartItemAck())
+    }
+
+
+    suspend fun sendEndItem(){
+        val endItem = EndItem()
+        channelFactory.itemChannel.send(endItem)
+        val endAck = channelFactory.itemAckChannel.receive() as EventItemAck
+        logger.info{ "received ack for the end event item " }
+
+        assertThat(endAck, isOKEndItemAck())
+    }
+
     @Test
-    fun testBuildCrawlerWithPipelineBranch() = TestScope().runTest{
-        coroutineScope {
-            val c = crawler("MainCrawler", ::testDIModule){
-                pipelineBranch {
-                    pipeline<PipelineClassTest>()
-                    exporter<ExporterClassTest>()
-                }
-            }
+    fun testBuildCrawlerWithPipelineBranch() = TestScope().runTest {
 
-            launch {
-                c.start(this)
-            }
-            launch {
-                logger.debug { "interacting with crawler" }
-
-                val data1 = DataItemTest("value1", "request1")
-                val item1 = DataItem.build(data1, "data1")
-                channelFactory.itemChannel.send(item1)
-
-                val ack = channelFactory.itemAckChannel.receive()
-                assertThat(ack.itemId, equalTo(item1.itemId))
-
-                c.stop()
-                channelFactory.closeChannels()
+        val c = crawler("MainCrawler", ::testDIModule) {
+            pipelineBranch {
+                pipeline<PipelineClassTest>()
+                exporter<ExporterClassTest>()
             }
         }
+
+        c.start(this)
+
+        logger.debug { "interacting with crawler" }
+        sendStartItem()
+
+        val data1 = DataItemTest("value1", "request1")
+        val item1 = ObjectDataItem.build(data1, "data1")
+        channelFactory.itemChannel.send(item1)
+
+        val ack = channelFactory.itemAckChannel.receive()
+        assertThat(ack.itemId, equalTo(item1.itemId))
+
+        sendEndItem()
+        c.stop()
+        channelFactory.closeChannels()
+
     }
 
 
     @Test
-    fun testBuildCrawlerWithItemDispatcherAll() = TestScope().runTest{
-        coroutineScope {
-            val c = crawler("MainCrawler", ::testDIModule){
-                 pipelineDispatcherAll{
-                    exporter<ExporterClassTest>("exporter1")
-                    exporter<ExporterClassTest>("exporter2")
-                }
-            }
+    fun testBuildCrawlerWithItemDispatcherAll() = TestScope().runTest {
 
-            launch {
-                c.start(this)
-            }
-            launch {
-                logger.debug { "interacting with crawler" }
-
-                val data1 = DataItemTest("value1", "request1")
-                val item1 = DataItem.build(data1, "data1")
-                channelFactory.itemChannel.send(item1)
-
-                val ack = channelFactory.itemAckChannel.receive()
-                assertThat(ack.itemId, equalTo(item1.itemId))
-
-                c.stop()
-                channelFactory.closeChannels()
+        val c = crawler("MainCrawler", ::testDIModule) {
+            pipelineDispatcherAll {
+                exporter<ExporterClassTest>("exporter1")
+                exporter<ExporterClassTest>("exporter2")
             }
         }
+
+        c.start(this)
+
+        logger.debug { "interacting with crawler" }
+        sendStartItem()
+
+        val data1 = DataItemTest("value1", "request1")
+        val item1 = ObjectDataItem.build(data1, "data1")
+        channelFactory.itemChannel.send(item1)
+
+        val ack = channelFactory.itemAckChannel.receive()
+        assertThat(ack.itemId, equalTo(item1.itemId))
+
+        sendEndItem()
+        c.stop()
+        channelFactory.closeChannels()
+
     }
 
 
     @Test
-    fun testBuildCrawlerWithItemDispatcherOne() = TestScope().runTest{
-        coroutineScope {
-            val c = crawler( "MainCrawler", ::testDIModule){
-                pipelineDispatcherOne("dispatcher1",
-                    {item: Item ->
-                        val it = item as DataItem<*>
-                        val data = (it.data) as DataItemTest
-                        if(data.value == "value1") itemOuts[0]
-                        else itemOuts[1]
-                    })
-                {
-                    exporter<ExporterClassTest>("exporter1")
-                    exporter<ExporterClassTest>("exporter2")
-                }
-            }
+    fun testBuildCrawlerWithItemDispatcherOne() = TestScope().runTest {
 
-            launch {
-                c.start(this)
-            }
-            launch {
-                logger.debug { "interacting with crawler" }
-
-                val data1 = DataItemTest("value1", "request1")
-                val item1 = DataItem.build(data1, "data1")
-                channelFactory.itemChannel.send(item1)
-
-                val ack = channelFactory.itemAckChannel.receive()
-                assertThat(ack.itemId, equalTo(item1.itemId))
-
-                c.stop()
-                channelFactory.closeChannels()
+        val c = crawler("MainCrawler", ::testDIModule) {
+            pipelineDispatcherOne(
+                "dispatcher1",
+                { item: Item ->
+                    val it = item as ObjectDataItem<*>
+                    val data = (it.data) as DataItemTest
+                    if (data.value == "value1") itemOuts[0]
+                    else itemOuts[1]
+                })
+            {
+                exporter<ExporterClassTest>("exporter1")
+                exporter<ExporterClassTest>("exporter2")
             }
         }
+
+
+        c.start(this)
+
+        logger.debug { "interacting with crawler" }
+        sendStartItem()
+
+        val data1 = DataItemTest("value1", "request1")
+        val item1 = ObjectDataItem.build(data1, "data1")
+        channelFactory.itemChannel.send(item1)
+
+        val ack = channelFactory.itemAckChannel.receive()
+        assertThat(ack.itemId, equalTo(item1.itemId))
+
+        sendEndItem()
+        c.stop()
+        channelFactory.closeChannels()
     }
 }

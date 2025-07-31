@@ -1,19 +1,21 @@
 package org.sbm4j.ktscraping.middleware
 
 import kotlinx.coroutines.CoroutineScope
-import org.sbm4j.ktscraping.core.ContentType
+import kotlinx.coroutines.Job
+import org.sbm4j.ktscraping.core.EventJobResult
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.data.Event
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.EndItem
-import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.item.ErrorItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
 import kotlin.reflect.KProperty1
 
 
@@ -72,20 +74,8 @@ class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
         return request
     }
 
-    override suspend fun processItem(item: Item): List<Item> {
-        when(item){
-            is ItemError -> {
-                if(item.errorInfo.level == ErrorLevel.MAJOR || item.errorInfo.level == ErrorLevel.FATAL) {
-                    errorOccured = true
-                }
-                return listOf(item)
-            }
-            is EndItem -> return processItemEnd(item)
-            else -> return listOf(item)
-        }
-    }
 
-    fun processItemEnd(item: EndItem): List<Item>{
+    override suspend fun preEnd(event: Event): EventJobResult? {
         val result: MutableList<Item> = mutableListOf()
 
         if(!errorOccured) {
@@ -97,7 +87,8 @@ class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
             result.addAll(itemDeletes)
         }
 
-        result.addLast(item)
-        return result
+
+        return super.preEnd(event)
     }
+
 }

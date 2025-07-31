@@ -11,7 +11,7 @@ import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.item.EndItem
 import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.item.ErrorItem
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
@@ -72,7 +72,7 @@ class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
             logger.debug { "Received a response: $response" }
 
             val errorInfos = ErrorInfo(Exception(), this.middleware, ErrorLevel.MAJOR)
-            itemChannelIn.send(ItemError(errorInfos))
+            itemChannelIn.send(ErrorItem(errorInfos))
             itemChannelOut.receive()
 
             logger.debug { "send item end" }

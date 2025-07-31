@@ -2,16 +2,18 @@ package org.sbm4j.ktscraping.downloaders.playwright
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import kotlinx.coroutines.*
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
-import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
-import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightRequest
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
+import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
+import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightRequest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 

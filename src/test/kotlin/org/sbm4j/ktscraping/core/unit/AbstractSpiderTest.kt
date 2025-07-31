@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.data.item.Data
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
@@ -24,7 +24,7 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         }
     }
 
-    var expectedItem = DataItem.build(data, "test")
+    var expectedItem = ObjectDataItem.build(data, "test")
 
     override fun buildSpider(spiderName: String): AbstractSimpleSpider {
         return object: AbstractSimpleSpider(spiderName){

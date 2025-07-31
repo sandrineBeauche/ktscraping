@@ -2,9 +2,9 @@ package org.sbm4j.ktscraping.core.utils
 
 import kotlinx.coroutines.channels.Channel
 import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
 
 abstract class ScrapingTest<IN, OUT> {
 
@@ -28,7 +28,7 @@ abstract class ScrapingTest<IN, OUT> {
                                 status: Status = Status.OK): Pair<Request, DownloadingResponse> {
         val req = Request(sender, url)
         val resp = DownloadingResponse(req, status =status)
-        return Pair<Request, DownloadingResponse>(req, resp)
+        return Pair(req, resp)
     }
 
     fun generateRequestResponses(sender: RequestSender,

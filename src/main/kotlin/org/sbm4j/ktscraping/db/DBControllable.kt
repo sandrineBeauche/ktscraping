@@ -3,7 +3,7 @@ package org.sbm4j.ktscraping.db
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.Item
 
 interface DBControllable {
@@ -22,7 +22,7 @@ interface DBControllable {
                 logger.debug { "${name}: delete item ${item}"}
                 performItemDelete(item)
             }
-            is DataItem<*> -> {
+            is ObjectDataItem<*> -> {
                 logger.debug { "${name}: insert item ${item}"}
                 perfomInsertItem(item)
             }
@@ -37,7 +37,7 @@ interface DBControllable {
         db.performItemDelete(item)
     }
 
-    fun perfomInsertItem(item: DataItem<*>){
+    fun perfomInsertItem(item: ObjectDataItem<*>){
         db.perfomInsertItem(item)
     }
 }

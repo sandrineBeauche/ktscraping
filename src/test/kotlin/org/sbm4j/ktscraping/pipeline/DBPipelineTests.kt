@@ -13,7 +13,7 @@ import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.ktscraping.exporters.Address
 import org.sbm4j.ktscraping.exporters.Contact
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.EndItem
 import java.io.File
 import kotlin.test.BeforeTest
@@ -53,7 +53,7 @@ class DBPipelineTests: AbstractPipelineTester() {
     @Test
     fun testDBPipeline1() = TestScope().runTest{
 
-        val item = DataItem.build(data1, "test")
+        val item = ObjectDataItem.build(data1, "test")
 
         withPipeline {
             inChannel.send(item)

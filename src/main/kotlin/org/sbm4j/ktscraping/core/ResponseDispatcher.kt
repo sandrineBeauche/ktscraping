@@ -9,17 +9,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.DI
 import org.kodein.di.DIAware
+import org.sbm4j.ktscraping.data.item.EventItem
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.EndItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.EventRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.EventResponse
 import java.util.concurrent.ConcurrentHashMap
 import org.sbm4j.ktscraping.data.response.Response
+import java.awt.event.ItemEvent
+import kotlin.compareTo
 
 interface ResponseDispatcher: Controllable, DIAware {
 
-    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<DownloadingResponse>>
+    val senders : MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response<*>>>
 
     val channelOut: SendChannel<AbstractRequest>
 
@@ -28,37 +33,35 @@ interface ResponseDispatcher: Controllable, DIAware {
     val pendingRequests: PendingRequestMap
 
 
-    val pendingRequestEvent: ConcurrentHashMap<String, Int>
+    val pendingRequestEvent: ConcurrentHashMap<String, MutableList<EventRequest>>
 
     suspend fun performRequests(){
         for ((index, entry) in senders.entries.withIndex()) {
             val (receiver, sender) = entry
             scope.launch(CoroutineName("${name}-performRequests-${index}")) {
                 for(request in receiver) {
-                    if(request is EventRequest){
-                        performEventRequest(request)
-                    }
-                    else {
-                        performRequest(request, sender as Channel<Response<*>>)
+                    when(request){
+                        is EventRequest -> performEventRequest(request, sender as Channel<Response<*>>, index)
+                        is DownloadingRequest -> performDownloadingRequest(request, sender as Channel<Response<*>>, index)
                     }
                 }
             }
         }
     }
 
-    suspend fun performEventRequest(request: EventRequest){
+    suspend fun performEventRequest(request: EventRequest, sender: Channel<Response<*>>, index: Int){
         val event = request.eventName
-        logger.debug { "${name}: received event request with name $event"}
-        var nb = pendingRequestEvent.getOrPut(event) { 0 }
-        nb++
-        pendingRequestEvent[event] = nb
-        if(nb >= senders.size){
+        logger.debug { "${name}: received event request with name $event from input #$index"}
+        val events = pendingRequestEvent.getOrPut(event) { mutableListOf() }
+        events.add(request)
+        pendingRequests[request.reqId] = sender
+        if(events.size >= senders.size){
             channelOut.send(request)
         }
     }
 
-    suspend fun performRequest(request: AbstractRequest, sender: Channel<Response<*>>){
-        logger.trace { "Received request ${request.name} and forwards it" }
+    suspend fun performDownloadingRequest(request: AbstractRequest, sender: Channel<Response<*>>, index: Int){
+        logger.trace { "Received request ${request.name} from input #$index and forwards it" }
         pendingRequests[request.reqId] = sender
         channelOut.send(request)
     }
@@ -67,11 +70,31 @@ interface ResponseDispatcher: Controllable, DIAware {
     suspend fun performResponses(){
         scope.launch(CoroutineName("${name}-performResponses")) {
             for(response in channelIn){
-                val req = response.request
-                logger.trace{ "Received response for the request ${req.name} and dispatch it"}
-                val channel = pendingRequests.remove(req.reqId)
-                channel?.send(response)
+                when(response){
+                    is DownloadingResponse -> performDownloadingResponse(response)
+                    is EventResponse -> performEventResponse(response)
+                }
+
             }
+        }
+    }
+
+    suspend fun performDownloadingResponse(response: DownloadingResponse){
+        logger.trace{ "Received response for the request ${response.request.name} and dispatch it"}
+        val channel = pendingRequests.remove(response.request.reqId)
+        channel?.send(response)
+    }
+
+    suspend fun performEventResponse(response: EventResponse){
+        logger.debug { "${name}: received an event ${response.eventName}, forwards it to all senders" }
+        val requests = pendingRequestEvent.remove(response.eventName)
+        if(requests != null){
+            for(req in requests){
+                val resp = response.copy(request = req)
+                val channel = pendingRequests.remove(req.reqId)
+                channel?.send(resp)
+            }
+
         }
     }
 
@@ -96,7 +119,7 @@ class SpiderResponseDispatcher(
     override val di: DI
 ): ResponseDispatcher{
 
-    override val senders: MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<DownloadingResponse>> = mutableMapOf()
+    override val senders: MutableMap<ReceiveChannel<AbstractRequest>, SendChannel<Response<*>>> = mutableMapOf()
 
     val itemSenders: MutableList<ReceiveChannel<Item>> = mutableListOf()
 
@@ -107,40 +130,39 @@ class SpiderResponseDispatcher(
     lateinit var itemChannelOut: SendChannel<Item>
 
     override val pendingRequests: PendingRequestMap = PendingRequestMap()
-    override val pendingRequestEvent: ConcurrentHashMap<String, Int> = ConcurrentHashMap()
+    override val pendingRequestEvent: ConcurrentHashMap<String, MutableList<EventRequest>> = ConcurrentHashMap()
+    val pendingItemEvent: ConcurrentHashMap<String, Int> = ConcurrentHashMap()
 
     override val mutex: Mutex = Mutex()
 
     override var state: State = State()
 
-    var nbItemEnd: Int = 0
-
     override lateinit var scope: CoroutineScope
 
-    suspend fun performItems(){
-        for((index, sender) in itemSenders.withIndex()){
+    fun performItems(){
+        for((index, senderChannel) in itemSenders.withIndex()){
             scope.launch(CoroutineName("${name}-performItems-${index}")) {
-                for(item in sender){
-                    performItem(item)
+                for(item in senderChannel){
+                    when(item){
+                        is EventItem -> performItemEvent(item, index)
+                        is ObjectDataItem<*> -> {
+                            logger.trace{ "${name}: Received an item from input #$index and forwards it: ${item}" }
+                            itemChannelOut.send(item)
+                        }
+                    }
                 }
             }
         }
     }
 
-    suspend fun performItem(item: Item){
-        if(item is EndItem){
-            logger.debug { "${name}: received an item end" }
-            nbItemEnd++
-            if(nbItemEnd >= itemSenders.size){
-                logger.debug { "${name}: All branches are finished, follows item end "}
-                itemChannelOut.send(item)
-            }
-            else{
-                logger.debug { "${name}: Wait for others item ends"}
-            }
-        }
-        else{
-            logger.trace{ "${name}: Received an item and follows it: ${item}" }
+    suspend fun performItemEvent(item: EventItem, index: Int){
+        logger.trace{ "${name}: Received an item from input #$index: ${item}..." }
+        var nb = pendingItemEvent.getOrPut(item.eventName){0}
+        nb++
+        pendingItemEvent[item.eventName] = nb
+        if(nb >= senders.size){
+            pendingItemEvent.remove(item.eventName)
+            logger.trace{ "... forward item $item"}
             itemChannelOut.send(item)
         }
     }

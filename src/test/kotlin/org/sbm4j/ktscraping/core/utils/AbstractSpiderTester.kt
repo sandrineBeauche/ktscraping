@@ -46,13 +46,13 @@ abstract class AbstractSpiderTester: ScrapingTest<Response<*>, AbstractRequest>(
             spider.start(this)
 
             val startReq = outChannel.receive() as EventRequest
-            val startResp = EventResponse(startReq)
+            val startResp = EventResponse(startReq.eventName, startReq)
             inChannel.send(startResp)
 
             func()
 
             val endReq = outChannel.receive() as EventRequest
-            val endResp = EventResponse(endReq)
+            val endResp = EventResponse(endReq.eventName, endReq)
             inChannel.send(endResp)
 
             outChannel.close()

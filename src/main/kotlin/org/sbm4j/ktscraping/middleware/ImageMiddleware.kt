@@ -6,13 +6,14 @@ import it.skrape.core.htmlDocument
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.SpiderMiddleware
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.ResponseException
-import org.sbm4j.ktscraping.data.response.Status
 import java.io.File
 
 class ImageDescriptor(val name: String){
@@ -162,7 +163,7 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
         return true
     }
 
-    override suspend fun processItem(item: Item): List<Item> {
+    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
         return listOf(item)
     }
 }

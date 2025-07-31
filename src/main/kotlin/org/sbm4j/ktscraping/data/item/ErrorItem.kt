@@ -12,10 +12,11 @@ enum class ErrorLevel{
 data class ErrorInfo(
     val ex: Exception,
     val controllable: Controllable,
-    val level: ErrorLevel
+    val level: ErrorLevel,
+    val message: String = ""
 )
 
-data class ItemError(
+data class ErrorItem(
     val errorInfo: ErrorInfo,
     val data: Channelable? = null
 ): Item(){

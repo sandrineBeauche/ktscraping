@@ -7,12 +7,13 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.EventResponse
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.ktscraping.data.response.Status
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -46,6 +47,8 @@ interface  RequestSender: Controllable, EventConsumer {
     val requestOut: SendChannel<AbstractRequest>
 
     val responseIn: ReceiveChannel<Response<*>>
+
+    val pendingMinorError: ConcurrentHashMap<Int, MutableList<ErrorInfo>>
 
     private suspend fun peformSend(request: AbstractRequest, callback: Callback, callbackError: CallbackError? = null){
         val respChannel = Channel<Response<*>>(Channel.RENDEZVOUS)
@@ -119,29 +122,41 @@ interface  RequestSender: Controllable, EventConsumer {
             for (resp in responseIn) {
                 logger.trace { "${name}: received a response for the request ${resp.request.name}" }
                 scope.launch(CoroutineName("${name}-performResponse-${resp.request.name}")) {
-                    val req = resp.request
-                    val reqId = req.reqId
-                    if (req.sender == this@RequestSender && reqId in pendingRequests.keys) {
-                        dispatchResponse(resp)
-                    } else {
-                        logger.trace{"${name}: Process response for the request ${resp.request.name}"}
-                        mutex.withLock {
-                            try{
-                                when(resp){
-                                    is EventResponse -> resumeEvent(resp)
-                                    is DownloadingResponse -> performResponse(resp, resp.request)
-                                }
-                            }
-                            catch(ex: Exception){
-                                logger.error(ex){ "${name}: Error while processing response - ${ex.message}"}
-                            }
-                        }
-                    }
+                    performResponse(resp)
                 }
+                logger.trace{"$name: ready to receive another response"}
             }
             logger.debug { "${name}: Finished receiving responses" }
         }
     }
+
+
+    suspend fun performResponse(response: Response<*>){
+        val req = response.request
+        val reqId = req.reqId
+        if (req.sender == this@RequestSender && reqId in pendingRequests.keys) {
+            dispatchResponse(response)
+        } else {
+            logger.trace{"${name}: Process response for the request ${response.request.name}"}
+
+                try{
+                    val errors = pendingMinorError.remove(response.request.reqId)
+                    if(errors != null && errors.isNotEmpty()){
+                        response.status = Status.ERROR
+                        response.errorInfos.addAll(errors)
+                    }
+                    when(response){
+                        is EventResponse -> resumeEvent(response)
+                        is DownloadingResponse -> performDownloadingResponse(response, response.request)
+                    }
+                }
+                catch(ex: Exception){
+                    logger.error(ex){ "${name}: Error while processing response - ${ex.message}"}
+                }
+
+        }
+    }
+
 
     suspend fun dispatchResponse(response: Response<*>){
         logger.trace{ "${name}: Dispatch response for the request ${response.request.name} to the request coroutine" }
@@ -149,11 +164,12 @@ interface  RequestSender: Controllable, EventConsumer {
         respChannel?.send(response)
     }
 
+
     /**
-     * Processes a response
+     * Processes a downloading response
      * @param response the response to be processed
      */
-    suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest)
+    suspend fun performDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest)
 
 
     override suspend fun run() {

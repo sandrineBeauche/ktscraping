@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.pipeline
 
+import kotlinx.coroutines.Job
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -7,12 +8,10 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
 import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.data.item.DataItem
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.EndItem
-import org.sbm4j.ktscraping.data.item.ItemStatus
-import org.sbm4j.ktscraping.data.item.StandardFormatItem
+import org.sbm4j.ktscraping.core.EventJobResult
+import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.*
 import kotlin.reflect.cast
 
 
@@ -31,7 +30,7 @@ data class JsonItem(
 }
 
 @OptIn(InternalSerializationApi::class)
-fun DataItem<*>.encodeDataToJson(): JsonElement{
+fun ObjectDataItem<*>.encodeDataToJson(): JsonElement{
     val json = JSONPipeline.json
     return json.encodeToJsonElement(clazz.serializer(), clazz.cast(data))
 
@@ -60,34 +59,27 @@ class JSONPipeline(name: String = "JSONPipeline") : AbstractPipeline(name) {
     }
 
 
-    @OptIn(InternalSerializationApi::class)
-    override suspend fun processItem(item: Item): List<Item> {
-        return when (item) {
-            is DataItem<*> -> {
-                val dataItem = item as DataItem<*>
-                val elt = dataItem.encodeDataToJson()
-
-                return if (accumulate) {
-                    documents.add(elt)
-                    val ack = ItemAck(item.itemId, ItemStatus.PROCESSED)
-                    itemAckOut.send(ack)
-                    emptyList()
-                } else {
-                    listOf(JsonItem(elt))
-                }
-            }
-
-            is EndItem -> {
-                return if (accumulate) {
-                    val json = JsonArray(documents)
-                    val elt = JsonItem(json)
-                    listOf(elt, item)
-                } else {
-                    listOf(item)
-                }
-            }
-            else -> listOf(item)
+    override suspend fun preEnd(event: Event): EventJobResult? {
+        if(accumulate) {
+            val json = JsonArray(documents)
+            val elt = JsonItem(json)
+            itemOut.send(elt)
         }
+        return super.preEnd(event)
+    }
 
+    @OptIn(InternalSerializationApi::class)
+    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+        val objectDataItem = item as ObjectDataItem<*>
+        val elt = objectDataItem.encodeDataToJson()
+
+        return if (accumulate) {
+            documents.add(elt)
+            val ack = ItemAck(item.itemId, Status.OK)
+            itemAckOut.send(ack)
+            emptyList()
+        } else {
+            listOf(JsonItem(elt))
+        }
     }
 }

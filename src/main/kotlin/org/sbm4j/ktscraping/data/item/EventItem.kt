@@ -12,12 +12,16 @@ abstract class EventItem(
 
 data class StartItem(val ok: Boolean = true): EventItem("start"), StartEvent {
     override fun clone(): Item {
-        return this.copy()
+        val result =  this.copy()
+        result.itemId = this.itemId
+        return result
     }
 }
 
 data class EndItem(val ok: Boolean = true): EventItem("end"), EndEvent{
     override fun clone(): Item {
-        return this.copy()
+        val result = this.copy()
+        result.itemId = this.itemId
+        return result
     }
 }

@@ -2,33 +2,36 @@ package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.data.item.DataItem
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.EndItem
-import org.sbm4j.ktscraping.data.item.EventItem
-import org.sbm4j.ktscraping.data.item.ItemError
-import org.sbm4j.ktscraping.data.item.ProgressItem
+import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.data.EventBack
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.*
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.request.EventRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
+import org.sbm4j.ktscraping.data.response.EventResponse
+import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.ktscraping.exporters.ItemDelete
+import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.stats.StatsCrawlerResult
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
-import org.sbm4j.ktscraping.data.response.Response
+
+
 
 abstract class AbstractEngine(
     channelFactory: ChannelFactory,
-) : RequestSender, RequestReceiver, ItemForwarder{
+) : RequestSender, RequestReceiver, ItemSecureForwarder{
 
     override val mutex: Mutex = Mutex()
     override var state = State()
@@ -38,7 +41,7 @@ abstract class AbstractEngine(
     override var itemIn: ReceiveChannel<Item> = channelFactory.spiderItemChannel
     override var itemOut: SendChannel<Item> = channelFactory.itemChannel
 
-    var itemAckIn: ReceiveChannel<ItemAck> = channelFactory.itemAckChannel
+    override var itemAckIn: ReceiveChannel<AbstractItemAck> = channelFactory.itemAckChannel
 
     override var requestIn: ReceiveChannel<AbstractRequest> = channelFactory.spiderRequestChannel
     override val responseOut: SendChannel<Response<*>> = channelFactory.spiderResponseChannel
@@ -48,52 +51,89 @@ abstract class AbstractEngine(
 
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
 
-    override val pendingEvent: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
 
-    val pendingItems: MutableList<UUID> = mutableListOf()
+
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
+
+    override val pendingMinorError: ConcurrentHashMap<Int, MutableList<ErrorInfo>> = ConcurrentHashMap()
+
+    val pendingEventItems: ConcurrentHashMap<UUID, Channel<EventItemAck>> = ConcurrentHashMap()
+
+
 
     override lateinit var scope: CoroutineScope
 
-    override suspend fun processItem(item: Item): List<Item> {
-        return when(item){
-            is EndItem -> {
-                listOf(item)
+    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
+        this.requestOut.send(request)
+    }
+
+    override suspend fun performEvent(event: Event): EventJobResult? {
+        when(event){
+            is EventRequest -> {
+                if(event.generateItem){
+                    val eventItem = event.generateEventItem()
+                    return sendEventItem(eventItem)
+                }
+                else return null
             }
-            is ProgressItem -> {
-                listOf()
+            is EventItem -> {
+                logger.trace{ "$name: forwards event item: $event"}
+                itemOut.send(event)
+                return null
             }
-            is ItemError -> {
-                listOf()
+            else -> return null
+        }
+    }
+
+
+    fun sendEventItem(event: EventItem): EventJobResult{
+        val respChannel = Channel<EventItemAck>(Channel.RENDEZVOUS)
+        pendingEventItems[event.itemId] = respChannel
+        val job = this.scope.async(CoroutineName("${name}-event-${event.eventName}")){
+            logger.trace{ "$name: send item from event request and waits for a response"}
+            itemOut.send(event)
+            val itemAck = respChannel.receive() as EventItemAck
+            logger.trace { "$name: received item ack for ${itemAck.eventName} event item" }
+            return@async Pair(itemAck.status, itemAck.errorInfos)
+        }
+        return job
+    }
+
+    override suspend fun resumeEvent(event: EventBack) {
+        logger.trace{ "$name: received event back: $event" }
+        when(event){
+            is EventResponse -> {
+                super<ItemSecureForwarder>.resumeEvent(event)
+                responseOut.send(event)
             }
-            else -> {
-                listOf(item)
+            is EventItemAck -> {
+                val respChannel = pendingEventItems.remove(event.itemId)
+                logger.trace { "$name: dispatches item event ack to the corresponding coroutine: $event" }
+                respChannel?.send(event)
             }
         }
+
+
+
+    }
+
+
+    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+        return listOf(item)
     }
 
 
     abstract fun computeResult(): CrawlerResult
 
 
-    override suspend fun performAck(itemAck: ItemAck) {
-        pendingItems.remove(itemAck.itemId)
+    override suspend fun performAck(itemAck: AbstractItemAck) {
+        pendingEventItems.remove(itemAck.itemId)
+
     }
 
-    override suspend fun performAcks(){
-        scope.launch(CoroutineName("${name}-performAcks")){
-            logger.debug { "${name}: Waiting for items acks to follow" }
-            for(itemAck in itemAckIn){
-                logger.trace{ "${name}: Received an item ack to process" }
-                performAck(itemAck)
-            }
-        }
-    }
 
-    override suspend fun performItems() {
-        super.performItems()
-    }
 
-    override suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest) {
+    override suspend fun performDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest) {
         this.responseOut.send(response)
     }
 
@@ -102,14 +142,14 @@ abstract class AbstractEngine(
         logger.info { "${name}: starting engine" }
         super<RequestSender>.run()
         super<RequestReceiver>.run()
-        super<ItemForwarder>.run()
+        super<ItemSecureForwarder>.run()
     }
 
     override suspend fun stop() {
         logger.info { "${name}: stopping engine" }
         super<RequestSender>.stop()
         super<RequestReceiver>.stop()
-        super<ItemForwarder>.stop()
+        super<ItemSecureForwarder>.stop()
     }
 
     override suspend fun pause() {
@@ -138,35 +178,24 @@ class Engine(
         return true
     }
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
-        this.requestOut.send(request)
-    }
+
 
     override fun computeResult(): CrawlerResult {
         return stats
     }
 
-    override suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest) {
+    override suspend fun performDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest) {
         when(response.status){
             Status.OK -> stats.responseOK++
             else -> stats.responseError++
         }
-        super.performResponse(response, request)
+        super.performDownloadingResponse(response, request)
     }
 
-    override suspend fun processItem(item: Item): List<Item> {
+    override suspend fun performItem(item: Item) {
         when(item){
-            is EventItem -> {}
-            is ItemError -> {
-                stats.errors.add(item)
-            }
-            is ProgressItem -> {
-                progressMonitor.processItemProgress(item)
-            }
-            is DataItem<*> -> {
-                this.stats.nbItems++
-                this.stats.incrNew(item.label)
-            }
+            is ErrorItem -> stats.errors.add(item)
+            is ProgressItem -> progressMonitor.processItemProgress(item)
             is ItemUpdate -> {
                 this.stats.nbItems++
                 this.stats.incrUpdate(item.label)
@@ -175,12 +204,18 @@ class Engine(
                 this.stats.nbItems++
                 this.stats.incrDelete(item.label)
             }
+            else -> super.performItem(item)
         }
-        return super.processItem(item)
+    }
+
+    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+        this.stats.nbItems++
+        this.stats.incrNew(item.label)
+        return super.processDataItem(item)
     }
 
 
-    override suspend fun performAck(itemAck: ItemAck) {
+    override suspend fun performAck(itemAck: AbstractItemAck) {
         progressMonitor.receivedItemAck++
         super.performAck(itemAck)
     }

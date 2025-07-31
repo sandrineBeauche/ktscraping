@@ -2,36 +2,43 @@ package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.item.ErrorLevel
-import org.sbm4j.ktscraping.data.item.EventItem
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.ItemError
-import org.sbm4j.ktscraping.data.item.ItemStatus
+import org.sbm4j.ktscraping.data.EventBack
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.*
 import java.util.concurrent.ConcurrentHashMap
 
 
-interface ItemReceiver : Controllable {
+interface ItemReceiver : Controllable, EventConsumer {
     var itemIn: ReceiveChannel<Item>
 
     suspend fun performItems() {
         scope.launch(CoroutineName("${name}-performItems")) {
             logger.debug { "${name}: Waiting for items to process" }
             for (item in itemIn) {
+                logger.trace { "${name}: Received an item to process: $item" }
                 performItem(item)
             }
         }
     }
 
     suspend fun performItem(item: Item){
-        logger.trace { "${name}: Received an item to process: $item" }
-        val resultItem = processItem(item)
+        when(item){
+            is EventItem -> performEventItem(item)
+            is ObjectDataItem<*> -> performDataItem(item)
+        }
+    }
+
+    suspend fun performEventItem(item: EventItem){
+        val result = consumeEvent(item)
+        pushItem(result as Item)
+    }
+
+    suspend fun performDataItem(item: ObjectDataItem<*>){
+        val resultItem = processDataItem(item)
         resultItem.forEach {
             pushItem(it)
         }
@@ -41,71 +48,85 @@ interface ItemReceiver : Controllable {
         this.performItems()
     }
 
-    suspend fun processItem(item: Item): List<Item>
+    suspend fun processDataItem(item: ObjectDataItem<*>): List<Item>{
+        return listOf(item)
+    }
 
     suspend fun pushItem(item: Item)
 
+    override fun generateErrorInfos(ex: Exception): ErrorInfo {
+        return ErrorInfo(ex, this, ErrorLevel.MAJOR)
+    }
 }
 
-interface ItemForwarder : ItemReceiver, EventConsumer {
+interface ItemForwarder : ItemReceiver {
     
     var itemOut: SendChannel<Item>
+
 
     override suspend fun pushItem(item: Item) {
         itemOut.send(item)
     }
 
     override suspend fun stop() {
-        super.stop()
         this.itemOut.close()
+        super.stop()
     }
-
-
-    override suspend fun run() {
-        super.run()
-        performAcks()
-    }
-
-    suspend fun performAck(itemAck: ItemAck): Unit {}
-
-    suspend fun performAcks() {}
 
 }
 
 
-interface Pipeline : ItemForwarder {
+interface ItemSecureForwarder: ItemForwarder{
+    var itemAckIn: ReceiveChannel<AbstractItemAck>
 
-    var itemAckIn: ReceiveChannel<ItemAck>
-
-    var itemAckOut: SendChannel<ItemAck>
-
-    override suspend fun performAcks() {
+    suspend fun performAcks() {
         scope.launch(CoroutineName("${name}-performAcks")) {
             logger.debug { "${name}: Waiting for items acks to follow" }
             for (itemAck in itemAckIn) {
                 logger.trace { "${name}: Received an item ack to process" }
-                performAck(itemAck)
-                itemAckOut.send(itemAck)
+                launch(CoroutineName("${name}-performAck-${itemAck.itemId}")){
+                    when(itemAck){
+                        is EventItemAck -> resumeEvent(itemAck)
+                        else -> performAck(itemAck)
+                    }
+                }
             }
         }
     }
 
-    override suspend fun performAck(itemAck: ItemAck) {
+    suspend fun performAck(itemAck: AbstractItemAck): Unit {}
+
+    override suspend fun run() {
+        performAcks()
+        super.run()
+    }
+
+}
+
+
+interface Pipeline : ItemSecureForwarder {
+
+    var itemAckOut: SendChannel<AbstractItemAck>
+
+
+    override suspend fun performAck(itemAck: AbstractItemAck) {
         itemAckOut.send(itemAck)
     }
 
-    fun buildItemError(ex: Exception, level: ErrorLevel = ErrorLevel.MAJOR): ItemError{
-        return ItemError(ErrorInfo(ex, this, level))
+    override suspend fun resumeEvent(event: EventBack) {
+        super.resumeEvent(event)
+        itemAckOut.send(event as EventItemAck)
     }
 
 
-    override suspend fun performItem(item: Item) {
+    override suspend fun performDataItem(item: ObjectDataItem<*>) {
         try {
-            super.performItem(item)
+            super.performDataItem(item)
         }
         catch(ex: Exception){
-            val errors = listOf(buildItemError(ex))
-            val ack = ItemAck(item.itemId, ItemStatus.ERROR, errors)
+            val infos = ErrorInfo(ex, this, ErrorLevel.MAJOR)
+            val errors = mutableListOf(infos)
+            val ack = ItemAck(item.itemId, Status.ERROR, errors)
             itemAckOut.send(ack)
         }
     }
@@ -134,11 +155,11 @@ abstract class AbstractPipeline(override val name: String) : Pipeline {
     override lateinit var itemOut: SendChannel<Item>
 
 
-    override lateinit var itemAckIn: ReceiveChannel<ItemAck>
+    override lateinit var itemAckIn: ReceiveChannel<AbstractItemAck>
 
-    override lateinit var itemAckOut: SendChannel<ItemAck>
+    override lateinit var itemAckOut: SendChannel<AbstractItemAck>
 
     override lateinit var scope: CoroutineScope
 
-    override val pendingEvent: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 }

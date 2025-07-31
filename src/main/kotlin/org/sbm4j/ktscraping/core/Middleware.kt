@@ -5,16 +5,17 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.core.AbstractMiddleware
-import org.sbm4j.ktscraping.data.Event
-import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.EventBack
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.ErrorInfo
+import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.EventResponse
-import java.util.concurrent.ConcurrentHashMap
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.ktscraping.data.response.Status
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A piece of the kt scraping line to perform some operations on requests, and answer by
@@ -22,6 +23,7 @@ import org.sbm4j.ktscraping.data.response.Status
  * before following them to the previous piece.
  */
 interface Middleware : RequestSender, RequestReceiver {
+
 
     /**
      * Answers a request by following it to the next piece or return a response to the sender
@@ -37,10 +39,17 @@ interface Middleware : RequestSender, RequestReceiver {
         }
     }
 
-    override suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest) {
-
+    override suspend fun performDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest) {
         if(response.request.sender != this){
-            val result = processResponse(response, response.request as DownloadingRequest)
+            var result = true
+            try {
+                result = processResponse(response, response.request)
+            }
+            catch(ex: Exception){
+                val infos = ErrorInfo(ex, this, ErrorLevel.MAJOR)
+                response.status = Status.ERROR
+                response.errorInfos.add(infos)
+            }
             if(result){
                 logger.trace{"${name}: forward response from the request ${response.request.name}"}
                 responseOut.send(response)
@@ -60,15 +69,13 @@ interface Middleware : RequestSender, RequestReceiver {
 
 
 
-    override suspend fun resumeEvent(event: EventResponse) {
-        try {
-            super<RequestReceiver>.resumeEvent(event)
-            responseOut.send(event)
-        }
-        catch(ex: Exception){
-            val newEventResponse = EventResponse(event.request, Status.ERROR)
-            responseOut.send(newEventResponse)
-        }
+    override suspend fun resumeEvent(event: EventBack) {
+        super<RequestReceiver>.resumeEvent(event)
+        responseOut.send(event as EventResponse)
+    }
+
+    override fun generateErrorInfos(ex: Exception): ErrorInfo {
+        return ErrorInfo(ex, this, ErrorLevel.MAJOR)
     }
 
     override suspend fun run() {
@@ -88,7 +95,7 @@ abstract class AbstractMiddleware(override val name: String): Middleware{
     override var state: State = State()
     override var pendingRequests: PendingRequestMap = PendingRequestMap()
 
-    override val pendingEvent: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 
     override lateinit var requestIn: ReceiveChannel<AbstractRequest>
     override lateinit var responseOut: SendChannel<Response<*>>
@@ -97,6 +104,9 @@ abstract class AbstractMiddleware(override val name: String): Middleware{
     override lateinit var responseIn: ReceiveChannel<Response<*>>
 
     override lateinit var scope: CoroutineScope
+
+    override val pendingMinorError: ConcurrentHashMap<Int, MutableList<ErrorInfo>> =
+        ConcurrentHashMap()
 
 }
 /**
@@ -112,6 +122,10 @@ abstract class SpiderMiddleware(name:String):
         logger.info{"${name}: Starting spider middleware"}
         super<AbstractMiddleware>.run()
         super<ItemForwarder>.run()
+    }
+
+    override fun generateErrorInfos(ex: Exception): ErrorInfo {
+        return super<AbstractMiddleware>.generateErrorInfos(ex)
     }
 
     override suspend fun stop() {

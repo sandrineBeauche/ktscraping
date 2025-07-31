@@ -6,15 +6,14 @@ import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.EventRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.EventResponse
-import java.util.concurrent.ConcurrentHashMap
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.ktscraping.data.response.Status
+import java.util.concurrent.ConcurrentHashMap
 
 enum class ContentType{
     HTML,
@@ -45,24 +44,29 @@ abstract class AbstractDownloader(
 
     override lateinit var scope: CoroutineScope
 
-    override val pendingEvent: ConcurrentHashMap<String, Job> = ConcurrentHashMap()
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 
     override suspend fun answerRequest(request: AbstractRequest, result: Any) {
-        logger.debug { "$name : answer to ${request.name} with a response"}
+        logger.debug { "$name : answer to request ${request.name} with a response"}
         responseOut.send(result as Response<*>)
     }
 
     override suspend fun consumeEvent(event: Event): Any? {
         try {
             super.consumeEvent(event)
-            val response = EventResponse(event as EventRequest)
+            val response = EventResponse(event.eventName, event as EventRequest)
             resumeEvent(response)
             return response
         }
         catch(ex: Exception){
             val infos = ErrorInfo(ex, this, ErrorLevel.MAJOR)
-            return EventResponse(event as EventRequest, Status.ERROR, infos)
+            return EventResponse(event.eventName, event as EventRequest,
+                Status.ERROR, mutableListOf(infos))
         }
+    }
+
+    override fun generateErrorInfos(ex: Exception): ErrorInfo {
+        return ErrorInfo(ex, this, ErrorLevel.MAJOR)
     }
 
 

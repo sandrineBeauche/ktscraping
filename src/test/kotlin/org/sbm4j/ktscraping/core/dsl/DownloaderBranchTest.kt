@@ -11,9 +11,14 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.AbstractMiddleware
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.utils.isDownloadingRequestWith
+import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.ktscraping.data.request.EndRequest
 import org.sbm4j.ktscraping.data.request.Request
+import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.EventResponse
 
 
 class MiddlewareClassTest(name: String): AbstractMiddleware(name){
@@ -37,38 +42,48 @@ class DownloaderClassTest(name: String) : AbstractDownloader(name){
 
 class DownloaderBranchTest: CrawlerTest() {
 
+    suspend fun sendStartEvent(){
+        val startReq = StartRequest(sender)
+        channelFactory.downloaderRequestChannel.send(startReq)
+        val startResp = channelFactory.downloaderResponseChannel.receive() as EventResponse
+    }
+
+    suspend fun sendEndEvent(){
+        val endReq = EndRequest(sender)
+        channelFactory.downloaderRequestChannel.send(endReq)
+        val endResp = channelFactory.downloaderResponseChannel.receive() as EventResponse
+    }
+
     @Test
-    fun testBuildCrawlerWithDownloaderBranch() = scope.runTest{
+    fun testBuildCrawlerWithDownloaderBranch() = scope.runTest {
         val url = "une url"
-        lateinit var response: DownloadingResponse
 
-        coroutineScope {
-            val c = crawler("MainCrawler", ::testDIModule){
-                downloaderBranch {
-                    middleware<MiddlewareClassTest>()
-                    downloader<DownloaderClassTest>(name = "Downloader1")
-                }
-            }
-
-            launch {
-                c.start(this)
-            }
-            launch {
-                logger.debug { "interacting with crawler" }
-
-                val request1 = Request(sender, url)
-                channelFactory.downloaderRequestChannel.send(request1)
-                response = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-
-                logger.debug { "Received the response" }
-
-                c.stop()
-                channelFactory.closeChannels()
+        val c = crawler("MainCrawler", ::testDIModule) {
+            downloaderBranch {
+                middleware<MiddlewareClassTest>()
+                downloader<DownloaderClassTest>(name = "Downloader1")
             }
         }
 
-        val respReq = response.request as DownloadingRequest
-        assertThat(respReq.url, equalTo(url))
+
+        c.start(this)
+        logger.debug { "interacting with crawler" }
+
+        sendStartEvent()
+
+        val request1 = Request(sender, url)
+        channelFactory.downloaderRequestChannel.send(request1)
+        val response: DownloadingResponse = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+
+        logger.debug { "Received the response: $response" }
+
+        sendEndEvent()
+        c.stop()
+        channelFactory.closeChannels()
+
+
+        val respReq = response.request
+        assertThat(respReq, isDownloadingRequestWith(url))
     }
 
 
@@ -80,50 +95,47 @@ class DownloaderBranchTest: CrawlerTest() {
         lateinit var response1: DownloadingResponse
         lateinit var response2: DownloadingResponse
 
-        coroutineScope {
-            val c = crawler("MainCrawler", ::testDIModule){
-                downloaderDispatcher("dispatcher1",
-                    {req: DownloadingRequest ->
-                        if(req.url == url1) senders[0]
-                        else senders[1]
-                    })
-                {
-                    downloader<DownloaderClassTest>(name = "Downloader1")
-                    downloader<DownloaderClassTest>(name = "Downloader2")
-                }
-            }
 
-            launch {
-                c.start(this)
-            }
-            launch {
-                logger.debug { "interacting with crawler" }
-
-                val request1 = Request(sender, url1)
-                val request2 = Request(sender, url2)
-
-                channelFactory.downloaderRequestChannel.send(request1)
-                channelFactory.downloaderRequestChannel.send(request2)
-
-                response1 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-                response2 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-
-                logger.debug { "Received the responses" }
-
-                c.stop()
-                channelFactory.closeChannels()
+        val c = crawler("MainCrawler", ::testDIModule) {
+            downloaderDispatcher(
+                "dispatcher1",
+                { req: DownloadingRequest ->
+                    if (req.url == url1) senders[0]
+                    else senders[1]
+                })
+            {
+                downloader<DownloaderClassTest>(name = "Downloader1")
+                downloader<DownloaderClassTest>(name = "Downloader2")
             }
         }
 
-        assertThat(response1, allOf(
-            has(DownloadingResponse::request, isA(has(DownloadingRequest::url, equalTo(url1)))),
-            has(DownloadingResponse::contents, equalTo(mutableMapOf("downloader" to "Downloader1")))
-        ))
 
-        assertThat(response2, allOf(
-            has(DownloadingResponse::request, isA(has(DownloadingRequest::url, equalTo(url2)))),
-            has(DownloadingResponse::contents, equalTo(mutableMapOf("downloader" to "Downloader2")))
-        ))
+        c.start(this)
+
+        logger.debug { "interacting with crawler" }
+        sendStartEvent()
+
+        val request1 = Request(sender, url1)
+        val request2 = Request(sender, url2)
+
+        channelFactory.downloaderRequestChannel.send(request1)
+        channelFactory.downloaderRequestChannel.send(request2)
+
+        response1 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+        response2 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+
+        logger.debug { "Received the responses" }
+
+        sendEndEvent()
+        c.stop()
+        channelFactory.closeChannels()
+
+        assertThat(response1, isDownloadingResponseWith(url1,
+            mutableMapOf("downloader" to "Downloader1")))
+
+        assertThat(response2, isDownloadingResponseWith(url2,
+            mutableMapOf("downloader" to "Downloader2")))
+
     }
 
     @Test
@@ -131,59 +143,53 @@ class DownloaderBranchTest: CrawlerTest() {
         val url1 = "url1"
         val url2 = "url2"
 
-        lateinit var response1: DownloadingResponse
-        lateinit var response2: DownloadingResponse
 
-        coroutineScope {
-            val c = crawler("MainCrawler", ::testDIModule){
-                downloaderDispatcher("dispatcher1",
-                    {req: DownloadingRequest ->
-                        if(req.url == url1) senders[0]
-                        else senders[1]
-                    })
-                {
-                    downloaderBranch {
-                        middleware<MiddlewareClassTest>(name = "Middleware1")
-                        downloader<DownloaderClassTest>(name = "Downloader1")
-                    }
-                    downloaderBranch {
-                        middleware<MiddlewareClassTest>(name = "Middleware2")
-                        downloader<DownloaderClassTest>(name = "Downloader2")
-                    }
+        val c = crawler("MainCrawler", ::testDIModule) {
+            downloaderDispatcher(
+                "dispatcher1",
+                { req: DownloadingRequest ->
+                    if (req.url == url1) senders[0]
+                    else senders[1]
+                })
+            {
+                downloaderBranch {
+                    middleware<MiddlewareClassTest>(name = "Middleware1")
+                    downloader<DownloaderClassTest>(name = "Downloader1")
                 }
-            }
-
-            launch {
-                c.start(this)
-            }
-            launch {
-                logger.debug { "interacting with crawler" }
-
-                val request1 = Request(sender, url1)
-                val request2 = Request(sender, url2)
-
-                channelFactory.downloaderRequestChannel.send(request1)
-                channelFactory.downloaderRequestChannel.send(request2)
-
-                response1 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-                response2 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-
-                logger.debug { "Received the responses" }
-
-                c.stop()
-                channelFactory.closeChannels()
+                downloaderBranch {
+                    middleware<MiddlewareClassTest>(name = "Middleware2")
+                    downloader<DownloaderClassTest>(name = "Downloader2")
+                }
             }
         }
 
-        assertThat(response1, allOf(
-            has(DownloadingResponse::request, isA(has(DownloadingRequest::url, equalTo(url1)))),
-            has(DownloadingResponse::contents, equalTo(mutableMapOf("downloader" to "Downloader1")))
-        ))
 
-        assertThat(response2, allOf(
-            has(DownloadingResponse::request, isA(has(DownloadingRequest::url, equalTo(url2)))),
-            has(DownloadingResponse::contents, equalTo(mutableMapOf("downloader" to "Downloader2")))
-        ))
+        c.start(this)
+
+        logger.debug { "interacting with crawler" }
+        sendStartEvent()
+
+        val request1 = Request(sender, url1)
+        val request2 = Request(sender, url2)
+
+        channelFactory.downloaderRequestChannel.send(request1)
+        channelFactory.downloaderRequestChannel.send(request2)
+
+        val response1: DownloadingResponse = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+        val response2: DownloadingResponse = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+
+        logger.debug { "Received the responses" }
+
+        sendEndEvent()
+        c.stop()
+        channelFactory.closeChannels()
+
+        assertThat(response1, isDownloadingResponseWith(url1,
+            mutableMapOf("downloader" to "Downloader1")))
+
+        assertThat(response2, isDownloadingResponseWith(url2,
+            mutableMapOf("downloader" to "Downloader2")))
+
     }
 
 }

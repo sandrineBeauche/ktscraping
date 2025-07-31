@@ -8,11 +8,11 @@ import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
 import org.sbm4j.ktscraping.core.DownloaderMiddleware
 import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
 import java.io.File
-import java.util.UUID
+import java.util.*
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours

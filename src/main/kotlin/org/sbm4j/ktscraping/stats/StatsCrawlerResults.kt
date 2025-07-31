@@ -1,12 +1,12 @@
 package org.sbm4j.ktscraping.stats
 
 import org.sbm4j.ktscraping.core.CrawlerResult
-import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.item.ErrorItem
 
 data class StatsCrawlerResult(
     var nbRequests: Int = 0,
     var nbItems: Int = 0,
-    val errors: MutableList<ItemError> = mutableListOf(),
+    val errors: MutableList<ErrorItem> = mutableListOf(),
     var responseOK: Int = 0,
     var responseError: Int = 0,
     var nbGoogleAPIRequests: Int = 0,

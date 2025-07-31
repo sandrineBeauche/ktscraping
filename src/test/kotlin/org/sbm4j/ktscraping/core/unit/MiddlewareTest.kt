@@ -5,9 +5,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractMiddleware
+import org.sbm4j.ktscraping.core.EventJobResult
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
 import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.data.EventBack
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.EventRequest
 import org.sbm4j.ktscraping.data.request.StartRequest
@@ -32,12 +34,12 @@ class MiddlewareTest: AbstractMiddlewareTester() {
                 return request
             }
 
-            override suspend fun preStart(event: Event): Job? {
+            override suspend fun preStart(event: Event): EventJobResult? {
                 logger.info{ "${name}: inside pre start event"}
                 return super.preStart(event)
             }
 
-            override suspend fun postStart(event: EventResponse) {
+            override suspend fun postStart(event: EventBack) {
                 logger.info{ "${name}: inside post start event"}
                 super.postStart(event)
             }
@@ -56,7 +58,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
             assertEquals(url, receivedReq.url)
 
             outChannel.send(resp)
-            val receivedResp = forwardOutChannel.receive()
+            forwardOutChannel.receive()
         }
 
         coVerify { middleware.processDataRequest(req)}
@@ -65,22 +67,13 @@ class MiddlewareTest: AbstractMiddlewareTester() {
 
     @Test
     fun testStartEvent() = TestScope().runTest {
-        val startRequest = StartRequest(sender)
-        val startResponse = EventResponse(startRequest)
-
         withMiddleware {
-            inChannel.send(startRequest)
-            val receivedReq = forwardInChannel.receive() as EventRequest
-            logger.info{"received forwarded start event"}
-
-            assertEquals("start", receivedReq.eventName)
-
-            logger.info{ "send response for start event"}
-            outChannel.send(startResponse)
-            val receivedResp = forwardOutChannel.receive()
+            logger.info{"middleware does something..."}
         }
 
-        coVerify { middleware.preStart(startRequest)}
-        coVerify { middleware.postStart(startResponse) }
+        coVerify { middleware.preStart(any())}
+        coVerify { middleware.postStart(any()) }
+        coVerify { middleware.preEnd(any())}
+        coVerify { middleware.postEnd(any()) }
     }
 }

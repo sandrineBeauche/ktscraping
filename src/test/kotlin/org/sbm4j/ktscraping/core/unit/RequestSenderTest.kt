@@ -12,11 +12,13 @@ import org.sbm4j.ktscraping.core.RequestException
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.ktscraping.data.response.Status
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,6 +27,7 @@ abstract class RequestSenderMock() : RequestSender {
     override val mutex = Mutex()
     override val name = "RequestSender"
     override var pendingRequests = PendingRequestMap()
+    override val pendingMinorError: ConcurrentHashMap<Int, MutableList<ErrorInfo>> = ConcurrentHashMap()
 
     var closed: Boolean = false
 
@@ -49,7 +52,7 @@ abstract class RequestSenderMock() : RequestSender {
         }
     }
 
-    override suspend fun performResponse(response: DownloadingResponse, request: DownloadingRequest){
+    override suspend fun performDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest){
         if(response.contents["close"] == true)
             closeChannels()
     }
@@ -121,7 +124,7 @@ class RequestSenderTest: ScrapingTest<DownloadingResponse, AbstractRequest>() {
             inChannel.send(resp)
         }
 
-        coVerify { sender.performResponse(resp, req) }
+        coVerify { sender.performDownloadingResponse(resp, req) }
     }
 
     @Test
@@ -151,7 +154,7 @@ class RequestSenderTest: ScrapingTest<DownloadingResponse, AbstractRequest>() {
         resps[1].contents["close"] = true
 
         every { sender.scope } returns this
-        coEvery { sender.performResponse(resps[0], reqs[0]) } throws Exception("Here is an exception")
+        coEvery { sender.performDownloadingResponse(resps[0], reqs[0]) } throws Exception("Here is an exception")
 
         repeat(2){
             inChannel.send(resps[it])

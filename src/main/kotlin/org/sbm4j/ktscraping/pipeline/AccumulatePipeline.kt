@@ -1,16 +1,12 @@
 package org.sbm4j.ktscraping.pipeline
 
+import kotlinx.coroutines.Job
 import org.sbm4j.ktscraping.core.AbstractPipeline
 import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.data.item.DataItem
-import org.sbm4j.ktscraping.data.item.ErrorLevel
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.EndItem
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.item.ItemError
-import org.sbm4j.ktscraping.data.item.ItemStatus
-import java.util.UUID
+import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.*
+import java.util.*
 
 abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
 
@@ -18,16 +14,21 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
 
     lateinit var endAckId: UUID
 
-    abstract fun accumulateItem(item: Item)
+    abstract fun accumulateItem(item: ObjectDataItem<*>)
 
     abstract fun generateItems(): List<Item>
 
-    override suspend fun processItem(item: Item): List<Item> {
-        return when(item){
-            is EndItem -> processItemEnd(item)
-            is DataItem<*> -> processDataItem(item)
-            else -> emptyList()
+    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+        try {
+            accumulateItem(item)
+            itemAckOut.send(ItemAck(item.itemId, Status.OK))
         }
+        catch(ex: Exception){
+            val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
+            itemAckOut.send(ItemAck(item.itemId,
+                Status.ERROR, mutableListOf(error)))
+        }
+        return emptyList()
     }
 
     fun processItemEnd(item: EndItem): List<Item>{
@@ -38,20 +39,7 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
         return items
     }
 
-    suspend fun processDataItem(item: DataItem<*>): List<Item>{
-        try {
-            accumulateItem(item)
-            itemAckOut.send(ItemAck(item.itemId, ItemStatus.PROCESSED))
-        }
-        catch(ex: Exception){
-            val error = ItemError(ErrorInfo(ex, this, ErrorLevel.MAJOR))
-            itemAckOut.send(ItemAck(item.itemId,
-                ItemStatus.ERROR, listOf(error)))
-        }
-        return emptyList()
-    }
-
-    override suspend fun performAck(itemAck: ItemAck) {
+    override suspend fun performAck(itemAck: AbstractItemAck) {
         if(itemAck.itemId == endAckId) {
             if(itemIds.isNotEmpty()){
                 logger.warn { "${name}: Some item data are not acked" }

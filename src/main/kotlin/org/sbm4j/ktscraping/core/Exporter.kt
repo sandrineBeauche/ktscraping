@@ -1,15 +1,20 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.item.ErrorLevel
+import org.sbm4j.ktscraping.data.item.EventItem
+import org.sbm4j.ktscraping.data.item.EventItemAck
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.ItemError
-import org.sbm4j.ktscraping.data.item.ItemStatus
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
+import java.util.concurrent.ConcurrentHashMap
 
 abstract class AbstractExporter(override val name: String): ItemReceiver {
 
@@ -20,7 +25,9 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
 
     override lateinit var itemIn: ReceiveChannel<Item>
 
-    lateinit var itemAckOut: SendChannel<ItemAck>
+    lateinit var itemAckOut: SendChannel<AbstractItemAck>
+
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 
     override suspend fun run() {
         logger.info{"${name}: Starting Exporter"}
@@ -33,22 +40,45 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
         super.stop()
     }
 
-    override suspend fun processItem(item: Item): List<Item> {
+    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
         return listOf(item)
     }
 
     abstract fun exportItem(item: Item)
 
     override suspend fun pushItem(item: Item) {
+        when(item){
+            is ObjectDataItem<*> -> pushDataItem(item)
+            is EventItem -> pushEventItem(item)
+        }
+    }
+
+    suspend fun pushDataItem(item: ObjectDataItem<*>){
         logger.debug{ "${name}: exporting the item ${item}" }
         lateinit var ack: ItemAck
         try {
             exportItem(item)
-            ack = ItemAck(item.itemId, ItemStatus.PROCESSED)
+            ack = ItemAck(item.itemId, Status.OK)
         }
         catch(ex: Exception){
-            val error = ItemError(ErrorInfo(ex, this, ErrorLevel.MAJOR))
-            ack = ItemAck(item.itemId, ItemStatus.ERROR, listOf(error))
+            val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
+            ack = ItemAck(item.itemId, Status.ERROR, mutableListOf(error))
+        }
+        finally {
+            itemAckOut.send(ack)
+        }
+    }
+
+    suspend fun pushEventItem(item: EventItem){
+        lateinit var ack: EventItemAck
+        try {
+            consumeEvent(item)
+            ack = EventItemAck(item.itemId, item.eventName, Status.OK)
+        }
+        catch(ex: Exception){
+            val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
+            ack = EventItemAck(item.itemId, item.eventName,
+                Status.ERROR, mutableListOf(error))
         }
         finally {
             itemAckOut.send(ack)

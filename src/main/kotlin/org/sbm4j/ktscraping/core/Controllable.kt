@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
@@ -37,14 +38,20 @@ interface Controllable {
 
     var scope: CoroutineScope
 
+
     /**
      * Starts the kt scraping component. The component is then executed in a coroutine subscope of the given scope
      * @param scope the parent coroutine scope
      */
     suspend fun start(scope: CoroutineScope){
         scope.launch {
-            this@Controllable.scope = this
-            run()
+            try {
+                this@Controllable.scope = this
+                run()
+            }
+            catch(ex: CancellationException){
+                logger.debug { "Cancellation exception" }
+            }
         }
     }
 

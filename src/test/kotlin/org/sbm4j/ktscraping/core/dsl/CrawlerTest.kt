@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.dsl
 
 import io.mockk.mockk
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.test.TestScope
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
@@ -19,6 +20,7 @@ data class DataItemTest(
 
 }
 
+class TestingCrawlerResult: CrawlerResult
 
 class EmptyTestingCrawler(
     name: String = "TestCrawler",
@@ -37,7 +39,10 @@ class EmptyTestingCrawler(
     }
 
     override suspend fun waitFinished(): CrawlerResult {
-        TODO("Not yet implemented")
+        controllables.filterIsInstance<AbstractSpider>()
+            .map { it.job }
+            .joinAll()
+        return TestingCrawlerResult()
     }
 }
 

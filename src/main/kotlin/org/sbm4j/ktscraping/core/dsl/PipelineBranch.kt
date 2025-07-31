@@ -6,14 +6,15 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
+import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
 
 
-fun buildPipelineChannels(): Pair<Channel<Item>, Channel<ItemAck>>{
+fun buildPipelineChannels(): Pair<Channel<Item>, Channel<AbstractItemAck>>{
     return Pair(
         Channel<Item>(Channel.UNLIMITED),
-        Channel<ItemAck>(Channel.UNLIMITED)
+        Channel<AbstractItemAck>(Channel.UNLIMITED)
     )
 }
 
@@ -57,7 +58,7 @@ fun Crawler.pipelineDispatcherOne(
 
 class PipelineBranch(
     var pipelineItemIn: Channel<Item>,
-    var pipelineItemAckOut: Channel<ItemAck>,
+    var pipelineItemAckOut: Channel<AbstractItemAck>,
     override val di: DI
 ): DIAware{
 

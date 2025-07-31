@@ -1,8 +1,10 @@
 package org.sbm4j.ktscraping.core.integration
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.time.delay
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.AbstractSpider
@@ -15,10 +17,9 @@ import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
 import kotlin.test.Test
 
-data class IntegrationTestItem(val value: String, ): Item() {
+data class IntegrationTestItem(val value: String ): Item() {
     override fun clone(): Item {
         return this.copy()
     }
@@ -74,6 +75,7 @@ class CrawlerIntegrationTest {
         }
 
         crawler.start(this)
+        delay(1000L)
         val result = crawler.waitFinished()
         crawler.stop()
 

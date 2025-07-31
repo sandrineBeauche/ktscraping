@@ -7,15 +7,15 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractSpider
 import org.sbm4j.ktscraping.core.RequestException
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.Data
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ErrorItem
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemError
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Status
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
@@ -32,7 +32,7 @@ class SpiderTest: AbstractSpiderTester() {
         }
     }
 
-    var expectedItem = DataItem.build(data, "test")
+    var expectedItem = ObjectDataItem.build(data, "test")
 
     override fun buildSpider(spiderName: String): AbstractSpider {
         return object: AbstractSpider(spiderName){
@@ -75,7 +75,7 @@ class SpiderTest: AbstractSpiderTester() {
             resp = DownloadingResponse(req, status = Status.ERROR)
             inChannel.send(resp)
 
-            val error = itemChannel.receive() as ItemError
+            val error = itemChannel.receive() as ErrorItem
             assertIs<RequestException>(error.errorInfo.ex)
         }
 

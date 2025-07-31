@@ -2,7 +2,7 @@ package org.sbm4j.ktscraping.db
 
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import kotlin.reflect.KProperty1
 
 interface DBConnexion {
@@ -11,7 +11,7 @@ interface DBConnexion {
 
     fun clear(classObject: Class<*>)
 
-    fun perfomInsertItem(item: DataItem<*>)
+    fun perfomInsertItem(item: ObjectDataItem<*>)
 
     fun performItemUpdate(item: ItemUpdate)
 

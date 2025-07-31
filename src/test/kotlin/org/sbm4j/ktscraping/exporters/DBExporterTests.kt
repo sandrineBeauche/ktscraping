@@ -10,7 +10,7 @@ import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.ktscraping.data.item.Data
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import java.io.File
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -81,7 +81,7 @@ class DBExporterTests: AbstractExporterTester() {
     @Test
     fun testExportItem1() = TestScope().runTest{
 
-        val item = DataItem.build(data1, "test")
+        val item = ObjectDataItem.build(data1, "test")
 
         withExporter {
             inChannel.send(item)
@@ -100,7 +100,7 @@ class DBExporterTests: AbstractExporterTester() {
     @Test
     fun testExportItem2() = TestScope().runTest{
 
-        val item = DataItem.build(data2, "test")
+        val item = ObjectDataItem.build(data2, "test")
 
         withExporter {
             inChannel.send(item)
@@ -118,7 +118,7 @@ class DBExporterTests: AbstractExporterTester() {
 
     @Test
     fun testUpdateItem() = TestScope().runTest {
-        val item = DataItem.build(data1, "test")
+        val item = ObjectDataItem.build(data1, "test")
 
         val updateItem = ItemUpdate(
             Contact::class.java,
@@ -142,7 +142,7 @@ class DBExporterTests: AbstractExporterTester() {
 
     @Test
     fun testUpdateItem2() = TestScope().runTest {
-        val item = DataItem.build(data2, "test")
+        val item = ObjectDataItem.build(data2, "test")
 
         val updateItem = ItemUpdate(
             Contact::class.java,
@@ -173,10 +173,10 @@ class DBExporterTests: AbstractExporterTester() {
         )
 
         withExporter {
-            inChannel.send(DataItem.build(data1, "test"))
+            inChannel.send(ObjectDataItem.build(data1, "test"))
             val itemAck1 = outChannel.receive()
 
-            inChannel.send(DataItem.build(data2, "test"))
+            inChannel.send(ObjectDataItem.build(data2, "test"))
 
             val itemAck2 = outChannel.receive()
 
