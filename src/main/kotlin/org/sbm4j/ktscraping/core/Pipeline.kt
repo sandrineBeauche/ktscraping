@@ -28,7 +28,7 @@ interface ItemReceiver : Controllable, EventConsumer {
     suspend fun performItem(item: Item){
         when(item){
             is EventItem -> performEventItem(item)
-            is ObjectDataItem<*> -> performDataItem(item)
+            is DataItem<*> -> performDataItem(item)
         }
     }
 
@@ -37,7 +37,7 @@ interface ItemReceiver : Controllable, EventConsumer {
         pushItem(result as Item)
     }
 
-    suspend fun performDataItem(item: ObjectDataItem<*>){
+    suspend fun performDataItem(item: DataItem<*>){
         val resultItem = processDataItem(item)
         resultItem.forEach {
             pushItem(it)
@@ -48,7 +48,7 @@ interface ItemReceiver : Controllable, EventConsumer {
         this.performItems()
     }
 
-    suspend fun processDataItem(item: ObjectDataItem<*>): List<Item>{
+    suspend fun processDataItem(item: DataItem<*>): List<Item>{
         return listOf(item)
     }
 
@@ -119,7 +119,7 @@ interface Pipeline : ItemSecureForwarder {
     }
 
 
-    override suspend fun performDataItem(item: ObjectDataItem<*>) {
+    override suspend fun performDataItem(item: DataItem<*>) {
         try {
             super.performDataItem(item)
         }

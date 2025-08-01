@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.DI
 import org.kodein.di.DIAware
+import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.EventItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
@@ -145,7 +146,7 @@ class SpiderResponseDispatcher(
                 for(item in senderChannel){
                     when(item){
                         is EventItem -> performItemEvent(item, index)
-                        is ObjectDataItem<*> -> {
+                        is DataItem<*> -> {
                             logger.trace{ "${name}: Received an item from input #$index and forwards it: ${item}" }
                             itemChannelOut.send(item)
                         }

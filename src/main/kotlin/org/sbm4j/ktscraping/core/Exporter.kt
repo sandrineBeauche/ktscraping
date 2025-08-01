@@ -7,6 +7,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
+import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.item.EventItem
@@ -40,7 +41,7 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
         super.stop()
     }
 
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         return listOf(item)
     }
 
@@ -48,12 +49,12 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
 
     override suspend fun pushItem(item: Item) {
         when(item){
-            is ObjectDataItem<*> -> pushDataItem(item)
+            is DataItem<*> -> pushDataItem(item)
             is EventItem -> pushEventItem(item)
         }
     }
 
-    suspend fun pushDataItem(item: ObjectDataItem<*>){
+    suspend fun pushDataItem(item: DataItem<*>){
         logger.debug{ "${name}: exporting the item ${item}" }
         lateinit var ack: ItemAck
         try {

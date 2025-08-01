@@ -16,6 +16,7 @@ import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.data.EventBack
 import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
@@ -46,7 +47,7 @@ class SpiderMiddlewareClassTest(name: String) : SpiderMiddleware(name) {
         return true
     }
 
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         return listOf(item)
     }
 

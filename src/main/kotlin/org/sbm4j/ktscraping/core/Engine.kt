@@ -118,7 +118,7 @@ abstract class AbstractEngine(
     }
 
 
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         return listOf(item)
     }
 
@@ -208,9 +208,11 @@ class Engine(
         }
     }
 
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         this.stats.nbItems++
-        this.stats.incrNew(item.label)
+        if(item is ObjectDataItem<*>) {
+            this.stats.incrNew(item.label)
+        }
         return super.processDataItem(item)
     }
 

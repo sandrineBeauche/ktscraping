@@ -39,7 +39,7 @@ abstract class AbstractSpider(
      /**
       * Performs the scraping logic. Here the user writes his code to scrape what he wants
       * @param subScope the subscope where the scraping should be executed
-      * @throws RequestException if there is a exception during the scraping
+      * @throws RequestException if there is an exception during the scraping
       */
      abstract suspend fun performScraping(subScope: CoroutineScope)
 
@@ -67,7 +67,7 @@ abstract class AbstractSpider(
                     itemsOut.send(error)
                }
                finally {
-                    logger.info{"${name}: finished performing scraping... send end event request and end event item"}
+                    logger.info{"${name}: finished performing scraping... send end event request"}
 
                     val endRequest = EndRequest(this@AbstractSpider)
                     val endResp = sendSync(endRequest, this)

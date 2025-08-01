@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.withLock
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
+import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.EventItemAck
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
@@ -37,7 +38,7 @@ abstract class ItemDispatcher(override val name: String, override val di: DI) : 
 
     override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         return listOf(item)
     }
 
@@ -136,7 +137,7 @@ abstract class ItemDispatcherOne(name: String, di: DI): ItemDispatcher(name, di)
 
     override suspend fun pushItem(item: Item) {
         when(item){
-            is ObjectDataItem<*> -> {
+            is DataItem<*> -> {
                 val channel = selectChannel(item)
                 channel.send(item)
             }

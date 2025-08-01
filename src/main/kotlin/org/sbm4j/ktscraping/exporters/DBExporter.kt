@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.exporters
 
 import org.sbm4j.ktscraping.core.AbstractExporter
+import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.db.DBControllable
 import org.sbm4j.ktscraping.data.item.Item
@@ -9,10 +10,10 @@ import kotlin.reflect.KProperty
 data class ItemUpdate(
     val entityType: Class<*>,
     val keyName: KProperty<*>,
-    val keyValue: Any,
+    override val data: Any,
     val values: Map<String, Any>,
-    val label: String = "update"
-): Item() {
+    val label: String = "update",
+): DataItem<Any>() {
     override fun clone(): Item {
         return this.copy()
     }
@@ -21,9 +22,9 @@ data class ItemUpdate(
 data class ItemDelete(
     val entityType: Class<*>,
     val keyName: KProperty<*>,
-    val keyValue: Any,
+    override val data: Any,
     val label: String = "delete"
-): Item() {
+): DataItem<Any>() {
     override fun clone(): Item {
         return this.copy()
     }

@@ -14,11 +14,11 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
 
     lateinit var endAckId: UUID
 
-    abstract fun accumulateItem(item: ObjectDataItem<*>)
+    abstract fun accumulateItem(item: DataItem<*>)
 
     abstract fun generateItems(): List<Item>
 
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         try {
             accumulateItem(item)
             itemAckOut.send(ItemAck(item.itemId, Status.OK))

@@ -64,12 +64,12 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
         item.values.forEach {
             doc.put(it.key, it.value)
         }
-        repository.update(item.keyName eq item.keyValue, doc)
+        repository.update(item.keyName eq item.data, doc)
     }
 
     override fun performItemDelete(item: ItemDelete) {
         val repository = db.getRepository(item.entityType)
-        repository.remove(item.keyName eq item.keyValue)
+        repository.remove(item.keyName eq item.data)
     }
 
     override fun commit() {

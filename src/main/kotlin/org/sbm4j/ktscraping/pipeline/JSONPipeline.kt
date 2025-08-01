@@ -69,17 +69,21 @@ class JSONPipeline(name: String = "JSONPipeline") : AbstractPipeline(name) {
     }
 
     @OptIn(InternalSerializationApi::class)
-    override suspend fun processDataItem(item: ObjectDataItem<*>): List<Item> {
-        val objectDataItem = item as ObjectDataItem<*>
-        val elt = objectDataItem.encodeDataToJson()
+    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
+        if(item is ObjectDataItem<*>) {
+            val elt = item.encodeDataToJson()
 
-        return if (accumulate) {
-            documents.add(elt)
-            val ack = ItemAck(item.itemId, Status.OK)
-            itemAckOut.send(ack)
-            emptyList()
-        } else {
-            listOf(JsonItem(elt))
+            return if (accumulate) {
+                documents.add(elt)
+                val ack = ItemAck(item.itemId, Status.OK)
+                itemAckOut.send(ack)
+                emptyList()
+            } else {
+                listOf(JsonItem(elt))
+            }
+        }
+        else{
+            return listOf(item)
         }
     }
 }

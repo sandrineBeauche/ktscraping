@@ -13,7 +13,7 @@ abstract class Data{
 }
 
 
-abstract class DataItem<T>(data: T) : Item(){
+abstract class DataItem<T>() : Item(){
     abstract val data: T
 }
 
@@ -21,7 +21,7 @@ data class ObjectDataItem<T: Data>(
     override val data: T,
     val clazz: KClass<T>,
     val label: String = "data"
-): DataItem<T>(data){
+): DataItem<T>(){
     companion object{
         inline fun <reified T: Data> build(data: T, label: String): ObjectDataItem<T> {
             return ObjectDataItem(data, T::class, label)
@@ -39,6 +39,6 @@ data class ObjectDataItem<T: Data>(
 
 abstract class StandardFormatItem<T>(
     override val data: T
-): DataItem<T>(data){
+): DataItem<T>(){
     abstract fun prettyPrint(): String
 }
