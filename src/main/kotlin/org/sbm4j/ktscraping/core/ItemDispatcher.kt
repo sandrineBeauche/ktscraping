@@ -2,7 +2,6 @@ package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
@@ -15,8 +14,6 @@ import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.EventItemAck
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 

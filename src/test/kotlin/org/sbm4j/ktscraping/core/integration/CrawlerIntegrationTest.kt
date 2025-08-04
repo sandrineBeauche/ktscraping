@@ -56,7 +56,7 @@ class IntegrationTestDownloader(
 class IntegrationTestExporter(
     name: String
 ): AbstractExporter(name){
-    override fun exportItem(item: Item) {
+    override fun exportItem(item: DataItem<*>) {
         println(item)
     }
 

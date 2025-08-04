@@ -21,6 +21,20 @@ fun isOKEventItemAck(eventName: String): Matcher<EventItemAck>{
 fun isOKStartItemAck() = isOKEventItemAck("start")
 fun isOKEndItemAck() = isOKEventItemAck("end")
 
+fun isEventItemAckWithErrors(eventName: String, status: Status, nbErrors: Int): Matcher<EventItemAck>{
+    return isA<EventItemAck>(
+        allOf(
+            has(EventItemAck::eventName, equalTo(eventName)),
+            has(EventItemAck::status, equalTo(status)),
+            has(EventItemAck::errorInfos, hasSize(equalTo(nbErrors)))
+        )
+    )
+}
+
+fun isStartItemAckWithErrors(status: Status, nbErrors: Int) = isEventItemAckWithErrors("start", status, nbErrors)
+fun isEndItemAckWithErrors(status: Status, nbErrors: Int) = isEventItemAckWithErrors("end", status, nbErrors)
+
+
 fun isDownloadingRequestWith(url: String): Matcher<DownloadingRequest>{
     return isA<DownloadingRequest>(
         allOf(

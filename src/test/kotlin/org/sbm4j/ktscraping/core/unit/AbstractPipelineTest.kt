@@ -12,7 +12,7 @@ import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.DataItemAck
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 
 class AbstractPipelineTest: AbstractPipelineTester() {
@@ -35,7 +35,7 @@ class AbstractPipelineTest: AbstractPipelineTester() {
             inChannel.send(itemVal)
             val processed = forwardInChannel.receive()
 
-            val ack = ItemAck(processed.itemId, Status.OK)
+            val ack = DataItemAck(processed.itemId, Status.OK)
             outChannel.send(ack)
             val receivedAck = forwardOutChannel.receive()
 

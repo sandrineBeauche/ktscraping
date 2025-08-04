@@ -18,6 +18,7 @@ import org.sbm4j.ktscraping.pipeline.JSONPipeline
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.pipeline.AccumulateJSONPipeline
 
 
 @Serializable
@@ -64,23 +65,16 @@ fun buildCrawler(): Crawler{
             downloader<HttpClientDownloader>()
         }
         pipelineBranch {
-            pipeline<JSONPipeline>{ accumulate = true }
+            pipeline<AccumulateJSONPipeline>()
             exporter<StdOutExporter>()
         }
     }
 }
 
-suspend fun executeCrawler(crawler: Crawler){
-    lateinit var result: CrawlerResult
-    coroutineScope {
-        launch {
-            crawler.start(this@launch)
-        }
-        launch{
-            result = crawler.waitFinished()
-            crawler.stop()
-        }
-    }
+suspend fun executeCrawler(crawler: Crawler) = coroutineScope {
+    crawler.start(this)
+    val result: CrawlerResult = crawler.waitFinished()
+    crawler.stop()
     println(result)
 }
 

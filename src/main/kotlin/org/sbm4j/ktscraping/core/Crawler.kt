@@ -90,6 +90,7 @@ class DefaultCrawler(
     }
 
     override suspend fun waitFinished(): CrawlerResult {
+        engine.waitStarted()
         controllables.filterIsInstance<AbstractSpider>()
             .map { it.job }
             .joinAll()

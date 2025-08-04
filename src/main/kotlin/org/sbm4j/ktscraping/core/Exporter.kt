@@ -1,7 +1,6 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.sync.Mutex
@@ -13,8 +12,7 @@ import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.item.EventItem
 import org.sbm4j.ktscraping.data.item.EventItemAck
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
+import org.sbm4j.ktscraping.data.item.DataItemAck
 import java.util.concurrent.ConcurrentHashMap
 
 abstract class AbstractExporter(override val name: String): ItemReceiver {
@@ -45,7 +43,7 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
         return listOf(item)
     }
 
-    abstract fun exportItem(item: Item)
+    abstract suspend fun exportItem(item: DataItem<*>)
 
     override suspend fun pushItem(item: Item) {
         when(item){
@@ -56,14 +54,14 @@ abstract class AbstractExporter(override val name: String): ItemReceiver {
 
     suspend fun pushDataItem(item: DataItem<*>){
         logger.debug{ "${name}: exporting the item ${item}" }
-        lateinit var ack: ItemAck
+        lateinit var ack: DataItemAck
         try {
             exportItem(item)
-            ack = ItemAck(item.itemId, Status.OK)
+            ack = DataItemAck(item.itemId, Status.OK)
         }
         catch(ex: Exception){
             val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
-            ack = ItemAck(item.itemId, Status.ERROR, mutableListOf(error))
+            ack = DataItemAck(item.itemId, Status.ERROR, mutableListOf(error))
         }
         finally {
             itemAckOut.send(ack)

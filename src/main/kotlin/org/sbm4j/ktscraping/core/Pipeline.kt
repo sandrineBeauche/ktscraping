@@ -87,14 +87,14 @@ interface ItemSecureForwarder: ItemForwarder{
                 launch(CoroutineName("${name}-performAck-${itemAck.itemId}")){
                     when(itemAck){
                         is EventItemAck -> resumeEvent(itemAck)
-                        else -> performAck(itemAck)
+                        is DataItemAck -> performDataAck(itemAck)
                     }
                 }
             }
         }
     }
 
-    suspend fun performAck(itemAck: AbstractItemAck): Unit {}
+    suspend fun performDataAck(itemAck: DataItemAck): Unit {}
 
     override suspend fun run() {
         performAcks()
@@ -109,7 +109,7 @@ interface Pipeline : ItemSecureForwarder {
     var itemAckOut: SendChannel<AbstractItemAck>
 
 
-    override suspend fun performAck(itemAck: AbstractItemAck) {
+    override suspend fun performDataAck(itemAck: DataItemAck) {
         itemAckOut.send(itemAck)
     }
 
@@ -126,7 +126,7 @@ interface Pipeline : ItemSecureForwarder {
         catch(ex: Exception){
             val infos = ErrorInfo(ex, this, ErrorLevel.MAJOR)
             val errors = mutableListOf(infos)
-            val ack = ItemAck(item.itemId, Status.ERROR, errors)
+            val ack = DataItemAck(item.itemId, Status.ERROR, errors)
             itemAckOut.send(ack)
         }
     }

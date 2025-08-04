@@ -18,7 +18,7 @@ class PipelineClassTest(name: String): AbstractPipeline(name){
 }
 
 class ExporterClassTest(name: String): AbstractExporter(name){
-    override fun exportItem(item: Item) {
+    override fun exportItem(item: DataItem<*>) {
         logger.info{"Item ${item} is exported"}
     }
 }

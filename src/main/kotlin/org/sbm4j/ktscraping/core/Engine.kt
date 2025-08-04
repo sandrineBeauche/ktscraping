@@ -2,14 +2,12 @@ package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import org.sbm4j.ktscraping.data.Event
 import org.sbm4j.ktscraping.data.EventBack
 import org.sbm4j.ktscraping.data.Status
@@ -18,6 +16,7 @@ import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.EventRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
+import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.EventResponse
 import org.sbm4j.ktscraping.data.response.Response
@@ -63,6 +62,12 @@ abstract class AbstractEngine(
 
     override lateinit var scope: CoroutineScope
 
+    val semaphore: Semaphore = Semaphore(1, 1)
+
+    suspend fun waitStarted() {
+        semaphore.acquire()
+    }
+
     override suspend fun answerRequest(request: AbstractRequest, result: Any) {
         this.requestOut.send(request)
     }
@@ -70,6 +75,9 @@ abstract class AbstractEngine(
     override suspend fun performEvent(event: Event): EventJobResult? {
         when(event){
             is EventRequest -> {
+                if(event is StartRequest){
+                    semaphore.release()
+                }
                 if(event.generateItem){
                     val eventItem = event.generateEventItem()
                     return sendEventItem(eventItem)
@@ -112,10 +120,9 @@ abstract class AbstractEngine(
                 respChannel?.send(event)
             }
         }
-
-
-
     }
+
+
 
 
     override suspend fun processDataItem(item: DataItem<*>): List<Item> {
@@ -126,7 +133,8 @@ abstract class AbstractEngine(
     abstract fun computeResult(): CrawlerResult
 
 
-    override suspend fun performAck(itemAck: AbstractItemAck) {
+
+    override suspend fun performDataAck(itemAck: DataItemAck) {
         pendingEventItems.remove(itemAck.itemId)
 
     }
@@ -169,6 +177,8 @@ class Engine(
 ) : AbstractEngine(channelFactory){
 
     val stats: StatsCrawlerResult = StatsCrawlerResult()
+
+
 
     override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         stats.nbRequests++
@@ -217,8 +227,8 @@ class Engine(
     }
 
 
-    override suspend fun performAck(itemAck: AbstractItemAck) {
+    override suspend fun performDataAck(itemAck: DataItemAck) {
         progressMonitor.receivedItemAck++
-        super.performAck(itemAck)
+        super.performDataAck(itemAck)
     }
 }

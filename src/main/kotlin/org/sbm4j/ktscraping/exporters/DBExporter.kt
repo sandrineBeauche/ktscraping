@@ -1,6 +1,8 @@
 package org.sbm4j.ktscraping.exporters
 
 import org.sbm4j.ktscraping.core.AbstractExporter
+import org.sbm4j.ktscraping.core.EventJobResult
+import org.sbm4j.ktscraping.data.Event
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.db.DBControllable
@@ -36,12 +38,12 @@ class DBExporter(name: String): AbstractExporter(name), DBControllable {
 
     override lateinit var db: DBConnexion
 
-    override fun exportItem(item: Item) {
+    override suspend fun exportItem(item: DataItem<*>) {
         performDBItem(item)
     }
 
-    override suspend fun stop() {
-        super.stop()
+    override suspend fun preEnd(event: Event): EventJobResult? {
         db.commit()
+        return super.preEnd(event)
     }
 }

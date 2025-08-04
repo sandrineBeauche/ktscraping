@@ -10,7 +10,6 @@ import org.sbm4j.ktscraping.core.AbstractExporter
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
 import kotlin.test.BeforeTest
 
 abstract class AbstractExporterTester: ScrapingTest<Item, AbstractItemAck>(){

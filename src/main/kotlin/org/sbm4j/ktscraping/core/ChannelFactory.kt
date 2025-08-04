@@ -3,7 +3,6 @@ package org.sbm4j.ktscraping.core
 import kotlinx.coroutines.channels.Channel
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.response.Response
 

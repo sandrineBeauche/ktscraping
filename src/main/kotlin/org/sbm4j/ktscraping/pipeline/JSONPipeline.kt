@@ -1,6 +1,5 @@
 package org.sbm4j.ktscraping.pipeline
 
-import kotlinx.coroutines.Job
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -41,49 +40,33 @@ class JSONPipeline(name: String = "JSONPipeline") : AbstractPipeline(name) {
         val json = Json { prettyPrint = true }
     }
 
-    var accumulate: Boolean = false
-
-    lateinit var documents: MutableList<JsonElement>
-
-
-
-    override suspend fun run() {
-        super.run()
-        if(accumulate){
-            documents = mutableListOf()
-        }
-    }
-
-    override suspend fun stop() {
-        super.stop()
-    }
-
-
-    override suspend fun preEnd(event: Event): EventJobResult? {
-        if(accumulate) {
-            val json = JsonArray(documents)
-            val elt = JsonItem(json)
-            itemOut.send(elt)
-        }
-        return super.preEnd(event)
-    }
 
     @OptIn(InternalSerializationApi::class)
     override suspend fun processDataItem(item: DataItem<*>): List<Item> {
-        if(item is ObjectDataItem<*>) {
+        return if(item is ObjectDataItem<*>) {
             val elt = item.encodeDataToJson()
-
-            return if (accumulate) {
-                documents.add(elt)
-                val ack = ItemAck(item.itemId, Status.OK)
-                itemAckOut.send(ack)
-                emptyList()
-            } else {
-                listOf(JsonItem(elt))
-            }
+            listOf(JsonItem(elt))
         }
         else{
-            return listOf(item)
+            listOf(item)
         }
+    }
+}
+
+class AccumulateJSONPipeline(name: String = "AccumulateJSONPipeline") : AccumulatePipeline(name) {
+
+    val documents: MutableList<JsonElement> = mutableListOf()
+
+    override fun accumulateItem(item: DataItem<*>) {
+        if(item is ObjectDataItem){
+            val elt = item.encodeDataToJson()
+            documents.add(elt)
+        }
+    }
+
+    override fun generateItems(): List<Item> {
+        val json = JsonArray(documents)
+        val elt = JsonItem(json)
+        return listOf(elt)
     }
 }

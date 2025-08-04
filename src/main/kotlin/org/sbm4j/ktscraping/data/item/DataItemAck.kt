@@ -6,7 +6,7 @@ import org.sbm4j.ktscraping.data.Status
 import java.util.UUID
 
 
-open class AbstractItemAck(
+abstract class AbstractItemAck(
     open val itemId: UUID,
     override var status: Status = Status.OK,
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
@@ -20,7 +20,7 @@ data class EventItemAck(
 ): AbstractItemAck(itemId, status, errorInfos), EventBack
 
 
-data class ItemAck(
+data class DataItemAck(
     override val itemId: UUID,
     override var status: Status = Status.OK,
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf(),

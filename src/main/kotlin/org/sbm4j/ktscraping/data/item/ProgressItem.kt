@@ -3,6 +3,7 @@ package org.sbm4j.ktscraping.data.item
 import org.sbm4j.ktscraping.core.ProgressSlot
 import org.sbm4j.ktscraping.core.ProgressState
 import org.sbm4j.ktscraping.core.SlotMode
+import org.sbm4j.ktscraping.data.Status
 
 abstract class ProgressItem(
     open val slot: String,
@@ -12,6 +13,10 @@ abstract class ProgressItem(
 
     fun getSlot(state: ProgressState): ProgressSlot{
         return state.progress
+    }
+
+    override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): AbstractItemAck {
+        return DataItemAck(this.itemId)
     }
 }
 

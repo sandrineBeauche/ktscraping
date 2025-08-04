@@ -8,7 +8,6 @@ import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
 
 
 fun buildPipelineChannels(): Pair<Channel<Item>, Channel<AbstractItemAck>>{

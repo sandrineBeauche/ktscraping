@@ -2,6 +2,7 @@ package org.sbm4j.ktscraping.data.item
 
 import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.data.Channelable
+import org.sbm4j.ktscraping.data.Status
 
 enum class ErrorLevel{
     MINOR,
@@ -22,6 +23,13 @@ data class ErrorItem(
 ): Item(){
     override fun clone(): Item {
         return this.copy()
+    }
+
+    override fun generateAck(
+        status: Status,
+        errors: MutableList<ErrorInfo>
+    ): AbstractItemAck {
+        return DataItemAck(this.itemId)
     }
 
 }
