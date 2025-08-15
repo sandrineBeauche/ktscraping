@@ -1,9 +1,14 @@
 package org.sbm4j.ktscraping.data.request
 
-import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.core.ContentType
+import org.sbm4j.ktscraping.core.Controllable
+import org.sbm4j.ktscraping.data.Back
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.item.ErrorInfo
+import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
 abstract class DownloadingRequest(
-    sender: RequestSender,
+    sender: Controllable,
     open var url: String
 ): AbstractRequest(sender){
 
@@ -29,10 +34,15 @@ abstract class DownloadingRequest(
     open fun toCacheKey(): String {
         return "url:${url}"
     }
+
+    override fun buildErrorBack(infos: ErrorInfo): Back<*> {
+        return DownloadingResponse(this, ContentType.NOTHING,
+            Status.ERROR, mutableListOf(infos))
+    }
 }
 
 data class Request(
-    override val sender: RequestSender,
+    override var sender: Controllable,
     override var url: String
 ): DownloadingRequest(sender, url){
 }

@@ -1,7 +1,6 @@
 package org.sbm4j.ktscraping.pipeline
 
 import com.natpryce.hamkrest.assertion.assertThat
-import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -71,12 +70,12 @@ class AccumulatePipelineTests: AbstractPipelineTester() {
                 logger.info{ "received the ack for the item ${it}: $ack"}
             }
 
-            val results = forwardInChannel.receiveAsFlow().take(nbResults).toList() as List<DataItem<*>>
+            val results = outChannel.receiveAsFlow().take(nbResults).toList() as List<DataItem<*>>
             val acks = func(results)
 
             acks.forEach { outChannel.send(it)}
 
-            val endEventItem = forwardInChannel.receive() as EventItem
+            val endEventItem = outChannel.receive() as EventItem
             val endEventItemAck = endEventItem.generateAck()
             outChannel.send(endEventItemAck)
 
@@ -94,7 +93,7 @@ class AccumulatePipelineTests: AbstractPipelineTester() {
             val result = outputs[0] as IntDataItem
             logger.info { "received the data from pipeline: $result and send back ack" }
             assertEquals(values.sum(), result.data)
-            val resultAck = DataItemAck(result.itemId)
+            val resultAck = DataItemAck(result.channelableId)
             listOf(resultAck)
         }
 
@@ -108,7 +107,7 @@ class AccumulatePipelineTests: AbstractPipelineTester() {
             logger.info { "received the data from pipeline: $result and send back ack" }
             assertEquals(values.sum(), result.data)
             val error = ErrorInfo(Exception("une erreur"), this.pipeline, ErrorLevel.MAJOR)
-            val resultAck = DataItemAck(result.itemId, Status.ERROR, mutableListOf(error))
+            val resultAck = DataItemAck(result.channelableId, Status.ERROR, mutableListOf(error))
             listOf(resultAck)
         }
 

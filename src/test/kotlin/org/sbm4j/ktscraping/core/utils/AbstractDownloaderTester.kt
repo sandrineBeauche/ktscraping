@@ -8,20 +8,22 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.AbstractDownloader
+import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.EndRequest
 import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.EventResponse
 import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response<*>>() {
+abstract class AbstractDownloaderTester: ScrapingTest() {
 
     lateinit var downloader: AbstractDownloader
 
-    val sender: RequestSender = mockk<RequestSender>()
+    val sender: Controllable = mockk<Controllable>()
 
     val downloaderName: String = "Downloader"
 
@@ -36,23 +38,21 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response<
 
         downloader = spyk(buildDownloader(downloaderName))
 
-        every { downloader.requestIn } returns inChannel
-        every { downloader.responseOut } returns outChannel
+        every { downloader.inChannel } returns inChannel
     }
 
     suspend fun withDownloader(func: suspend AbstractDownloaderTester.() -> Unit){
         coroutineScope {
             downloader.start(this@coroutineScope)
+            inChannel.init(this@coroutineScope)
 
             val startEventReq = StartRequest(sender)
-            inChannel.send(startEventReq)
-            outChannel.receive()
+            inChannel.sendSync<EventResponse>(startEventReq)
 
             func()
 
             val endEventReq = EndRequest(sender)
-            inChannel.send(endEventReq)
-            outChannel.receive()
+            inChannel.sendSync<EventResponse>(endEventReq)
             
             closeChannels()
             downloader.stop()
@@ -62,8 +62,7 @@ abstract class AbstractDownloaderTester: ScrapingTest<AbstractRequest, Response<
     protected suspend fun sendRequest(request: AbstractRequest): DownloadingResponse?{
         var response: DownloadingResponse? = null
         withDownloader {
-            inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
         return response
     }

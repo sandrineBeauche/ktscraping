@@ -5,7 +5,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.AbstractSpider
-import org.sbm4j.ktscraping.core.RequestException
+import org.sbm4j.ktscraping.core.SendException
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.Data
@@ -32,14 +32,14 @@ class SpiderTest: AbstractSpiderTester() {
         }
     }
 
-    var expectedItem = ObjectDataItem.build(data, "test")
+    var expectedItem = ObjectDataItem.build(data, "test", spider)
 
     override fun buildSpider(spiderName: String): AbstractSpider {
         return object: AbstractSpider(spiderName){
             override suspend fun performScraping(subScope: CoroutineScope) {
                 val req = Request(this, url)
                 resp = sendSync(req) as DownloadingResponse
-                itemsOut.send(expectedItem)
+                outChannel.send(expectedItem)
             }
 
         }
@@ -52,12 +52,12 @@ class SpiderTest: AbstractSpiderTester() {
         lateinit var receivedItem: Item
 
         withSpider {
-            req = outChannel.receive() as DownloadingRequest
+            req = channel.channel.receive() as DownloadingRequest
             assertTrue{req.url == url}
 
             resp = DownloadingResponse(req)
             inChannel.send(resp)
-            receivedItem = itemChannel.receive()
+            receivedItem = channel.channel.receive() as Item
         }
 
         assertEquals(expectedItem, receivedItem)
@@ -69,14 +69,14 @@ class SpiderTest: AbstractSpiderTester() {
         lateinit var resp: DownloadingResponse
 
         withSpider {
-            req = outChannel.receive() as DownloadingRequest
+            req = channel.channel.receive() as DownloadingRequest
             assertTrue { req.url == url }
 
             resp = DownloadingResponse(req, status = Status.ERROR)
             inChannel.send(resp)
 
-            val error = itemChannel.receive() as ErrorItem
-            assertIs<RequestException>(error.errorInfo.ex)
+            val error = channel.channel.receive() as ErrorItem
+            assertIs<SendException>(error.errorInfo.ex)
         }
 
     }

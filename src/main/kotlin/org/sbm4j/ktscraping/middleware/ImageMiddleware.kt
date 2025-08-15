@@ -37,7 +37,7 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
         val IMAGES_ROOT: String = "imagesRoot"
     }
 
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         if(response.status == Status.OK &&
             (response.request.parameters.contains(CSS_SELECTOR_IMAGES) ||
                     response.request.parameters.containsKey(JSON_PATH_IMAGES))){

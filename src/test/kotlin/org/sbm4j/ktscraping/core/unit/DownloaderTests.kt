@@ -1,6 +1,5 @@
 package org.sbm4j.ktscraping.core.unit
 
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractDownloader
@@ -30,7 +29,7 @@ class DownloaderTests: AbstractDownloaderTester() {
                 return super.preStart(event)
             }
 
-            override suspend fun postStart(event: EventBack) {
+            override suspend fun postStart(event: EventBack<*>) {
                 logger.info { "${name}: inside post start" }
                 super.postStart(event)
             }
@@ -40,7 +39,7 @@ class DownloaderTests: AbstractDownloaderTester() {
                 return super.preEnd(event)
             }
 
-            override suspend fun postEnd(event: EventBack) {
+            override suspend fun postEnd(event: EventBack<*>) {
                 logger.info { "${name}: inside post end" }
                 super.postEnd(event)
             }
@@ -55,10 +54,10 @@ class DownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
-        val req = response.request
+        val req = response.send
         assertEquals(req.url, url)
     }
 }

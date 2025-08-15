@@ -29,17 +29,17 @@ class AbstractPipelineTest: AbstractPipelineTester() {
     fun testPipeline() = TestScope().runTest {
 
         val dataVal = DataItemTest("coucou", "request1")
-        val itemVal = ObjectDataItem.build(dataVal, "itemTest")
+        val itemVal = ObjectDataItem.build(dataVal, "itemTest", sender)
 
         withPipeline {
             inChannel.send(itemVal)
-            val processed = forwardInChannel.receive()
+            val processed = outChannel.channel.receive() as ObjectDataItem<*>
 
-            val ack = DataItemAck(processed.itemId, Status.OK)
+            val ack = processed.generateAck()
             outChannel.send(ack)
-            val receivedAck = forwardOutChannel.receive()
+            val receivedAck = inChannel.channel.receive()
 
-            assertThat(receivedAck.itemId, equalTo(itemVal.itemId))
+            assertThat(receivedAck.channelableId, equalTo(itemVal.channelableId))
         }
 
         coVerify { pipeline.processDataItem(itemVal) }

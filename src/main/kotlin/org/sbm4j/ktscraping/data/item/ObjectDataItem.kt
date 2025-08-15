@@ -1,6 +1,8 @@
 package org.sbm4j.ktscraping.data.item
 
 import kotlinx.serialization.Serializable
+import org.sbm4j.ktscraping.core.Controllable
+import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.Status
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
@@ -18,27 +20,35 @@ abstract class DataItem<T>() : Item(){
     abstract val data: T
 
     override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): DataItemAck {
-        return DataItemAck(this.itemId, status, errors)
+        return DataItemAck(this, status, errors)
+    }
+
+    override fun buildErrorBack(infos: ErrorInfo): Back<*> {
+        return DataItemAck(this, Status.ERROR, mutableListOf(infos))
     }
 }
 
 data class ObjectDataItem<T: Data>(
     override val data: T,
     val clazz: KClass<T>,
-    val label: String = "data"
+    val label: String = "data",
+    override var sender: Controllable
 ): DataItem<T>(){
     companion object{
-        inline fun <reified T: Data> build(data: T, label: String): ObjectDataItem<T> {
-            return ObjectDataItem(data, T::class, label)
+        inline fun <reified T: Data> build(data: T, label: String, sender: Controllable): ObjectDataItem<T> {
+            return ObjectDataItem(data, T::class, label, sender)
         }
     }
 
+    override val name: String = "ObjectDataItem"
 
     override fun clone(): Item {
         val result = this.copy(data = clazz.cast(data.clone()))
-        result.itemId = this.itemId
+        result.channelableId = this.channelableId
         return result
     }
+
+
 }
 
 

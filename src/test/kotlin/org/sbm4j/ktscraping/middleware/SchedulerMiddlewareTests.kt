@@ -32,7 +32,7 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            req = forwardInChannel.receive() as Request
+            req = outChannel.receive() as Request
 
             outChannel.send(response)
             resp = forwardOutChannel.receive() as DownloadingResponse
@@ -58,11 +58,11 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
             inChannel.send(request1)
             inChannel.send(request2)
 
-            req1 = forwardInChannel.receive() as Request
+            req1 = outChannel.receive() as Request
             outChannel.send(response1)
             resp1 = forwardOutChannel.receive() as DownloadingResponse
 
-            req2 = forwardInChannel.receive() as Request
+            req2 = outChannel.receive() as Request
             outChannel.send(response2)
             resp2 = forwardOutChannel.receive() as DownloadingResponse
         }
@@ -87,8 +87,8 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
                     inChannel.send(request1)
                     inChannel.send(request2)
 
-                    forwardInChannel.receive() as Request
-                    forwardInChannel.receive() as Request
+                    outChannel.receive() as Request
+                    outChannel.receive() as Request
 
                     outChannel.send(response1)
                     forwardOutChannel.receive()

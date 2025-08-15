@@ -14,7 +14,7 @@ class ChannelFactory {
     val downloaderRequestChannel: Channel<AbstractRequest> = Channel(Channel.UNLIMITED)
     val downloaderResponseChannel: Channel<Response<*>> = Channel(Channel.UNLIMITED)
     val itemChannel: Channel<Item> = Channel(Channel.UNLIMITED)
-    val itemAckChannel: Channel<AbstractItemAck> = Channel(Channel.UNLIMITED)
+    val itemAckChannel: Channel<AbstractItemAck<*>> = Channel(Channel.UNLIMITED)
 
     val channels: MutableList<Channel<*>> = mutableListOf(
         spiderRequestChannel,

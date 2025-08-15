@@ -22,11 +22,11 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
     override suspend fun processDataItem(item: DataItem<*>): List<Item> {
         try {
             accumulateItem(item)
-            itemAckOut.send(DataItemAck(item.itemId, Status.OK))
+            itemAckOut.send(DataItemAck(item.channelableId, Status.OK))
         }
         catch(ex: Exception){
             val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
-            itemAckOut.send(DataItemAck(item.itemId,
+            itemAckOut.send(DataItemAck(item.channelableId,
                 Status.ERROR, mutableListOf(error)))
         }
         return emptyList()
@@ -37,25 +37,25 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
     override suspend fun preEnd(event: Event): EventJobResult? {
         println(event)
         val items = generateItems() as MutableList
-        generatedItemIds.addAll(items.map{it.itemId})
+        generatedItemIds.addAll(items.map{it.channelableId})
         items.forEach { itemOut.send(it) }
         return null
     }
 
     override suspend fun postEnd(event: EventBack) {
         if(generatedItemIds.size != generatedItemAcks.size){
-            event.status = event.status + Status.ERROR
+            event.status += Status.ERROR
             val error = ErrorInfo(Exception("There are some item that are not acked"), this, ErrorLevel.MAJOR)
             event.errorInfos.add(error)
         }
-        generatedItemAcks.forEach { key, value ->
-            event.status = event.status + value.status
+        generatedItemAcks.forEach { (_, value) ->
+            event.status += value.status
             event.errorInfos.addAll(value.errorInfos)
         }
     }
 
     override suspend fun performDataAck(itemAck: DataItemAck) {
-        generatedItemAcks[itemAck.itemId] = itemAck
+        generatedItemAcks[itemAck.channelableId] = itemAck
     }
 
 

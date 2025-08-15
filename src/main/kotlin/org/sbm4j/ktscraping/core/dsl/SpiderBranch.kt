@@ -55,6 +55,7 @@ class SpiderBranch(
         val mid = buildControllable<T>(name)
 
         senders.add(mid)
+        /*
         mid.requestOut = spiderIn
         mid.responseIn = spiderOut
         mid.itemOut = spiderItemIn
@@ -68,6 +69,8 @@ class SpiderBranch(
         spiderOut = spidResp
         spiderItemIn = spidItem
 
+
+         */
         mid.init()
 
         return mid
@@ -79,12 +82,15 @@ class SpiderBranch(
         val spid = buildControllable<T>(name)
 
         senders.add(spid)
+        /*
         spid.requestOut = spiderIn
         spid.responseIn = spiderOut
         spid.itemsOut = spiderItemIn
 
         spid.init()
 
+
+         */
         return spid
     }
 
@@ -109,12 +115,16 @@ inline fun <reified T: AbstractSpider> SpiderResponseDispatcher.spider(
     crawler.controllables.add(spid)
 
     val (spidResp, spidReq, spidItem) = buildSpiderChannels()
+    /*
     spid.requestOut = spidReq
     spid.responseIn = spidResp
     val itemChannel = spidItem
     spid.itemsOut = itemChannel
 
+
     this.addBranch(spidReq, spidResp, itemChannel)
+
+     */
     spid.init()
 
     return spid

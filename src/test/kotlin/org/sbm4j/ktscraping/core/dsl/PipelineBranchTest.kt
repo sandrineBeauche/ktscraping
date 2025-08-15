@@ -2,8 +2,6 @@ package org.sbm4j.ktscraping.core.dsl
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -66,7 +64,7 @@ class PipelineBranchTest: CrawlerTest() {
         channelFactory.itemChannel.send(item1)
 
         val ack = channelFactory.itemAckChannel.receive()
-        assertThat(ack.itemId, equalTo(item1.itemId))
+        assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
@@ -95,7 +93,7 @@ class PipelineBranchTest: CrawlerTest() {
         channelFactory.itemChannel.send(item1)
 
         val ack = channelFactory.itemAckChannel.receive()
-        assertThat(ack.itemId, equalTo(item1.itemId))
+        assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
@@ -133,7 +131,7 @@ class PipelineBranchTest: CrawlerTest() {
         channelFactory.itemChannel.send(item1)
 
         val ack = channelFactory.itemAckChannel.receive()
-        assertThat(ack.itemId, equalTo(item1.itemId))
+        assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()

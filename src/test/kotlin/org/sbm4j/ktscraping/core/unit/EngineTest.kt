@@ -9,12 +9,11 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractEngine
 import org.sbm4j.ktscraping.core.ChannelFactory
 import org.sbm4j.ktscraping.core.ContentType
+import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.CrawlerResult
-import org.sbm4j.ktscraping.core.RequestException
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.dsl.DataItemTest
 import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
-import org.sbm4j.ktscraping.core.integration.IntegrationTestItem
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.isEventResponseWithError
 import org.sbm4j.ktscraping.core.utils.isOKEventResponseWith
@@ -50,7 +49,7 @@ class EngineTest {
 
     val scope = TestScope()
 
-    val sender: RequestSender = mockk<RequestSender>()
+    val sender: Controllable = mockk<Controllable>()
 
     lateinit var channelFactory : ChannelFactory
 
@@ -105,7 +104,7 @@ class EngineTest {
     @Test
     fun testEngineSendItem() = TestScope().runTest {
         val data = DataItemTest("value1", "req1")
-        val item = ObjectDataItem<DataItemTest>(data, data.javaClass.kotlin)
+        val item = ObjectDataItem<DataItemTest>(data, data::class)
 
         withEngine {
             channelFactory.spiderItemChannel.send(item)
@@ -131,7 +130,7 @@ class EngineTest {
                 }
                 launch {
                     val item = channelFactory.itemChannel.receive() as EventItem
-                    val itemAck = EventItemAck(item.itemId, item.eventName)
+                    val itemAck = EventItemAck(item.channelableId, item.eventName)
                     logger.debug{ "Received an event item and send back a ack: $item "}
                     channelFactory.itemAckChannel.send(itemAck)
                 }
@@ -161,8 +160,7 @@ class EngineTest {
                 launch {
                     val item = channelFactory.itemChannel.receive() as EventItem
                     val error = ErrorInfo(Exception(),sender, ErrorLevel.MAJOR, "an error message")
-                    val itemAck = EventItemAck(item.itemId, item.eventName,
-                        Status.ERROR, mutableListOf(error))
+                    val itemAck = item.generateAck(Status.ERROR, mutableListOf(error))
                     logger.debug{ "Received an event item and send back a ack with errors: $item "}
                     channelFactory.itemAckChannel.send(itemAck)
                 }

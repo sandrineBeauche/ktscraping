@@ -12,11 +12,11 @@ import org.sbm4j.ktscraping.data.request.EventRequest
 
 
 data class DownloadingResponse(
-    override val request: DownloadingRequest,
+    override val send: DownloadingRequest,
     var type: ContentType = ContentType.HTML,
     override var status: Status = Status.OK,
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
-): Response<DownloadingRequest>(request, status, errorInfos) {
+): Response<DownloadingRequest>(send, status, errorInfos) {
 
     val contents: MutableMap<String, Any> = mutableMapOf()
 

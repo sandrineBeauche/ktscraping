@@ -12,16 +12,17 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.item.EventItemAck
 import org.sbm4j.ktscraping.data.item.Item
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-abstract class ItemDispatcher(override val name: String, override val di: DI) : ItemReceiver, DIAware {
+abstract class ItemDispatcher(override val name: String, override val di: DI) : ItemReceiver, Controllable, DIAware {
 
-    override lateinit var itemIn: ReceiveChannel<Item>
 
-    lateinit var itemAckOut: SendChannel<AbstractItemAck>
+
+    lateinit var itemAckOut: SendChannel<AbstractItemAck<*>>
 
     override val mutex: Mutex = Mutex()
 
@@ -29,7 +30,7 @@ abstract class ItemDispatcher(override val name: String, override val di: DI) : 
 
     val itemOuts: MutableList<SendChannel<Item>> = mutableListOf()
 
-    val itemAckIns: MutableList<ReceiveChannel<AbstractItemAck>> = mutableListOf()
+    val itemAckIns: MutableList<ReceiveChannel<AbstractItemAck<*>>> = mutableListOf()
 
     override lateinit var scope: CoroutineScope
 
@@ -42,7 +43,6 @@ abstract class ItemDispatcher(override val name: String, override val di: DI) : 
 
     override suspend fun run() {
         logger.info { "${name}: starting the item dispatcher" }
-        this.performItems()
         this.performAcks()
     }
 
@@ -57,7 +57,7 @@ abstract class ItemDispatcher(override val name: String, override val di: DI) : 
 
     abstract suspend fun performAcks()
 
-    fun addBranch(itemChannel: Channel<Item>, itemAckChannel: Channel<AbstractItemAck>){
+    fun addBranch(itemChannel: Channel<Item>, itemAckChannel: Channel<AbstractItemAck<*>>){
         itemOuts.add(itemChannel)
         itemAckIns.add(itemAckChannel)
     }
@@ -74,15 +74,15 @@ class ItemDispatcherAll(name: String, di: DI): ItemDispatcher(name, di){
                 for(ack in current){
                     logger.trace{ "Received the ack ${ack}" }
                     mutex.withLock {
-                        if(pendingAcks.contains(ack.itemId)) {
-                            pendingAcks[ack.itemId] = pendingAcks[ack.itemId] as Int + 1
-                            if (pendingAcks[ack.itemId] == itemAckIns.size) {
-                                pendingAcks.remove(ack.itemId)
+                        if(pendingAcks.contains(ack.channelableId)) {
+                            pendingAcks[ack.channelableId] = pendingAcks[ack.channelableId] as Int + 1
+                            if (pendingAcks[ack.channelableId] == itemAckIns.size) {
+                                pendingAcks.remove(ack.channelableId)
                                 itemAckOut.send(ack)
                             }
                         }
                         else{
-                            logger.warn { "${name}: received an item ack with unknown UUID: ${ack.itemId}" }
+                            logger.warn { "${name}: received an item ack with unknown UUID: ${ack.channelableId}" }
                         }
                     }
                 }
@@ -90,13 +90,21 @@ class ItemDispatcherAll(name: String, di: DI): ItemDispatcher(name, di){
         }
     }
 
-    override suspend fun pushItem(item: Item) {
-        pendingAcks.put(item.itemId, 0)
+    suspend fun pushItem(item: Item) {
+        pendingAcks.put(item.channelableId, 0)
 
         itemOuts.forEach {
             val cl = item.clone()
             it.send(cl)
         }
+    }
+
+    override var inChannel: SuperChannel
+        get() = TODO("Not yet implemented")
+        set(value) {}
+
+    override fun generateErrorInfos(ex: Exception): ErrorInfo {
+        TODO("Not yet implemented")
     }
 }
 
@@ -113,12 +121,12 @@ abstract class ItemDispatcherOne(name: String, di: DI): ItemDispatcher(name, di)
                     logger.trace{"${name}: received item ack: $ack"}
                     when(ack){
                         is EventItemAck -> {
-                            var nb = pendingEventAcks[ack.itemId]
+                            var nb = pendingEventAcks[ack.channelableId]
                             if(nb != null){
                                 nb++
-                                pendingEventAcks[ack.itemId] = nb
+                                pendingEventAcks[ack.channelableId] = nb
                                 if(nb >= itemAckIns.size){
-                                    pendingEventAcks.remove(ack.itemId)
+                                    pendingEventAcks.remove(ack.channelableId)
                                     itemAckOut.send(ack)
                                 }
                             }
@@ -132,14 +140,14 @@ abstract class ItemDispatcherOne(name: String, di: DI): ItemDispatcher(name, di)
         }
     }
 
-    override suspend fun pushItem(item: Item) {
+    suspend fun pushItem(item: Item) {
         when(item){
             is DataItem<*> -> {
                 val channel = selectChannel(item)
                 channel.send(item)
             }
             else -> {
-                pendingEventAcks[item.itemId] = 0
+                pendingEventAcks[item.channelableId] = 0
                 itemOuts.forEach {
                     val cl = item.clone()
                     it.send(cl)

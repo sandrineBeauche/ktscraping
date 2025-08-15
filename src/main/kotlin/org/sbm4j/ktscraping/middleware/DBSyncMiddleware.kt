@@ -43,14 +43,15 @@ class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
 
     var errorOccured: Boolean = false
 
-    override suspend fun start(scope: CoroutineScope) {
+
+    override suspend fun preStart(event: Event): EventJobResult? {
         if(keys == null) {
             keys = dbConnexion.getKeys(classObject, keyProperty)
         }
-        super.start(scope)
+        return super.preStart(event)
     }
 
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         if(response.request.parameters.getOrDefault(DBSYNC_STATE, null) == DBSyncState.NEW){
             response.contents[DBSYNC_STATE] = DBSyncState.NEW
         }

@@ -11,7 +11,6 @@ import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.SpiderMiddleware
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
@@ -38,12 +37,8 @@ abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest,
 
         middleware = spyk(buildMiddleware(middlewareName))
 
-        every { middleware.requestIn } returns inChannel
-        every { middleware.requestOut } returns forwardInChannel
-        every { middleware.responseIn } returns outChannel
-        every { middleware.responseOut } returns forwardOutChannel
-        every { middleware.itemIn } returns itemChannelIn
-        every { middleware.itemOut } returns itemChannelOut
+        every { middleware.inChannel } returns inChannel
+        every { middleware.outChannel } returns outChannel
     }
 
     suspend fun withMiddleware(func: suspend AbstractSpiderMiddlewareTester.() -> Unit){

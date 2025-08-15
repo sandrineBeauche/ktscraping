@@ -64,9 +64,9 @@ interface RequestDispatcher: Controllable, DIAware {
         for((index, receiver) in receivers.withIndex()) {
             scope.launch(CoroutineName("${name}-performResponses-${index}")) {
                 for (response in receiver) {
-                    logger.trace { "${name}: Received response for the request ${response.request.name} and forwards it" }
+                    logger.trace { "${name}: Received response for the request ${response.send.name} and forwards it" }
                     when(response){
-                        is EventResponse -> performEventResponse(response, response.request)
+                        is EventResponse -> performEventResponse(response, response.send)
                         is DownloadingResponse -> channelOut.send(response)
                     }
                 }
@@ -81,7 +81,7 @@ interface RequestDispatcher: Controllable, DIAware {
         if(responses.size >= senders.size){
             pendingRequestEvent.remove(name)
             val newResp = responses.reduce{ acc, response ->
-                EventResponse(acc.eventName, acc.request,
+                EventResponse(acc.send,
                     acc.status + response.status,
                     (acc.errorInfos + response.errorInfos) as MutableList<ErrorInfo>
                 ) }

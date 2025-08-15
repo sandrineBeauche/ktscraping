@@ -61,7 +61,7 @@ class DBPipelineTests: AbstractPipelineTester() {
             val end = EndItem()
             inChannel.send(end)
 
-            val f = forwardInChannel.receiveAsFlow()
+            val f = outChannel.receiveAsFlow()
             val l = f.take(2).toList()
 
             println(l)

@@ -15,7 +15,7 @@ class FilterPipeline(name: String) : AbstractPipeline(name) {
         return if (result) {
             listOf(item)
         } else {
-            val ack = DataItemAck(item.itemId, Status.IGNORED)
+            val ack = DataItemAck(item.channelableId, Status.IGNORED)
             itemAckOut.send(ack)
             emptyList()
         }

@@ -6,8 +6,10 @@ import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.request.EventRequest
 
 data class EventResponse(
-    override val eventName: String,
-    override val request: EventRequest,
+    override val send: EventRequest,
     override var status: Status = Status.OK,
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
-): Response<EventRequest>(request, status, errorInfos), EventBack
+): Response<EventRequest>(send, status, errorInfos), EventBack<EventRequest> {
+
+
+}

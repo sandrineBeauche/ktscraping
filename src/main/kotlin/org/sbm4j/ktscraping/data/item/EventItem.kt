@@ -1,30 +1,39 @@
 package org.sbm4j.ktscraping.data.item
 
+import org.sbm4j.ktscraping.core.Controllable
+import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.EndEvent
 import org.sbm4j.ktscraping.data.Event
 import org.sbm4j.ktscraping.data.StartEvent
 import org.sbm4j.ktscraping.data.Status
 
 abstract class EventItem(
-    override val eventName: String
+    override val eventName: String,
+    override var sender: Controllable
 ): Item(), Event{
-    override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): EventItemAck {
-        return EventItemAck(this.itemId, this.eventName, status, errors)
+    override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): AbstractItemAck<*> {
+        return EventItemAck(this, status, errors)
+    }
+
+    override val name: String = "EventItem"
+
+    override fun buildErrorBack(infos: ErrorInfo): Back<*> {
+        return EventItemAck(this, Status.ERROR, mutableListOf(infos))
     }
 }
 
-data class StartItem(val ok: Boolean = true): EventItem("start"), StartEvent {
+data class StartItem(override var sender: Controllable): EventItem("start", sender), StartEvent {
     override fun clone(): Item {
         val result =  this.copy()
-        result.itemId = this.itemId
+        result.channelableId = this.channelableId
         return result
     }
 }
 
-data class EndItem(val ok: Boolean = true): EventItem("end"), EndEvent{
+data class EndItem(override var sender: Controllable): EventItem("end", sender), EndEvent{
     override fun clone(): Item {
         val result = this.copy()
-        result.itemId = this.itemId
+        result.channelableId = this.channelableId
         return result
     }
 }

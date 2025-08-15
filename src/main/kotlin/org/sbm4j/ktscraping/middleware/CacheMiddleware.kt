@@ -109,7 +109,7 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
     lateinit var root: File
 
 
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         if(response.status == Status.OK) {
             val avail = request.parameters[CACHE_AVAILABILITY] as CacheAvailability
             if (avail != CacheAvailability.NEVER) {

@@ -28,7 +28,7 @@ enum class ContentType{
 
 abstract class AbstractDownloader(
     override val name: String
-): RequestReceiver{
+): Controllable, RequestReceiver{
 
     companion object{
         val PAYLOAD: String = "payload"
@@ -39,28 +39,29 @@ abstract class AbstractDownloader(
     override val mutex: Mutex = Mutex()
     override var state: State = State()
 
-    override lateinit var requestIn: ReceiveChannel<AbstractRequest>
-    override lateinit var responseOut: SendChannel<Response<*>>
+    lateinit var inChannel: SuperChannel
+
 
     override lateinit var scope: CoroutineScope
 
     override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
+
+    suspend fun answerRequest(request: AbstractRequest, result: Any) {
         logger.debug { "$name : answer to request ${request.name} with a response"}
-        responseOut.send(result as Response<*>)
+        inChannel.send(result as Response<*>)
     }
 
     override suspend fun consumeEvent(event: Event): Any? {
         try {
             super.consumeEvent(event)
-            val response = EventResponse(event.eventName, event as EventRequest)
+            val response = EventResponse(event as EventRequest)
             resumeEvent(response)
             return response
         }
         catch(ex: Exception){
             val infos = ErrorInfo(ex, this, ErrorLevel.MAJOR)
-            return EventResponse(event.eventName, event as EventRequest,
+            return EventResponse(event as EventRequest,
                 Status.ERROR, mutableListOf(infos))
         }
     }
@@ -71,12 +72,11 @@ abstract class AbstractDownloader(
 
 
     override suspend fun run() {
-        logger.info{"${name}: Starting downloader"}
-        super.run()
+        logger.info{"${name}: Starting downloader"
     }
 
-    override suspend fun stop() {
+    suspend fun stop() {
         logger.info{"${name}: Stopping downloader"}
         super.stop()
     }
-}
+}}

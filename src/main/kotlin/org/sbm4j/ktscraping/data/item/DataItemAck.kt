@@ -1,27 +1,31 @@
 package org.sbm4j.ktscraping.data.item
 
 import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.EventBack
 import org.sbm4j.ktscraping.data.Status
-import java.util.UUID
+import java.util.*
 
 
-abstract class AbstractItemAck(
-    open val itemId: UUID,
+abstract class AbstractItemAck<T: Item>(
     override var status: Status = Status.OK,
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
-): Back
+): Back<T> {
+    override var channelableId: UUID = UUID.randomUUID()
+}
 
 data class EventItemAck(
-    override val itemId: UUID,
-    override val eventName: String,
+    override val send: EventItem,
     override var status: Status = Status.OK,
-    override val errorInfos: MutableList<ErrorInfo> = mutableListOf(),
-): AbstractItemAck(itemId, status, errorInfos), EventBack
+    override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
+): AbstractItemAck<EventItem>(status, errorInfos){
+
+
+}
 
 
 data class DataItemAck(
-    override val itemId: UUID,
+    override val send: DataItem<*>,
     override var status: Status = Status.OK,
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf(),
-): AbstractItemAck(itemId, status, errorInfos)
+): AbstractItemAck<DataItem<*>>(status, errorInfos){
+
+}

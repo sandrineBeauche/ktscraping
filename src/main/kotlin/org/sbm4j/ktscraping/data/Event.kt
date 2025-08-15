@@ -1,6 +1,6 @@
 package org.sbm4j.ktscraping.data
 
-interface Event {
+interface Event: Send {
     val eventName: String
 }
 

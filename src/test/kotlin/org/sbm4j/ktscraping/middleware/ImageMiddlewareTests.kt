@@ -38,11 +38,11 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            val req = forwardInChannel.receive()
+            val req = outChannel.receive()
 
             outChannel.send(response)
 
-            val reqImage = forwardInChannel.receive() as DownloadingRequest
+            val reqImage = outChannel.receive() as DownloadingRequest
             logger.debug { "Tester: received the request ${reqImage.name} for the image ${reqImage.url}" }
 
             val respImage = DownloadingResponse(reqImage)
@@ -79,7 +79,7 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            val req = forwardInChannel.receive()
+            val req = outChannel.receive()
 
             outChannel.send(response)
 
@@ -115,12 +115,12 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            val req = forwardInChannel.receive()
+            val req = outChannel.receive()
             logger.info { "received the followed request, now send response" }
 
             outChannel.send(response)
 
-            val reqImage = forwardInChannel.receive() as DownloadingRequest
+            val reqImage = outChannel.receive() as DownloadingRequest
             val respImage = DownloadingResponse(reqImage, type = ContentType.IMAGE)
             respImage.contents[AbstractDownloader.PAYLOAD] = bytesImage
             outChannel.send(respImage)

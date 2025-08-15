@@ -7,13 +7,14 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.*
 import org.sbm4j.ktscraping.data.item.AbstractItemAck
+import org.sbm4j.ktscraping.data.item.ErrorInfo
 import org.sbm4j.ktscraping.data.item.Item
 
 
-fun buildPipelineChannels(): Pair<Channel<Item>, Channel<AbstractItemAck>>{
+fun buildPipelineChannels(): Pair<Channel<Item>, Channel<AbstractItemAck<*>>>{
     return Pair(
         Channel<Item>(Channel.UNLIMITED),
-        Channel<AbstractItemAck>(Channel.UNLIMITED)
+        Channel<AbstractItemAck<*>>(Channel.UNLIMITED)
     )
 }
 
@@ -29,7 +30,7 @@ fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
 
 fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: ItemDispatcherAll.() -> Unit){
     val dispatcher = ItemDispatcherAll(name, this.di)
-    dispatcher.itemIn = this.channelFactory.itemChannel
+    //dispatcher.itemIn = this.channelFactory.itemChannel
     dispatcher.itemAckOut = this.channelFactory.itemAckChannel
 
     dispatcher.initDispatcher()
@@ -46,8 +47,16 @@ fun Crawler.pipelineDispatcherOne(
         override fun selectChannel(item: Item): SendChannel<Item> {
             return selectChannelFunc(item)
         }
+
+        override var inChannel: SuperChannel
+            get() = TODO("Not yet implemented")
+            set(value) {}
+
+        override fun generateErrorInfos(ex: Exception): ErrorInfo {
+            TODO("Not yet implemented")
+        }
     }
-    dispatcher.itemIn = this.channelFactory.itemChannel
+    //dispatcher.itemIn = this.channelFactory.itemChannel
     dispatcher.itemAckOut = this.channelFactory.itemAckChannel
 
     dispatcher.init()
@@ -57,7 +66,7 @@ fun Crawler.pipelineDispatcherOne(
 
 class PipelineBranch(
     var pipelineItemIn: Channel<Item>,
-    var pipelineItemAckOut: Channel<AbstractItemAck>,
+    var pipelineItemAckOut: Channel<AbstractItemAck<*>>,
     override val di: DI
 ): DIAware{
 
@@ -68,6 +77,7 @@ class PipelineBranch(
                                       init: T.() -> Unit = {}): T{
         val pip = buildControllable<T>(name)
 
+        /*
         senders.add(pip)
         pip.itemIn = pipelineItemIn
         pip.itemAckOut = pipelineItemAckOut
@@ -79,6 +89,8 @@ class PipelineBranch(
         pipelineItemIn = newPipItem
         pipelineItemAckOut = newPipItemAck
 
+
+         */
         pip.init()
 
         return pip
@@ -90,16 +102,19 @@ class PipelineBranch(
         val exp = buildControllable<T>(name)
 
         senders.add(exp)
+        /*
         exp.itemIn = pipelineItemIn
         exp.itemAckOut = pipelineItemAckOut
         exp.init()
 
+
+         */
         return exp
     }
 
     fun pipelineDispatcherAll(name: String = "dispatcher", init: ItemDispatcherAll.() -> Unit){
         val dispatcher = ItemDispatcherAll(name, this.di)
-        dispatcher.itemIn = pipelineItemIn
+        //dispatcher.itemIn = pipelineItemIn
         dispatcher.itemAckOut = pipelineItemAckOut
         dispatcher.init()
         senders.add(dispatcher)
@@ -115,8 +130,16 @@ class PipelineBranch(
             override fun selectChannel(item: Item): SendChannel<Item> {
                 return selectChannelFunc(item)
             }
+
+            override var inChannel: SuperChannel
+                get() = TODO("Not yet implemented")
+                set(value) {}
+
+            override fun generateErrorInfos(ex: Exception): ErrorInfo {
+                TODO("Not yet implemented")
+            }
         }
-        dispatcher.itemIn = pipelineItemIn
+        //dispatcher.itemIn = pipelineItemIn
         dispatcher.itemAckOut = pipelineItemAckOut
         dispatcher.init()
         senders.add(dispatcher)
@@ -133,9 +156,12 @@ inline fun <reified T: AbstractExporter> ItemDispatcher.exporter(
     crawler.controllables.add(exp)
 
     val (newItemChannel, newItemAckChannel) = buildPipelineChannels()
+    /*
     exp.itemIn = newItemChannel
     exp.itemAckOut = newItemAckChannel
 
+
+     */
     this.addBranch(newItemChannel, newItemAckChannel)
     exp.init()
 

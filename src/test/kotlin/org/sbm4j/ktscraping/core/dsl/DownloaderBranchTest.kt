@@ -22,7 +22,7 @@ import org.sbm4j.ktscraping.data.response.EventResponse
 
 
 class MiddlewareClassTest(name: String): AbstractMiddleware(name){
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         return true
     }
 

@@ -24,7 +24,7 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
 
     val pendingRequest: MutableMap<String, Channel<AbstractRequest>> = mutableMapOf()
 
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         requestSemaphore.release()
         return true
     }

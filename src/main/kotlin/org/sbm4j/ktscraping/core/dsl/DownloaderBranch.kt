@@ -60,6 +60,7 @@ class DownloaderBranch(
         val mid = buildControllable<T>(name)
 
         senders.add(mid)
+        /*
         mid.requestIn = downloaderOut
         mid.responseOut = downloaderIn
 
@@ -70,6 +71,8 @@ class DownloaderBranch(
         downloaderIn = downResp
         downloaderOut = downReq
 
+         */
+
         mid.init()
         return mid
     }
@@ -79,10 +82,13 @@ class DownloaderBranch(
                                           init: T.() -> Unit = {}): T{
         val down = buildControllable<T>(name)
         senders.add(down)
+        /*
         down.requestIn = downloaderOut
         down.responseOut = downloaderIn
         down.init()
 
+
+         */
         return down
     }
 
@@ -112,9 +118,12 @@ inline fun <reified T: AbstractDownloader> DownloaderRequestDispatcher.downloade
     crawler.controllables.add(down)
 
     val (downReq, downResp) = buildDownloaderChannels()
+    /*
     down.requestIn = downReq
     down.responseOut = downResp
 
+
+     */
     this.addBranch(downReq, downResp)
     down.init()
 

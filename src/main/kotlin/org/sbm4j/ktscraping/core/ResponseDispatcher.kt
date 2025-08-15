@@ -55,7 +55,7 @@ interface ResponseDispatcher: Controllable, DIAware {
         logger.debug { "${name}: received event request with name $event from input #$index"}
         val events = pendingRequestEvent.getOrPut(event) { mutableListOf() }
         events.add(request)
-        pendingRequests[request.reqId] = sender
+        pendingRequests[request.channelableId] = sender
         if(events.size >= senders.size){
             channelOut.send(request)
         }
@@ -63,7 +63,7 @@ interface ResponseDispatcher: Controllable, DIAware {
 
     suspend fun performDownloadingRequest(request: AbstractRequest, sender: Channel<Response<*>>, index: Int){
         logger.trace { "Received request ${request.name} from input #$index and forwards it" }
-        pendingRequests[request.reqId] = sender
+        pendingRequests[request.channelableId] = sender
         channelOut.send(request)
     }
 
@@ -81,8 +81,8 @@ interface ResponseDispatcher: Controllable, DIAware {
     }
 
     suspend fun performDownloadingResponse(response: DownloadingResponse){
-        logger.trace{ "Received response for the request ${response.request.name} and dispatch it"}
-        val channel = pendingRequests.remove(response.request.reqId)
+        logger.trace{ "Received response for the request ${response.send.name} and dispatch it"}
+        val channel = pendingRequests.remove(response.send.channelableId)
         channel?.send(response)
     }
 
@@ -91,8 +91,8 @@ interface ResponseDispatcher: Controllable, DIAware {
         val requests = pendingRequestEvent.remove(response.eventName)
         if(requests != null){
             for(req in requests){
-                val resp = response.copy(request = req)
-                val channel = pendingRequests.remove(req.reqId)
+                val resp = response.copy(send = req)
+                val channel = pendingRequests.remove(req.channelableId)
                 channel?.send(resp)
             }
 

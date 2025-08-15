@@ -1,7 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
 import io.mockk.coVerify
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.AbstractMiddleware
@@ -11,10 +10,7 @@ import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
 import org.sbm4j.ktscraping.data.Event
 import org.sbm4j.ktscraping.data.EventBack
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.request.EventRequest
-import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.EventResponse
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -25,7 +21,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
 
     override fun buildMiddleware(middlewareName: String): AbstractMiddleware {
         return object: AbstractMiddleware(middlewareName){
-            override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+            override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
                 return true
             }
 
@@ -52,7 +48,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(req)
-            val receivedReq = forwardInChannel.receive() as DownloadingRequest
+            val receivedReq = outChannel.receive() as DownloadingRequest
 
             assertEquals(req.name, receivedReq.name)
             assertEquals(url, receivedReq.url)
@@ -62,7 +58,7 @@ class MiddlewareTest: AbstractMiddlewareTester() {
         }
 
         coVerify { middleware.processDataRequest(req)}
-        coVerify { middleware.processResponse(resp, req)}
+        coVerify { middleware.processDownloadingResponse(resp, req)}
     }
 
     @Test

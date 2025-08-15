@@ -46,13 +46,13 @@ interface EventConsumer {
         return null
     }
 
-    suspend fun resumeEvent(event: EventBack){
+    suspend fun resumeEvent(event: EventBack<*>){
         try {
             val eventName = event.eventName
             val job = pendingEventJobs.remove(eventName)
             val result = job?.await()
             if(result != null) {
-                event.status = event.status + result.first
+                event.status += result.first
                 event.errorInfos.addAll(result.second)
             }
             performPostEvent(event)
@@ -63,7 +63,7 @@ interface EventConsumer {
         }
     }
 
-    suspend fun performPostEvent(event: EventBack){
+    suspend fun performPostEvent(event: EventBack<*>){
         when(event.eventName){
             "start" -> postStart(event)
             "end" -> postEnd(event)
@@ -71,11 +71,11 @@ interface EventConsumer {
         }
     }
 
-    suspend fun postStart(event: EventBack){}
+    suspend fun postStart(event: EventBack<*>){}
 
-    suspend fun postEnd(event: EventBack){}
+    suspend fun postEnd(event: EventBack<*>){}
 
-    suspend fun postCustomEvent(event: EventBack){}
+    suspend fun postCustomEvent(event: EventBack<*>){}
 
     fun generateErrorInfos(ex: Exception): ErrorInfo
 

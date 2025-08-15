@@ -24,12 +24,12 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         }
     }
 
-    var expectedItem = ObjectDataItem.build(data, "test")
+    var expectedItem = ObjectDataItem.build(data, "test", spider)
 
     override fun buildSpider(spiderName: String): AbstractSimpleSpider {
         return object: AbstractSimpleSpider(spiderName){
             override suspend fun parse(resp: DownloadingResponse) {
-                this.itemsOut.send(expectedItem)
+                this.outChannel.send(expectedItem)
             }
 
             override suspend fun callbackError(ex: Throwable) {
@@ -50,13 +50,13 @@ class AbstractSpiderTest: AbstractSpiderTester() {
         (spider as AbstractSimpleSpider).urlRequest = url
 
         withSpider {
-            req = outChannel.receive() as DownloadingRequest
+            req = inChannel.channel.receive() as DownloadingRequest
             assertTrue{req.url == url}
 
 
             resp = DownloadingResponse(req)
             inChannel.send(resp)
-            receivedItem = itemChannel.receive()
+            receivedItem = inChannel.channel.receive() as Item
         }
 
         coVerify{ (spider as AbstractSimpleSpider).parse(resp)}

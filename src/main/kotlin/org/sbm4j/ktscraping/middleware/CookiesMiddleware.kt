@@ -23,7 +23,7 @@ class CookiesMiddleware(name: String = "Cookies middleware") : DownloaderMiddlew
         return request
     }
 
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         val cook = response.contents.get(COOKIE)
         if(cook != null){
             val name = response.request.parameters.get(COOKIE_NAME) as String?

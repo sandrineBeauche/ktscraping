@@ -3,11 +3,12 @@ package org.sbm4j.ktscraping.data.request
 import org.apache.hc.core5.net.URIBuilder
 import org.sbm4j.ktscraping.core.AbstractDownloader
 import org.sbm4j.ktscraping.core.ContentType
+import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.middleware.ImageMiddleware
 
 open class AbstractInlineRequest(
-    override val sender: RequestSender,
+    override var sender: Controllable,
     url: String,
     params: Map<String, String>
 ): DownloadingRequest(sender, url){

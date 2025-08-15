@@ -12,7 +12,7 @@ import org.sbm4j.ktscraping.data.item.AbstractItemAck
 import org.sbm4j.ktscraping.data.item.Item
 import kotlin.test.BeforeTest
 
-abstract class AbstractExporterTester: ScrapingTest<Item, AbstractItemAck>(){
+abstract class AbstractExporterTester: ScrapingTest(){
 
     lateinit var exporter: AbstractExporter
 
@@ -30,8 +30,7 @@ abstract class AbstractExporterTester: ScrapingTest<Item, AbstractItemAck>(){
 
         exporter = spyk(buildExporter(exporterName))
 
-        every { exporter.itemIn } returns inChannel
-        every { exporter.itemAckOut } returns outChannel
+        every { exporter.inChannel } returns inChannel
     }
 
     suspend fun withExporter(func: suspend AbstractExporterTester.() -> Unit){

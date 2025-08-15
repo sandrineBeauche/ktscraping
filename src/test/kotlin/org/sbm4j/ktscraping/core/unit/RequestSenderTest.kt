@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.PendingRequestMap
-import org.sbm4j.ktscraping.core.RequestException
+import org.sbm4j.ktscraping.core.SendException
 import org.sbm4j.ktscraping.core.RequestSender
 import org.sbm4j.ktscraping.core.logger
 import org.sbm4j.ktscraping.core.utils.ScrapingTest
@@ -45,7 +45,7 @@ abstract class RequestSenderMock() : RequestSender {
     }
 
     suspend fun callbackErr(ex: Throwable) {
-        val exRequest = ex as RequestException
+        val exRequest = ex as SendException
         val response = exRequest.resp
         if (response is DownloadingResponse && response.contents["close"] == true) {
             closeChannels()

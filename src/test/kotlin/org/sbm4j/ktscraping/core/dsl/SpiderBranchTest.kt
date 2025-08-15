@@ -39,7 +39,7 @@ class SpiderClassTest(name:String): AbstractSimpleSpider(name){
 }
 
 class SpiderMiddlewareClassTest(name: String) : SpiderMiddleware(name) {
-    override suspend fun processResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
         return true
     }
 

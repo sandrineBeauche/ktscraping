@@ -133,7 +133,7 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            req = forwardInChannel.receive() as Request
+            req = outChannel.receive() as Request
 
             outChannel.send(response)
             resp = forwardOutChannel.receive() as DownloadingResponse

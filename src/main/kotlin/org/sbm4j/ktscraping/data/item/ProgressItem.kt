@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.data.item
 
+import org.sbm4j.ktscraping.core.Controllable
 import org.sbm4j.ktscraping.core.ProgressSlot
 import org.sbm4j.ktscraping.core.ProgressState
 import org.sbm4j.ktscraping.core.SlotMode
@@ -9,14 +10,15 @@ abstract class ProgressItem(
     open val slot: String,
 ): Item(){
 
+
     abstract fun updateProgressState(state: ProgressState)
 
     fun getSlot(state: ProgressState): ProgressSlot{
         return state.progress
     }
 
-    override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): AbstractItemAck {
-        return DataItemAck(this.itemId)
+    override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): AbstractItemAck<*>? {
+        return null
     }
 }
 
@@ -24,7 +26,8 @@ data class StartTaskProgressItem(
     override val slot: String,
     val message: String = "",
     val nbSteps: Int = 0,
-    val slotMode: SlotMode = SlotMode.PROGRESS_BAR_DEFINED
+    val slotMode: SlotMode = SlotMode.PROGRESS_BAR_DEFINED,
+    override var sender: Controllable
 ): ProgressItem(slot) {
 
     override fun updateProgressState(state: ProgressState) {
@@ -43,6 +46,7 @@ data class StartTaskProgressItem(
 data class StartStepProgressItem(
     override val slot: String,
     val message: String = "",
+    override var sender: Controllable,
 ): ProgressItem(slot) {
     override fun updateProgressState(state: ProgressState) {
         val slot = getSlot(state)
@@ -57,7 +61,7 @@ data class StartStepProgressItem(
 
 data class StepDoneProgressItem(
     override val slot: String,
-    val nbSteps: Int = 1
+    val nbSteps: Int = 1, override var sender: Controllable
 ): ProgressItem(slot){
     override fun updateProgressState(state: ProgressState) {
         val slot = getSlot(state)
