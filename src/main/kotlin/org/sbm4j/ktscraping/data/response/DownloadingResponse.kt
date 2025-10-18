@@ -1,22 +1,18 @@
 package org.sbm4j.ktscraping.data.response
 
-import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.data.Channelable
+import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.request.AbstractRequest
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.request.EventRequest
-
-
 
 
 data class DownloadingResponse(
     override val send: DownloadingRequest,
     var type: ContentType = ContentType.HTML,
     override var status: Status = Status.OK,
-    override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
-): Response<DownloadingRequest>(send, status, errorInfos) {
+    override val errorInfos: MutableList<ErrorInfo> = mutableListOf(),
+    override val name: String = "${send.name}-DownloadingResponse"
+): Response(send, status, errorInfos) {
 
     val contents: MutableMap<String, Any> = mutableMapOf()
 
@@ -32,6 +28,10 @@ data class DownloadingResponse(
             ContentType.XML, ContentType.JSON, ContentType.SVG_IMAGE, ContentType.HTML, ContentType.NOTHING -> false
             ContentType.FILE, ContentType.IMAGE, ContentType.BITMAP_IMAGE -> true
         }
+    }
+
+    override fun clone(): DownloadingResponse {
+        return this.copy()
     }
 }
 

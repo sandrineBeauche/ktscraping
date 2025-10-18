@@ -4,9 +4,9 @@ import com.natpryce.hamkrest.*
 import com.natpryce.hamkrest.assertion.assertThat
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.AbstractMiddleware
-import org.sbm4j.ktscraping.core.ContentType
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.AbstractMiddleware
+import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
 import org.sbm4j.ktscraping.middleware.CacheAvailability
 import org.sbm4j.ktscraping.middleware.CacheEntry
@@ -133,13 +133,13 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            req = outChannel.receive() as Request
+            req = outChannel.channel.receive() as Request
 
             outChannel.send(response)
-            resp = forwardOutChannel.receive() as DownloadingResponse
+            resp = outChannel.channel.receive() as DownloadingResponse
 
             inChannel.send(request)
-            resp2 = forwardOutChannel.receive() as DownloadingResponse
+            resp2 = outChannel.channel.receive() as DownloadingResponse
         }
 
         val contentType = resp2.type
@@ -156,7 +156,7 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            resp = forwardOutChannel.receive() as DownloadingResponse
+            resp = outChannel.channel.receive() as DownloadingResponse
         }
 
         val contentType = resp.type

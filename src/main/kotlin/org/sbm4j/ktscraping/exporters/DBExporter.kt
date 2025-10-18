@@ -1,8 +1,9 @@
 package org.sbm4j.ktscraping.exporters
 
-import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.core.EventJobResult
-import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.core.components.AbstractExporter
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.db.DBControllable
@@ -15,6 +16,8 @@ data class ItemUpdate(
     override val data: Any,
     val values: Map<String, Any>,
     val label: String = "update",
+    override var sender: Controllable,
+    override val name: String = "${label}-${entityType.simpleName}-${lastId.getAndIncrement()}"
 ): DataItem<Any>() {
     override fun clone(): Item {
         return this.copy()
@@ -25,7 +28,9 @@ data class ItemDelete(
     val entityType: Class<*>,
     val keyName: KProperty<*>,
     override val data: Any,
-    val label: String = "delete"
+    val label: String = "delete",
+    override var sender: Controllable,
+    override val name: String = "${label}-${entityType.simpleName}-${lastId.getAndIncrement()}"
 ): DataItem<Any>() {
     override fun clone(): Item {
         return this.copy()
@@ -38,7 +43,7 @@ class DBExporter(name: String): AbstractExporter(name), DBControllable {
 
     override lateinit var db: DBConnexion
 
-    override suspend fun exportItem(item: DataItem<*>) {
+    override suspend fun exportItem(item: Item) {
         performDBItem(item)
     }
 

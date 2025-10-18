@@ -6,19 +6,18 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import org.sbm4j.ktscraping.core.AbstractMiddleware
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.AbstractMiddleware
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.EndRequest
-import org.sbm4j.ktscraping.data.request.EventRequest
-import org.sbm4j.ktscraping.data.request.StartRequest
-import org.sbm4j.ktscraping.data.response.EventResponse
 import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Response<*>>() {
+abstract class AbstractMiddlewareTester: DualScrapingTest() {
 
     val sender: Controllable = mockk<Controllable>()
 
@@ -43,28 +42,28 @@ abstract class AbstractMiddlewareTester: DualScrapingTest<AbstractRequest, Respo
     }
 
 
-    suspend fun performEvent(eventRequest: EventRequest, eventResponse: EventResponse){
-        inChannel.send(eventRequest)
-        outChannel.channel.receive() as EventRequest
-        logger.info{"received forwarded ${eventRequest.eventName} event"}
+    suspend fun performEvent(event: Event, eventBack: EventBack){
+        inChannel.send(event)
+        outChannel.channel.receive() as Event
+        logger.info{"received forwarded ${event.eventName} event"}
 
-        logger.info{ "send response for ${eventRequest.eventName} event"}
-        outChannel.send(eventResponse)
+        logger.info{ "send back for ${event.eventName} event"}
+        outChannel.send(eventBack)
         inChannel.channel.receive()
     }
 
     suspend fun performStartEvent(){
-        val startRequest = StartRequest(sender)
-        val startResponse = EventResponse(startRequest)
+        val startEvent = StartEvent(sender)
+        val startResponse = startEvent.buildBack()
 
-        performEvent(startRequest, startResponse)
+        performEvent(startEvent, startResponse)
     }
 
     suspend fun performEndEvent(){
-        val endRequest = EndRequest(sender)
-        val endResponse = EventResponse(endRequest)
+        val endEvent = EndEvent(sender)
+        val endEventBack = endEvent.buildBack()
 
-        performEvent(endRequest, endResponse)
+        performEvent(endEvent, endEventBack)
     }
 
 

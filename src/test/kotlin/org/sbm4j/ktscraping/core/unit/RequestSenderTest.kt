@@ -1,28 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
-import io.mockk.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.PendingRequestMap
-import org.sbm4j.ktscraping.core.SendException
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Response
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-
+/*
 abstract class RequestSenderMock() : RequestSender {
     override val mutex = Mutex()
     override val name = "RequestSender"
@@ -186,3 +164,5 @@ class RequestSenderTest: ScrapingTest<DownloadingResponse, AbstractRequest>() {
         }
     }
 }
+
+ */

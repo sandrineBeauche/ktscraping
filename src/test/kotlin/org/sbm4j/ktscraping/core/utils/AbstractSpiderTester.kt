@@ -5,16 +5,12 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import org.sbm4j.ktscraping.core.AbstractSpider
-import org.sbm4j.ktscraping.core.SuperChannel
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.request.EventRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.EventResponse
-import org.sbm4j.ktscraping.data.response.Response
+import kotlinx.coroutines.launch
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.components.AbstractSpider
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.StartEvent
 import kotlin.test.BeforeTest
 
 abstract class AbstractSpiderTester: ScrapingTest(){
@@ -32,33 +28,37 @@ abstract class AbstractSpiderTester: ScrapingTest(){
         initChannels()
         clearAllMocks()
 
-        val sc = mockk<CoroutineScope>()
-
-        spider = spyk(buildSpider(spiderName))
+        spider = buildSpider(spiderName)
 
         channel = SuperChannel()
-        every { spider.outChannel } returns channel
+        spider.outChannel = channel
     }
 
     suspend fun withSpider(func: suspend AbstractSpiderTester.() -> Unit){
         coroutineScope {
-            every { spider.scope } returns this
-            channel.scope = spider.scope
+            channel.init()
 
-            spider.start(this)
+            launch {
+                spider.start(this)
+            }
+            launch{
+                val startEvent = channel.receiveSend<StartEvent>()
+                val startEventBack = startEvent.buildBack()
+                channel.send(startEventBack)
 
-            val startReq = channel.channel.receive() as EventRequest
-            val startResp = EventResponse(startReq)
-            inChannel.send(startResp)
+                func()
 
-            func()
+                val endEvent = channel.receiveSend<EndEvent>()
+                val endEventBack = endEvent.buildBack()
+                channel.send(endEventBack)
 
-            val endReq = channel.channel.receive() as EventRequest
-            val endResp = EventResponse(endReq)
-            inChannel.send(endResp)
+                spider.job.join()
 
-            channel.close()
-            spider.stop()
+                channel.close()
+                spider.stop()
+            }
+
+
         }
     }
 }

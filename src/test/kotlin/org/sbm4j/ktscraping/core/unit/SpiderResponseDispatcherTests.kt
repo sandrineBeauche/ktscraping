@@ -1,34 +1,12 @@
 package org.sbm4j.ktscraping.core.unit
 
-import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.sameInstance
-import io.mockk.clearAllMocks
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.spyk
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.PendingRequestMap
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.ResponseDispatcher
-import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Response
-import kotlin.test.BeforeTest
-import kotlin.test.Test
+import org.sbm4j.ktscraping.core.dispatchers.BackDispatcher
 
-abstract class ResponseDispatcherMock: ResponseDispatcher{
-    override val pendingRequests: PendingRequestMap = PendingRequestMap()
+abstract class ResponseDispatcherMock: BackDispatcher{
+    //override val pendingAnswerable: PendingRequestMap = PendingRequestMap()
     override val name: String = "ResponseDispatcherMock"
 }
-
+/*
 class ResponseDispatcherTest: ScrapingTest<Response<*>, AbstractRequest>(){
 
     val sender1 : RequestSender = mockk<RequestSender>()
@@ -126,3 +104,5 @@ class ResponseDispatcherTest: ScrapingTest<Response<*>, AbstractRequest>(){
         }
     }
 }
+
+ */

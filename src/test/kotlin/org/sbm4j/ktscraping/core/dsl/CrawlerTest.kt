@@ -5,6 +5,10 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.test.TestScope
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
+import org.sbm4j.ktscraping.core.channels.ChannelFactory
+import org.sbm4j.ktscraping.core.components.AbstractSpider
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.item.Data
 
 
@@ -51,7 +55,7 @@ abstract class CrawlerTest {
 
     val scope = TestScope()
 
-    val sender: RequestSender = mockk<RequestSender>()
+    val sender: Controllable = mockk<Controllable>()
 
     val channelFactory : ChannelFactory = ChannelFactory()
 

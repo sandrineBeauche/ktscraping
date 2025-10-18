@@ -1,13 +1,12 @@
-package org.sbm4j.ktscraping.core
+package org.sbm4j.ktscraping.core.components
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 val logger = KotlinLogging.logger {}
@@ -38,21 +37,25 @@ interface Controllable {
 
     var scope: CoroutineScope
 
+    var job: Job
+
 
     /**
      * Starts the kt scraping component. The component is then executed in a coroutine subscope of the given scope
      * @param scope the parent coroutine scope
      */
-    suspend fun start(scope: CoroutineScope){
-        scope.launch {
+    suspend fun start(scope: CoroutineScope): Job{
+        job = scope.launch {
             try {
                 this@Controllable.scope = this
                 run()
+                logger.trace{"${name}: finished run"}
             }
             catch(ex: CancellationException){
                 logger.debug { "Cancellation exception" }
             }
         }
+        return job
     }
 
     /**
@@ -66,7 +69,9 @@ interface Controllable {
      */
     suspend fun stop(){
         try {
-            this.scope.cancel()
+            if(this.scope.isActive) {
+                this.scope.cancel()
+            }
         }
         catch (ex: Exception){
             logger.info{ "crawler scope cancelled" }
@@ -84,4 +89,26 @@ interface Controllable {
      */
     suspend fun resume(){
     }
+
+    fun generateErrorInfos(
+        ex: Exception,
+        level: ErrorLevel = ErrorLevel.MAJOR,
+        message: String = ""
+    ): ErrorInfo {
+        return ErrorInfo(ex, this, level, message)
+    }
+}
+
+abstract class AbstractControllable: Controllable{
+    override val mutex: Mutex = Mutex()
+
+    override var state: State = State()
+
+    override lateinit var scope: CoroutineScope
+
+    override lateinit var job: Job
+
+    val pendingMinorError: ConcurrentHashMap<UUID, MutableList<ErrorInfo>> = ConcurrentHashMap()
+
+    val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 }

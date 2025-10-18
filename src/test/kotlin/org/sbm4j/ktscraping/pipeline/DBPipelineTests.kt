@@ -2,19 +2,18 @@ package org.sbm4j.ktscraping.pipeline
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.AbstractPipeline
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
+import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.ktscraping.exporters.Address
 import org.sbm4j.ktscraping.exporters.Contact
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
-import org.sbm4j.ktscraping.data.item.EndItem
 import java.io.File
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -53,16 +52,15 @@ class DBPipelineTests: AbstractPipelineTester() {
     @Test
     fun testDBPipeline1() = TestScope().runTest{
 
-        val item = ObjectDataItem.build(data1, "test")
+        val item = ObjectDataItem.build(data1, "test", sender)
 
         withPipeline {
             inChannel.send(item)
 
-            val end = EndItem()
+            val end = EndEvent(sender)
             inChannel.send(end)
 
-            val f = outChannel.receiveAsFlow()
-            val l = f.take(2).toList()
+            val l = outChannel.getSendFlow(ObjectDataItem::class).take(2).toList()
 
             println(l)
         }

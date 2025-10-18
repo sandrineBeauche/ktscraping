@@ -4,12 +4,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.sbm4j.ktscraping.core.AbstractSpider
-import org.sbm4j.ktscraping.core.SendException
+import org.sbm4j.ktscraping.core.components.AbstractSpider
+import org.sbm4j.ktscraping.core.processors.SendException
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.internal.ErrorInternal
 import org.sbm4j.ktscraping.data.item.Data
-import org.sbm4j.ktscraping.data.item.ErrorItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
@@ -75,7 +75,7 @@ class SpiderTest: AbstractSpiderTester() {
             resp = DownloadingResponse(req, status = Status.ERROR)
             inChannel.send(resp)
 
-            val error = channel.channel.receive() as ErrorItem
+            val error = channel.channel.receive() as ErrorInternal
             assertIs<SendException>(error.errorInfo.ex)
         }
 

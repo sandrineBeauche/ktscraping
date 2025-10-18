@@ -1,27 +1,20 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.SendChannel
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
-import org.sbm4j.ktscraping.core.*
+import org.sbm4j.ktscraping.core.Crawler
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.AbstractMiddleware
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.dispatchers.DownloaderDispatcher
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Response
 
-fun buildDownloaderChannels(): Pair<Channel<AbstractRequest>, Channel<Response<*>>>{
-    return Pair(
-        Channel(Channel.UNLIMITED),
-        Channel(Channel.UNLIMITED),
-    )
-}
 
 fun Crawler.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
     val branch = DownloaderBranch(
-        this.channelFactory.downloaderResponseChannel,
-        this.channelFactory.downloaderRequestChannel,
+        this.channelFactory.downloaderChannel,
         this.di)
     branch.initBranch()
     this.controllables.addAll(branch.senders)
@@ -30,16 +23,16 @@ fun Crawler.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
 
 fun Crawler.downloaderDispatcher(
     name: String = "dispatcher",
-    selectChannelFunc: DownloaderRequestDispatcher.(DownloadingRequest) -> SendChannel<AbstractRequest>,
-    initDispatcher: DownloaderRequestDispatcher.() -> Unit
+    selectChannelFunc: DownloaderDispatcher.(AbstractRequest) -> SuperChannel,
+    initDispatcher: DownloaderDispatcher.() -> Unit
 ){
-    val dispatcher = object : DownloaderRequestDispatcher(name, this.di){
-        override fun selectChannel(request: DownloadingRequest): SendChannel<AbstractRequest> {
+    val dispatcher = object : DownloaderDispatcher(name, this.di){
+        override fun selectChannel(request: AbstractRequest): SuperChannel {
             return selectChannelFunc(request)
         }
     }
-    dispatcher.channelOut = this.channelFactory.downloaderResponseChannel
-    dispatcher.channelIn = this.channelFactory.downloaderRequestChannel
+
+    dispatcher.channelIn = this.channelFactory.downloaderChannel
 
     dispatcher.initDispatcher()
     this.controllables.add(dispatcher)
@@ -47,8 +40,7 @@ fun Crawler.downloaderDispatcher(
 
 
 class DownloaderBranch(
-    var downloaderIn: Channel<Response<*>>,
-    var downloaderOut: Channel<AbstractRequest>,
+    var downloaderChannel: SuperChannel,
     override val di: DI
 ): DIAware{
 
@@ -60,18 +52,12 @@ class DownloaderBranch(
         val mid = buildControllable<T>(name)
 
         senders.add(mid)
-        /*
-        mid.requestIn = downloaderOut
-        mid.responseOut = downloaderIn
+        mid.inChannel = downloaderChannel
 
-        val (downReq, downResp) = buildDownloaderChannels()
-        mid.requestOut = downReq
-        mid.responseIn = downResp
+        val newChannel = SuperChannel()
+        mid.outChannel = newChannel
 
-        downloaderIn = downResp
-        downloaderOut = downReq
-
-         */
+        downloaderChannel = newChannel
 
         mid.init()
         return mid
@@ -82,34 +68,31 @@ class DownloaderBranch(
                                           init: T.() -> Unit = {}): T{
         val down = buildControllable<T>(name)
         senders.add(down)
-        /*
-        down.requestIn = downloaderOut
-        down.responseOut = downloaderIn
+
+        down.inChannel = downloaderChannel
         down.init()
 
-
-         */
         return down
     }
 
     fun downloaderDispatcher(
         name: String = "dispatcher",
-        selectChannelFunc: DownloaderRequestDispatcher.(AbstractRequest) -> SendChannel<AbstractRequest>,
-        init: DownloaderRequestDispatcher.() -> Unit
+        selectChannelFunc: DownloaderDispatcher.(AbstractRequest) -> SuperChannel,
+        init: DownloaderDispatcher.() -> Unit
     ){
-        val dispatcher = object : DownloaderRequestDispatcher(name, this.di){
-            override fun selectChannel(request: DownloadingRequest): SendChannel<AbstractRequest> {
+        val dispatcher = object : DownloaderDispatcher(name, this.di){
+            override fun selectChannel(request: AbstractRequest): SuperChannel {
                 return selectChannelFunc(request)
             }
         }
-        dispatcher.channelOut = downloaderIn
-        dispatcher.channelIn = downloaderOut
+
+        dispatcher.channelIn = downloaderChannel
         dispatcher.init()
         senders.add(dispatcher)
     }
 }
 
-inline fun <reified T: AbstractDownloader> DownloaderRequestDispatcher.downloader(
+inline fun <reified T: AbstractDownloader> DownloaderDispatcher.downloader(
                                                                    name: String? = null,
                                                                    init: T.() -> Unit = {}): T {
     val down = buildControllable<T>(name)
@@ -117,23 +100,19 @@ inline fun <reified T: AbstractDownloader> DownloaderRequestDispatcher.downloade
     val crawler: Crawler by di.instance(arg = this.di)
     crawler.controllables.add(down)
 
-    val (downReq, downResp) = buildDownloaderChannels()
-    /*
-    down.requestIn = downReq
-    down.responseOut = downResp
+    val channel = SuperChannel()
+    down.inChannel = channel
 
-
-     */
-    this.addBranch(downReq, downResp)
+    this.addBranch(channel)
     down.init()
 
     return down
 }
 
-fun DownloaderRequestDispatcher.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
-    val (downReq, downResp) = buildDownloaderChannels()
-    this.addBranch(downReq, downResp)
-    val branch = DownloaderBranch(downResp, downReq, this.di)
+fun DownloaderDispatcher.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
+    val channel = SuperChannel()
+    this.addBranch(channel)
+    val branch = DownloaderBranch(channel, this.di)
     branch.initBranch()
 
     val crawler : Crawler by this.di.instance(arg = this.di)

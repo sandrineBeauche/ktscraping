@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.channels.Channel
-import org.sbm4j.ktscraping.data.item.ProgressItem
+import org.sbm4j.ktscraping.data.internal.ProgressInternal
 
 
 enum class SlotMode{
@@ -37,7 +37,7 @@ class ProgressMonitor() {
 
     val progressState: MutableMap<String, ProgressState> = mutableMapOf()
 
-    suspend fun processItemProgress(item: ProgressItem){
+    suspend fun processItemProgress(item: ProgressInternal){
         val state = progressState.getOrPut(item.slot){ ProgressState(item.slot, ProgressSlot(item.slot)) }
         item.updateProgressState(state)
         progressChannel.send(state.copy())

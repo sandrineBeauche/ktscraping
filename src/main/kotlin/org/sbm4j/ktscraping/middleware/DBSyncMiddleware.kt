@@ -1,21 +1,17 @@
 package org.sbm4j.ktscraping.middleware
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import org.sbm4j.ktscraping.core.EventJobResult
-import org.sbm4j.ktscraping.core.SpiderMiddleware
-import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.data.Event
+import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.ktscraping.core.components.SpiderMiddleware
+import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.data.item.Data
-import org.sbm4j.ktscraping.data.item.ErrorLevel
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.EndItem
-import org.sbm4j.ktscraping.data.item.ErrorItem
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import kotlin.reflect.KProperty1
 
 
@@ -43,20 +39,23 @@ class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
 
     var errorOccured: Boolean = false
 
-
-    override suspend fun preStart(event: Event): EventJobResult? {
+    /*
+    override suspend fun start(scope: CoroutineScope) {
         if(keys == null) {
             keys = dbConnexion.getKeys(classObject, keyProperty)
         }
-        return super.preStart(event)
+        super.start(scope)
+    }
+*/
+
+    override suspend fun processResponse(response: Response) {
+        if(response is DownloadingResponse) {
+            if (response.send.parameters.getOrDefault(DBSYNC_STATE, null) == DBSyncState.NEW) {
+                response.contents[DBSYNC_STATE] = DBSyncState.NEW
+            }
+        }
     }
 
-    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
-        if(response.request.parameters.getOrDefault(DBSYNC_STATE, null) == DBSyncState.NEW){
-            response.contents[DBSYNC_STATE] = DBSyncState.NEW
-        }
-        return true
-    }
 
     override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         if(request.parameters.containsKey(DBSYNC_KEY)){
@@ -76,6 +75,8 @@ class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
     }
 
 
+
+
     override suspend fun preEnd(event: Event): EventJobResult? {
         val result: MutableList<Item> = mutableListOf()
 
@@ -83,13 +84,13 @@ class DBSyncMiddleware<T: Data>(name: String): SpiderMiddleware(name) {
             logger.debug { "${name}: get keys to delete to update database" }
             val keyToDelete = keys?.minus(updatedKeys)
             val itemDeletes = keyToDelete?.map {
-                ItemDelete(classObject, keyProperty, classObject.cast(it))
+                ItemDelete(classObject, keyProperty, classObject.cast(it), sender = this)
             }!!
             result.addAll(itemDeletes)
         }
 
 
-        return super.preEnd(event)
+        return null
     }
 
 }

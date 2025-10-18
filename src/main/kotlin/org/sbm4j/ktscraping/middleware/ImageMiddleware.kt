@@ -3,17 +3,17 @@ package org.sbm4j.ktscraping.middleware
 import com.nfeld.jsonpathkt.JsonPath
 import com.nfeld.jsonpathkt.extension.read
 import it.skrape.core.htmlDocument
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.core.SpiderMiddleware
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.ContentType
+import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 import org.sbm4j.ktscraping.data.response.ResponseException
 import java.io.File
 
@@ -37,46 +37,48 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
         val IMAGES_ROOT: String = "imagesRoot"
     }
 
-    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
-        if(response.status == Status.OK &&
-            (response.request.parameters.contains(CSS_SELECTOR_IMAGES) ||
-                    response.request.parameters.containsKey(JSON_PATH_IMAGES))){
+    override suspend fun processResponse(response: Response) {
+        if(response is DownloadingResponse){
+            if(response.status == Status.OK &&
+                (response.send.parameters.contains(CSS_SELECTOR_IMAGES) ||
+                        response.send.parameters.containsKey(JSON_PATH_IMAGES))){
 
-            val payload = getPayload(response)
-            var images: Map<String, String> = mapOf()
-            if (response.request.parameters.contains(CSS_SELECTOR_IMAGES)) {
-                val cssSelectors = (response.request.parameters[CSS_SELECTOR_IMAGES] as Map<*, *>)
-                images = searchImageCSS(cssSelectors, payload)
-            }
-            if(response.request.parameters.containsKey(JSON_PATH_IMAGES)){
-                val jsonPaths = (response.request.parameters[JSON_PATH_IMAGES] as Map<String, String>)
-                images = searchImageJsonPath(jsonPaths, payload)
-            }
-            response.contents[IMAGES] = images
-
-            val imagesPayload = images.map {
-                if(it.value.startsWith("data:image")){
-                    val id = ImageDescriptor(it.key)
-                    id.rawStringData = it.value
-                    it.key to id
+                val payload = getPayload(response)
+                var images: Map<String, String> = mapOf()
+                if (response.send.parameters.contains(CSS_SELECTOR_IMAGES)) {
+                    val cssSelectors = (response.send.parameters[CSS_SELECTOR_IMAGES] as Map<*, *>)
+                    images = searchImageCSS(cssSelectors, payload)
                 }
-                else {
-                    val imageValue = downloadImage(it.key, it.value, response.request)
-                    it.value to imageValue
+                if(response.send.parameters.containsKey(JSON_PATH_IMAGES)){
+                    val jsonPaths = (response.send.parameters[JSON_PATH_IMAGES] as Map<String, String>)
+                    images = searchImageJsonPath(jsonPaths, payload)
                 }
-            }.toMap()
+                response.contents[IMAGES] = images
 
-            response.contents[IMAGES_PAYLOAD] = imagesPayload
+                val imagesPayload = images.map {
+                    if(it.value.startsWith("data:image")){
+                        val id = ImageDescriptor(it.key)
+                        id.rawStringData = it.value
+                        it.key to id
+                    }
+                    else {
+                        val imageValue = downloadImage(it.key, it.value, response.send)
+                        it.value to imageValue
+                    }
+                }.toMap()
+
+                response.contents[IMAGES_PAYLOAD] = imagesPayload
+            }
         }
-        return true
     }
+
 
     fun getPayload(response: DownloadingResponse): String{
         return when(response.type){
             ContentType.XML, ContentType.HTML, ContentType.JSON -> {
                 val payload = response.contents[AbstractDownloader.PAYLOAD]
                 if(payload == null) {
-                    throw ResponseException("payload for response on request ${response.request.name} is null")
+                    throw ResponseException("payload for response on request ${response.send.name} is null")
                 }
                 else payload as String
             }
@@ -158,13 +160,8 @@ class ImageMiddleware(name: String): SpiderMiddleware(name) {
     }
 
 
-
-
     override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         return true
     }
 
-    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
-        return listOf(item)
-    }
 }

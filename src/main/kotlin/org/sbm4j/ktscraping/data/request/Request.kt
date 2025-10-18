@@ -1,8 +1,6 @@
 package org.sbm4j.ktscraping.data.request
 
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.data.Channelable
+import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.Send
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger

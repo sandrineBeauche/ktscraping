@@ -1,88 +1,142 @@
 package org.sbm4j.ktscraping.core.unit
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.SendChannel
+import io.mockk.mockk
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.State
-import org.sbm4j.ktscraping.core.SuperChannel
-import org.sbm4j.ktscraping.data.Channelable
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.ktscraping.data.response.Response
-import java.util.UUID
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.components.AbstractControllable
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.Back
+import org.sbm4j.ktscraping.data.Channelable.Companion.lastId
+import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import java.util.*
 import kotlin.test.Test
 
 
-class ChannelableA(
+data class SendA(
     val message: String,
-    override var sender: Controllable?
-) : Channelable{
+    override var sender: Controllable,
+    override val name: String = "A${lastId.getAndIncrement()}"
+) : Send {
+
     override var channelableId: UUID = UUID.randomUUID()
+    override fun buildErrorBack(infos: ErrorInfo, status: Status): Back<*> {
+        return BackB(this,
+            Status.ERROR, mutableListOf(infos))
+    }
+
+    override fun buildBack(): BackB {
+        return BackB(send = this)
+    }
+
+    override fun clone(): Send {
+        return this.copy()
+    }
 }
 
-class ChannelableB(
+data class SendC(
     val message: String,
-    override var sender: Controllable?
-) : Channelable{
+    override var sender: Controllable,
+    override val name: String = "A${lastId.getAndIncrement()}"
+) : Send {
+
     override var channelableId: UUID = UUID.randomUUID()
+    override fun buildErrorBack(infos: ErrorInfo, status: Status): Back<*> {
+        return BackD(this,
+            Status.ERROR, mutableListOf(infos))
+    }
+
+    override fun buildBack(): BackD {
+        return BackD(send = this)
+    }
+
+    override fun clone(): Send {
+        return this.copy()
+    }
+}
+
+data class BackB(
+    override val send: SendA,
+    override var status: Status = Status.OK,
+    override val errorInfos: MutableList<ErrorInfo> = mutableListOf(),
+    override val name: String = "B${lastId.getAndIncrement()}",
+    ) : Back<SendA> {
+
+    override var channelableId: UUID = UUID.randomUUID()
+    override fun clone(): Back<SendA> {
+        return this.copy()
+    }
+}
+
+data class BackD(
+    override val send: SendC,
+    override var status: Status = Status.OK,
+    override val errorInfos: MutableList<ErrorInfo> = mutableListOf(),
+    override val name: String = "D${lastId.getAndIncrement()}",
+) : Back<SendC> {
+
+    override var channelableId: UUID = UUID.randomUUID()
+    override fun clone(): Back<SendC> {
+        return this.copy()
+    }
 }
 
 class TestingControllableA(
     override val name: String = "ControllableA"
-) : Controllable{
-    override val mutex: Mutex = Mutex()
-    override var state: State = State()
+) : AbstractControllable(){
 
-    override lateinit var scope: CoroutineScope
+    lateinit var channelableAOut: SuperChannel
 
-    lateinit var channelableAOut: SendChannel<ChannelableA>
-
-    lateinit var channelableBIn: Flow<ChannelableB>
 
     override suspend fun run() {
         scope.launch {
             repeat(5){
-                val chanA = ChannelableA("messsage #$it from A", this@TestingControllableA)
-                channelableAOut.send(chanA)
+                val chanA = SendA("messsage #$it from A", sender = this@TestingControllableA)
+                val chanB = channelableAOut.sendSync<BackB>(chanA)
+                logger.debug{"${name}: received ${chanB.loggingLabel} ${chanB.name} for the ${chanA.loggingLabel} ${chanA.name}: ${chanB}"}
             }
+            logger.debug{"${name}: finished to send sends"}
         }
         scope.launch {
-            channelableBIn.collect {
-                println("${name}: received ${it.message} from ${it.sender?.name}")
+            channelableAOut.getBackFlow(this@TestingControllableA).take(5).collect { chanB ->
+                logger.debug{"${name}: received ${chanB.loggingLabel} ${chanB.name} from ${chanB.send.loggingLabel} ${chanB.send.name} (${chanB.send}) -> ${chanB}"}
             }
+            logger.debug{"${name}: finished to receive backs"}
         }
     }
 }
 
 class TestingControllableB(
     override val name: String = "ControllableB",
-) : Controllable{
-    override val mutex: Mutex = Mutex()
-    override var state: State = State()
+) : AbstractControllable(){
 
-    override lateinit var scope: CoroutineScope
+    lateinit var channelableAIn: SuperChannel
 
-    lateinit var channelableAIn: Flow<ChannelableA>
-
-    lateinit var channelableBOut: SendChannel<ChannelableB>
 
     override suspend fun run() {
         scope.launch {
             repeat(5){
-                val chanA = ChannelableB("messsage #$it from B", this@TestingControllableB)
-                channelableBOut.send(chanA)
+                val chanA = SendA("another message", sender = this@TestingControllableB)
+                val chanB = chanA.buildBack()
+                channelableAIn.send(chanB)
+                delay(10)
             }
+            logger.debug{"${name}: finished to send backs"}
         }
         scope.launch {
-            channelableAIn.collect {
-                println("${name}: received ${it.message} from ${it.sender?.name}")
+            channelableAIn.getSendFlow().take(5).collect { chanA ->
+                logger.debug{"${name}: received ${chanA.name} from ${chanA.sender.name} and answers with a back"}
+                val chanB = chanA.buildBack()
+                channelableAIn.send(chanB)
             }
+            logger.debug{"${name}: finished to answers to sends"}
         }
     }
 }
@@ -90,22 +144,60 @@ class TestingControllableB(
 class SuperChannelTests {
 
     @Test
-    fun testRequestResponseExchange() = TestScope().runTest{
+    fun testSendBackExchange() = TestScope().runTest{
         coroutineScope {
-            val channel = SuperChannel(this)
+            val channel = SuperChannel()
+
+            channel.init()
+
+            val contA = TestingControllableA()
+            contA.channelableAOut = channel
+            contA.start(this)
+
+            val contB = TestingControllableB()
+            contB.channelableAIn = channel
+            contB.start(this)
+
+            logger.debug{"Waiting for run to finish"}
+            contA.job.join()
+            contB.job.join()
+            logger.debug { "After join jobs" }
+
+            contA.stop()
+            logger.debug{"After stop A"}
+            contB.stop()
+            logger.debug{"After stop B"}
+
+            channel.close()
+            logger.debug{"After channel close()"}
+        }
+    }
+
+    @Test
+    fun testMultipleSendType() = TestScope().runTest {
+        val sender = mockk<Controllable>()
+
+        coroutineScope {
+            val channel = SuperChannel.build()
 
             launch {
-                val contA = TestingControllableA()
-                contA.channelableAOut = channel.channel
-                contA.channelableBIn = channel.getFlow<ChannelableB>()
-                contA.start(this)
+                repeat(3){
+                    val s1 = SendA("coucou$it", sender)
+                    channel.send(s1)
 
-                val contB = TestingControllableB()
-                contB.channelableAIn = channel.getFlow<ChannelableA>()
-                contB.channelableBOut = channel.channel
-                contB.start(this)
-
-
+                    val s2 = SendC("salut$it", sender)
+                    channel.send(s2)
+                }
+            }
+            launch {
+                channel.getSendFlow(SendA::class).take(3).collect {
+                    logger.debug { "received the sendA: ${it}" }
+                }
+            }
+            launch {
+                channel.getSendFlow(SendC::class).take(3).collect {
+                    logger.debug { "received the sendC: ${it}" }
+                }
             }
         }
     }

@@ -5,18 +5,16 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.coroutineScope
-import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.data.item.AbstractItemAck
-import org.sbm4j.ktscraping.data.item.EndItem
-import org.sbm4j.ktscraping.data.item.EventItem
-import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.EventItemAck
-import org.sbm4j.ktscraping.data.item.StartItem
+import org.sbm4j.ktscraping.core.components.AbstractPipeline
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.StartEvent
 import kotlin.test.BeforeTest
 
-abstract class AbstractPipelineTester: DualScrapingTest<Item, AbstractItemAck<*>>() {
+abstract class AbstractPipelineTester: DualScrapingTest() {
 
     lateinit var pipeline: AbstractPipeline
 
@@ -38,9 +36,9 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, AbstractItemAck<*>
     }
 
 
-    suspend fun performEvent(eventItem: EventItem, dataItemAck: EventItemAck){
+    suspend fun performEvent(eventItem: Event, dataItemAck: EventBack){
         inChannel.send(eventItem)
-        outChannel.channel.receive() as EventItem
+        outChannel.channel.receive() as Event
         logger.info{"received forwarded ${eventItem.eventName} event"}
 
         logger.info{ "send response for ${eventItem.eventName} event"}
@@ -49,17 +47,17 @@ abstract class AbstractPipelineTester: DualScrapingTest<Item, AbstractItemAck<*>
     }
 
     suspend fun performStartEvent(){
-        val startItem = StartItem(sender)
-        val startItemAck = EventItemAck(startItem)
+        val startEvent = StartEvent(sender)
+        val startEventBack = startEvent.buildBack()
 
-        performEvent(startItem, startItemAck)
+        performEvent(startEvent, startEventBack)
     }
 
     suspend fun performEndEvent(){
-        val endItem = EndItem(sender)
-        val endItemAck = EventItemAck(endItem)
+        val endEvent = EndEvent(sender)
+        val endItemAck = endEvent.buildBack()
 
-        performEvent(endItem, endItemAck)
+        performEvent(endEvent, endItemAck)
     }
 
     suspend fun withPipeline(

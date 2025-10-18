@@ -5,11 +5,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
-import org.sbm4j.ktscraping.core.DownloaderMiddleware
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 
 class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMiddleware(name) {
 
@@ -24,16 +25,16 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
 
     val pendingRequest: MutableMap<String, Channel<AbstractRequest>> = mutableMapOf()
 
-    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+
+    override suspend fun processResponse(response: Response) {
         requestSemaphore.release()
-        return true
     }
 
     override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         return true
     }
 
-    override suspend fun answerRequest(request: AbstractRequest, result: Any) {
+    suspend fun answerRequest(request: AbstractRequest, result: Any) {
         submitRequest(request as DownloadingRequest)
     }
 
@@ -44,7 +45,7 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
             for(req in ch){
                 requestSemaphore.acquire()
                 logger.trace { "${name}: Sending request ${req.name}" }
-                requestOut.send(req)
+                outChannel.send(req)
                 if(autoThrottle > 0){
                     logger.trace { "${name}: delai of ${autoThrottle}ms for auto-throttle"}
                     delay(autoThrottle.toLong())
@@ -73,7 +74,7 @@ class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMidd
 
     override suspend fun run() {
         logger.info{"${name}: Starting scheduler middleware"}
-        super.run()
+        //super.run()
     }
 
     override suspend fun stop() {

@@ -1,25 +1,20 @@
-package org.sbm4j.ktscraping.core
+package org.sbm4j.ktscraping.core.components
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import java.util.UUID
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Send
-import org.sbm4j.ktscraping.data.item.*
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.request.EndRequest
+import org.sbm4j.ktscraping.core.SlotMode
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.processors.SendException
+import org.sbm4j.ktscraping.core.processors.SendSource
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.StartEvent
+import org.sbm4j.ktscraping.data.internal.*
+import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import java.util.concurrent.ConcurrentHashMap
-import org.sbm4j.ktscraping.data.response.Response
-import kotlin.reflect.KClass
 
 
 class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {
@@ -28,32 +23,11 @@ class SpiderStepException(message: String? = null, cause: Throwable? = null) : E
 
 abstract class AbstractSpider(
     override val name: String = "Spider"
-) : SendSource<AbstractRequest, Back<AbstractRequest>>, RequestSender, Controllable {
+) : SendSource, AbstractControllable() {
 
-    override val mutex: Mutex = Mutex()
-    override var state: State = State()
 
-    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult> = ConcurrentHashMap()
 
     override lateinit var outChannel: SuperChannel
-
-    override val backClazz: KClass<*> = Back::class
-
-    override val sendClazz: KClass<*> = Send::class
-
-    override val pendingMinorError: ConcurrentHashMap<UUID, MutableList<ErrorInfo>>
-        get() = TODO("Not yet implemented")
-
-    override suspend fun performBack(back: Back<AbstractRequest>) {
-        super<RequestSender>.performBack(back as Response<*>)
-    }
-
-    override suspend fun processDownloadingResponse(
-        response: DownloadingResponse,
-        request: DownloadingRequest
-    ): Boolean {
-        return false
-    }
 
     /**
      * Performs the scraping logic. Here the user writes his code to scrape what he wants
@@ -62,42 +36,30 @@ abstract class AbstractSpider(
      */
     abstract suspend fun performScraping(subScope: CoroutineScope)
 
-    override lateinit var scope: CoroutineScope
-
-    lateinit var job: Job
-
 
     override suspend fun run() {
         logger.info { "${name}: Starting spider" }
         job = scope.launch {
             try {
                 logger.info { "${name}: send start event request to initialize the crawler" }
-                val startRequest = StartRequest(this@AbstractSpider)
-                sendSync(startRequest, this)
-
+                val startRequest = StartEvent(this@AbstractSpider)
+                sendSync<Event>(startRequest, this)
 
                 logger.info { "${name}: Crawler initialized with success... start performing scraping" }
                 performScraping(this)
             } catch (ex: SendException) {
                 logger.error { "${name}: Error when running the spider -> ${ex.message}" }
-                val error = ErrorItem(
-                    ErrorInfo(ex, this@AbstractSpider, ErrorLevel.MAJOR),
-                    this@AbstractSpider
-                )
+                val errorInfos = generateErrorInfos(ex)
+                val error = ErrorInternal(errorInfos, this@AbstractSpider)
                 outChannel.send(error)
             } finally {
                 logger.info { "${name}: finished performing scraping... send end event request" }
 
-                val endRequest = EndRequest(this@AbstractSpider)
+                val endRequest = EndEvent(this@AbstractSpider)
                 val endResp = sendSync(endRequest, this)
                 logger.info { "${name}: ready to stop: ${endResp}" }
             }
         }
-    }
-
-
-    override suspend fun performDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest) {
-        throw NoRequestSenderException("${name}: request ${response.send.name} is not correlated to a sender")
     }
 
 
@@ -116,17 +78,14 @@ abstract class AbstractSpider(
     ): T? {
         val task = ScrapingTask(taskSlot, taskName, nbSteps)
         try {
-            val itemStart = StartTaskProgressItem(taskSlot, taskMessage, nbSteps, slotMode, this@AbstractSpider)
+            val itemStart = StartTaskProgressInternal(taskSlot, taskMessage, nbSteps, slotMode, this@AbstractSpider)
             outChannel.send(itemStart)
             val result = func(task)
             return result
         } catch (ex: Exception) {
             if (optional) {
                 logger.error(ex) { "${ex.message}" }
-                val error = ErrorItem(
-                    ErrorInfo(ex, this, ErrorLevel.MINOR),
-                    this
-                )
+                val error = ErrorInternal(this.generateErrorInfos(ex, ErrorLevel.MINOR), this)
                 outChannel.send(error)
             } else {
                 throw ex
@@ -155,7 +114,7 @@ abstract class AbstractSpider(
                 val newEx = SpiderStepException(message, ex)
                 if (optional) {
                     logger.error(newEx) { "${name}: $message" }
-                    val error = ErrorItem(
+                    val error = ErrorInternal(
                         ErrorInfo(newEx, this@AbstractSpider, ErrorLevel.MINOR),
                         this@AbstractSpider
                     )
@@ -176,7 +135,7 @@ abstract class AbstractSpider(
                 func(this)
             } catch (ex: Exception) {
                 logger.error(ex) { "${ex.message}" }
-                val error = ErrorItem(
+                val error = ErrorInternal(
                     ErrorInfo(ex, this@AbstractSpider, ErrorLevel.MINOR),
                     this@AbstractSpider
                 )
@@ -201,11 +160,6 @@ abstract class AbstractSpider(
         suspend fun sendUpdate(update: ItemUpdate) {
             outChannel.send(update)
         }
-    }
-
-
-    override fun generateErrorInfos(ex: Exception): ErrorInfo {
-        return ErrorInfo(ex, this, ErrorLevel.MAJOR)
     }
 }
 

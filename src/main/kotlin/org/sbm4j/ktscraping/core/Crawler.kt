@@ -1,13 +1,15 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.sync.Mutex
 import org.kodein.di.*
+import org.sbm4j.ktscraping.core.channels.ChannelFactory
+import org.sbm4j.ktscraping.core.components.AbstractControllable
+import org.sbm4j.ktscraping.core.components.AbstractSpider
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.Engine
+import org.sbm4j.ktscraping.core.components.logger
 
 
 interface CrawlerResult{
@@ -58,14 +60,8 @@ interface Crawler : Controllable, DIAware{
 abstract class AbstractCrawler(
     override val name: String = "AbstractCrawler",
     override val channelFactory: ChannelFactory,
-): Crawler {
+): Crawler, AbstractControllable() {
     override val controllables: MutableList<Controllable> = mutableListOf()
-
-    override val mutex: Mutex = Mutex()
-
-    override var state: State = State()
-
-    override lateinit var scope: CoroutineScope
 }
 
 

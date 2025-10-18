@@ -6,11 +6,11 @@ import com.natpryce.hamkrest.hasSize
 import com.natpryce.hamkrest.startsWith
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.ContentType
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.ContentType
 
-import org.sbm4j.ktscraping.core.SpiderMiddleware
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.SpiderMiddleware
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
@@ -38,20 +38,20 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            val req = outChannel.receive()
+            val req = outChannel.channel.receive()
 
             outChannel.send(response)
 
-            val reqImage = outChannel.receive() as DownloadingRequest
+            val reqImage = outChannel.channel.receive() as DownloadingRequest
             logger.debug { "Tester: received the request ${reqImage.name} for the image ${reqImage.url}" }
 
             val respImage = DownloadingResponse(reqImage)
             val svgImage = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/iana-logo-header.svg")?.readText()
             respImage.contents["payload"] = svgImage!!
             outChannel.send(respImage)
-            logger.debug { "Tester: sent the response for the request ${respImage.request.name}" }
+            logger.debug { "Tester: sent the response for the request ${respImage.send.name}" }
 
-            resp = forwardOutChannel.receive() as DownloadingResponse
+            resp = outChannel.channel.receive() as DownloadingResponse
         }
 
         val contents = resp.contents
@@ -79,11 +79,11 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            val req = outChannel.receive()
+            val req = outChannel.channel.receive()
 
             outChannel.send(response)
 
-            resp = forwardOutChannel.receive() as DownloadingResponse
+            resp = outChannel.channel.receive() as DownloadingResponse
         }
 
         val contents = resp.contents
@@ -115,17 +115,17 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            val req = outChannel.receive()
+            val req = outChannel.channel.receive()
             logger.info { "received the followed request, now send response" }
 
             outChannel.send(response)
 
-            val reqImage = outChannel.receive() as DownloadingRequest
+            val reqImage = outChannel.channel.receive() as DownloadingRequest
             val respImage = DownloadingResponse(reqImage, type = ContentType.IMAGE)
             respImage.contents[AbstractDownloader.PAYLOAD] = bytesImage
             outChannel.send(respImage)
 
-            resp = forwardOutChannel.receive() as DownloadingResponse
+            resp = outChannel.channel.receive() as DownloadingResponse
         }
 
         val contents = resp.contents

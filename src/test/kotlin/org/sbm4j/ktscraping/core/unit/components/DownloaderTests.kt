@@ -1,13 +1,12 @@
-package org.sbm4j.ktscraping.core.unit
+package org.sbm4j.ktscraping.core.unit.components
 
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.EventJobResult
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
-import org.sbm4j.ktscraping.data.Event
-import org.sbm4j.ktscraping.data.EventBack
+import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
@@ -21,40 +20,30 @@ class DownloaderTests: AbstractDownloaderTester() {
     override fun buildDownloader(downloaderName: String): AbstractDownloader {
         return object: AbstractDownloader(downloaderName){
             override suspend fun processDataRequest(request: DownloadingRequest): Any? {
-                return DownloadingResponse(request)
+                return request.buildBack()
             }
 
             override suspend fun preStart(event: Event): EventJobResult? {
                 logger.info { "${name}: inside pre start" }
-                return super.preStart(event)
+                return null
             }
 
-            override suspend fun postStart(event: EventBack<*>) {
-                logger.info { "${name}: inside post start" }
-                super.postStart(event)
-            }
 
             override suspend fun preEnd(event: Event): EventJobResult? {
                 logger.info { "${name}: inside pre end" }
-                return super.preEnd(event)
-            }
-
-            override suspend fun postEnd(event: EventBack<*>) {
-                logger.info { "${name}: inside post end" }
-                super.postEnd(event)
+                return null
             }
         }
     }
 
 
     @Test
-    fun testDownloader() = TestScope().runTest{
+    fun testDownloader() = TestScope().runTest {
         val request = Request(sender, url)
         lateinit var response: DownloadingResponse
 
         withDownloader {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         val req = response.send

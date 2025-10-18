@@ -7,16 +7,15 @@ import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.EndRequest
-import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.EventResponse
-import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
 import kotlin.test.BeforeTest
 
 abstract class AbstractDownloaderTester: ScrapingTest() {
@@ -32,30 +31,30 @@ abstract class AbstractDownloaderTester: ScrapingTest() {
     @BeforeTest
     fun setUp(){
         initChannels()
-        clearAllMocks()
 
-        val sc = mockk<CoroutineScope>()
-
-        downloader = spyk(buildDownloader(downloaderName))
-
-        every { downloader.inChannel } returns inChannel
+        downloader = buildDownloader(downloaderName)
+        downloader.inChannel = inChannel
     }
 
-    suspend fun withDownloader(func: suspend AbstractDownloaderTester.() -> Unit){
+    suspend fun withDownloader(func: suspend AbstractDownloaderTester.() -> Unit) {
         coroutineScope {
-            downloader.start(this@coroutineScope)
-            inChannel.init(this@coroutineScope)
+            inChannel.init()
 
-            val startEventReq = StartRequest(sender)
-            inChannel.sendSync<EventResponse>(startEventReq)
+            launch {
+                downloader.start(this)
+            }
+            launch{
+                val startEvent = StartEvent(sender)
+                inChannel.sendSync<EventBack>(startEvent)
 
-            func()
+                func()
 
-            val endEventReq = EndRequest(sender)
-            inChannel.sendSync<EventResponse>(endEventReq)
-            
-            closeChannels()
-            downloader.stop()
+                val endEvent = EndEvent(sender)
+                inChannel.sendSync<EventBack>(endEvent)
+
+                downloader.stop()
+                closeChannels()
+            }
         }
     }
 

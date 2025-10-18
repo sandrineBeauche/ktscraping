@@ -7,7 +7,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.request.Request
@@ -31,7 +31,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -44,7 +44,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -57,7 +57,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -79,7 +79,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
                 request.forEach{
                     launch {
                         inChannel.send(it)
-                        response1 = outChannel.receive() as DownloadingResponse
+                        response1 = inChannel.channel.receive() as DownloadingResponse
                     }
                 }
             }
@@ -110,11 +110,11 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         withDownloader {
             val job1 =launch {
                 inChannel.send(request1)
-                response1 = outChannel.receive() as DownloadingResponse
+                response1 = inChannel.channel.receive() as DownloadingResponse
             }
             val job2 = launch {
                 inChannel.send(request2)
-                response2 = outChannel.receive() as DownloadingResponse
+                response2 = inChannel.channel.receive() as DownloadingResponse
             }
             joinAll(job1, job2)
 

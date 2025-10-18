@@ -1,33 +1,37 @@
 package org.sbm4j.ktscraping.pipeline
 
-import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.core.EventJobResult
-import org.sbm4j.ktscraping.data.Event
-import org.sbm4j.ktscraping.data.EventBack
+import org.sbm4j.ktscraping.core.components.AbstractPipeline
+import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.*
+import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
+abstract class AggregatePipeline(name: String): AbstractPipeline(name) {
 
-    val generatedItemAcks: MutableMap<UUID, DataItemAck> = ConcurrentHashMap()
+    val generatedItemAcks: MutableMap<UUID, ItemAck> = ConcurrentHashMap()
 
     val generatedItemIds: MutableList<UUID> = mutableListOf()
 
-    abstract fun accumulateItem(item: DataItem<*>)
+    abstract fun accumulateItem(item: Item)
 
-    abstract fun generateItems(): List<Item>
+    abstract fun aggregate(): List<Item>
 
-    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
+    override suspend fun processItem(item: Item): List<Item> {
         try {
             accumulateItem(item)
-            itemAckOut.send(DataItemAck(item.channelableId, Status.OK))
+            val ack = item.buildBack()
+            outChannel.send(ack)
         }
         catch(ex: Exception){
             val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
-            itemAckOut.send(DataItemAck(item.channelableId,
-                Status.ERROR, mutableListOf(error)))
+            val back = item.buildErrorBack(error)
+            outChannel.send(back)
         }
         return emptyList()
     }
@@ -36,9 +40,9 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
 
     override suspend fun preEnd(event: Event): EventJobResult? {
         println(event)
-        val items = generateItems() as MutableList
+        val items = aggregate() as MutableList
         generatedItemIds.addAll(items.map{it.channelableId})
-        items.forEach { itemOut.send(it) }
+        items.forEach { outChannel.send(it) }
         return null
     }
 
@@ -54,9 +58,8 @@ abstract class AccumulatePipeline(name: String): AbstractPipeline(name) {
         }
     }
 
-    override suspend fun performDataAck(itemAck: DataItemAck) {
+    override suspend fun processItemAck(itemAck: ItemAck) {
         generatedItemAcks[itemAck.channelableId] = itemAck
     }
-
 
 }

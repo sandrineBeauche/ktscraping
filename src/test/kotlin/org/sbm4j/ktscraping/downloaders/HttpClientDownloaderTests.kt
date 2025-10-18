@@ -4,7 +4,7 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.request.Request
@@ -28,7 +28,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
         assertNotNull(response)
@@ -51,7 +51,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
         assertThat(response.status, equalTo(Status.NOT_FOUND))
@@ -65,7 +65,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
 
         withDownloader {
             inChannel.send(request)
-            response = outChannel.receive() as DownloadingResponse
+            response = inChannel.channel.receive() as DownloadingResponse
         }
 
         assertThat(response.status, equalTo(Status.OK))

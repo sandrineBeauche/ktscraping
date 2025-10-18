@@ -8,7 +8,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.assertThrows
-import org.sbm4j.ktscraping.core.AbstractMiddleware
+import org.sbm4j.ktscraping.core.components.AbstractMiddleware
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
@@ -32,10 +32,10 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
 
         withMiddleware {
             inChannel.send(request)
-            req = outChannel.receive() as Request
+            req = outChannel.channel.receive() as Request
 
             outChannel.send(response)
-            resp = forwardOutChannel.receive() as DownloadingResponse
+            resp = outChannel.channel.receive() as DownloadingResponse
         }
 
         assertThat(req, sameInstance(request))
@@ -58,13 +58,13 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
             inChannel.send(request1)
             inChannel.send(request2)
 
-            req1 = outChannel.receive() as Request
+            req1 = outChannel.channel.receive() as Request
             outChannel.send(response1)
-            resp1 = forwardOutChannel.receive() as DownloadingResponse
+            resp1 = outChannel.channel.receive() as DownloadingResponse
 
-            req2 = outChannel.receive() as Request
+            req2 = outChannel.channel.receive() as Request
             outChannel.send(response2)
-            resp2 = forwardOutChannel.receive() as DownloadingResponse
+            resp2 = outChannel.channel.receive() as DownloadingResponse
         }
 
         assertThat(req1, sameInstance(request1))
@@ -87,14 +87,14 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
                     inChannel.send(request1)
                     inChannel.send(request2)
 
-                    outChannel.receive() as Request
-                    outChannel.receive() as Request
+                    outChannel.channel.receive() as Request
+                    outChannel.channel.receive() as Request
 
                     outChannel.send(response1)
-                    forwardOutChannel.receive()
+                    outChannel.channel.receive()
 
                     outChannel.send(response2)
-                    forwardOutChannel.receive()
+                    outChannel.channel.receive()
                 }
             }
         }

@@ -1,10 +1,11 @@
 package org.sbm4j.ktscraping.data.request
 
-import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.data.Back
+import org.sbm4j.ktscraping.core.components.ContentType
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.data.Channelable
+import org.sbm4j.ktscraping.data.Send
 import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
 abstract class DownloadingRequest(
@@ -35,15 +36,25 @@ abstract class DownloadingRequest(
         return "url:${url}"
     }
 
-    override fun buildErrorBack(infos: ErrorInfo): Back<*> {
+    override fun buildErrorBack(infos: ErrorInfo, status: Status): DownloadingResponse {
         return DownloadingResponse(this, ContentType.NOTHING,
-            Status.ERROR, mutableListOf(infos))
+            status, mutableListOf(infos), "${this.name}-Response")
     }
+
+    override fun buildBack(): DownloadingResponse {
+        return DownloadingResponse(this, ContentType.NOTHING, name = "${this.name}-Response")
+    }
+
+    abstract override fun clone(): DownloadingRequest
 }
 
 data class Request(
     override var sender: Controllable,
     override var url: String
 ): DownloadingRequest(sender, url){
+
+    override fun clone(): Request {
+        return this.copy()
+    }
 }
 

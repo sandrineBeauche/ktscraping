@@ -5,8 +5,8 @@ import com.natpryce.hamkrest.equalTo
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
-import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.AbstractExporter
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.ktscraping.data.item.Data
@@ -81,11 +81,11 @@ class DBExporterTests: AbstractExporterTester() {
     @Test
     fun testExportItem1() = TestScope().runTest{
 
-        val item = ObjectDataItem.build(data1, "test")
+        val item = ObjectDataItem.build(data1, "test", sender)
 
         withExporter {
             inChannel.send(item)
-            val itemAck = outChannel.receive()
+            val itemAck = inChannel.channel.receive()
         }
 
         val size = db.getSize(Contact::class.java)
@@ -100,11 +100,11 @@ class DBExporterTests: AbstractExporterTester() {
     @Test
     fun testExportItem2() = TestScope().runTest{
 
-        val item = ObjectDataItem.build(data2, "test")
+        val item = ObjectDataItem.build(data2, "test", sender)
 
         withExporter {
             inChannel.send(item)
-            val itemAck = outChannel.receive()
+            val itemAck = inChannel.channel.receive()
         }
 
         val size = db.getSize(Contact::class.java)
@@ -118,21 +118,22 @@ class DBExporterTests: AbstractExporterTester() {
 
     @Test
     fun testUpdateItem() = TestScope().runTest {
-        val item = ObjectDataItem.build(data1, "test")
+        val item = ObjectDataItem.build(data1, "test", sender)
 
         val updateItem = ItemUpdate(
             Contact::class.java,
             Contact::contactId,
             1,
-            mapOf("years" to 20)
+            mapOf("years" to 20),
+            sender = sender
         )
 
         withExporter {
             inChannel.send(item)
-            val itemAck = outChannel.receive()
+            val itemAck = inChannel.channel.receive()
 
             inChannel.send(updateItem)
-            val itemAck2 = outChannel.receive()
+            val itemAck2 = inChannel.channel.receive()
         }
 
         val cont = getFirstContact()
@@ -142,21 +143,22 @@ class DBExporterTests: AbstractExporterTester() {
 
     @Test
     fun testUpdateItem2() = TestScope().runTest {
-        val item = ObjectDataItem.build(data2, "test")
+        val item = ObjectDataItem.build(data2, "test", sender)
 
         val updateItem = ItemUpdate(
             Contact::class.java,
             Contact::contactId,
             2,
-            mapOf("address.number" to 4)
+            mapOf("address.number" to 4),
+            sender = sender
         )
 
         withExporter {
             inChannel.send(item)
-            val itemAck = outChannel.receive()
+            val itemAck = inChannel.channel.receive()
 
             inChannel.send(updateItem)
-            val itemAck2 = outChannel.receive()
+            val itemAck2 = inChannel.channel.receive()
         }
 
         val cont = getFirstContact()
@@ -169,19 +171,20 @@ class DBExporterTests: AbstractExporterTester() {
         val deleteItem = ItemDelete(
             Contact::class.java,
             Contact::contactId,
-            1
+            1,
+            sender = sender
         )
 
         withExporter {
-            inChannel.send(ObjectDataItem.build(data1, "test"))
-            val itemAck1 = outChannel.receive()
+            inChannel.send(ObjectDataItem.build(data1, "test", sender))
+            val itemAck1 = inChannel.channel.receive()
 
-            inChannel.send(ObjectDataItem.build(data2, "test"))
+            inChannel.send(ObjectDataItem.build(data2, "test", sender))
 
-            val itemAck2 = outChannel.receive()
+            val itemAck2 = inChannel.channel.receive()
 
             inChannel.send(deleteItem)
-            val itemAck3 = outChannel.receive()
+            val itemAck3 = inChannel.channel.receive()
         }
 
         val size = db.getSize(Contact::class.java)

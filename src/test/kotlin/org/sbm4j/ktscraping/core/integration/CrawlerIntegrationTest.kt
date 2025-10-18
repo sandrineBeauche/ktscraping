@@ -4,9 +4,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.core.AbstractSpider
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.AbstractExporter
+import org.sbm4j.ktscraping.core.components.AbstractSpider
+import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.defaultDIModule
 import org.sbm4j.ktscraping.core.dsl.crawler
 import org.sbm4j.ktscraping.core.dsl.downloaderBranch
@@ -23,7 +24,10 @@ import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import kotlin.test.Test
 
-data class IntegrationTestItem(override val data: String): DataItem<String>() {
+data class IntegrationTestItem(override val data: String,
+                               override var sender: Controllable,
+                               override val name: String = "IntegrationItem${lastId.getAndIncrement()}"
+): DataItem<String>() {
     override fun clone(): Item {
         return this.copy()
     }
@@ -36,8 +40,8 @@ class IntegrationTestSpider(
         val req1 = Request(this, "request1-${name}")
         val resp1 = sendSync(req1) as DownloadingResponse
         val value = resp1.contents["prop1"] as String
-        val result = IntegrationTestItem(value)
-        this.itemsOut.send(result)
+        val result = IntegrationTestItem(value, this)
+        this.outChannel.send(result)
     }
 }
 
@@ -56,7 +60,7 @@ class IntegrationTestDownloader(
 class IntegrationTestExporter(
     name: String
 ): AbstractExporter(name){
-    override fun exportItem(item: DataItem<*>) {
+    override suspend fun exportItem(item: Item) {
         println(item)
     }
 

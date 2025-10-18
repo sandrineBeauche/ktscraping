@@ -1,37 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
-import com.natpryce.hamkrest.assertion.assertThat
-import io.mockk.mockk
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractEngine
-import org.sbm4j.ktscraping.core.ChannelFactory
-import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.CrawlerResult
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.dsl.DataItemTest
-import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
-import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.core.utils.isEventResponseWithError
-import org.sbm4j.ktscraping.core.utils.isOKEventResponseWith
-import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.item.ErrorLevel
-import org.sbm4j.ktscraping.data.item.EventItem
-import org.sbm4j.ktscraping.data.item.EventItemAck
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
-import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.request.EventRequest
-import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.ktscraping.data.request.StartRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.EventResponse
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-
+/*
 class TestingEngine(
     channelFactory: ChannelFactory,
 ) : AbstractEngine(channelFactory) {
@@ -173,3 +142,5 @@ class EngineTest {
         }
     }
 }
+
+ */

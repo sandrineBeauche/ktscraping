@@ -5,7 +5,7 @@ import com.microsoft.playwright.BrowserContext
 import com.microsoft.playwright.BrowserType
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.PlaywrightException
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.logger
 import java.util.concurrent.ThreadFactory
 
 class PlaywrightThreadfactory(val headless: Boolean = true): ThreadFactory {

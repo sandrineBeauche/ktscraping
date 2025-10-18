@@ -2,19 +2,17 @@ package org.sbm4j.ktscraping.core.utils
 
 import com.natpryce.hamkrest.*
 import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.item.EventItem
-import org.sbm4j.ktscraping.data.item.EventItemAck
+import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.EventResponse
 
-fun isOKEventItemAck(eventName: String): Matcher<EventItemAck>{
-    return isA<EventItemAck>(
+fun isOKEventItemAck(eventName: String): Matcher<EventBack>{
+    return isA<EventBack>(
         allOf(
-            has(EventItemAck::send, has(EventItem::eventName, equalTo(eventName))),
-            has(EventItemAck::status, equalTo(Status.OK)),
-            has(EventItemAck::errorInfos, isEmpty)
+            has(EventBack::send, has(Event::eventName, equalTo(eventName))),
+            has(EventBack::status, equalTo(Status.OK)),
+            has(EventBack::errorInfos, isEmpty)
         )
     )
 }
@@ -22,12 +20,12 @@ fun isOKEventItemAck(eventName: String): Matcher<EventItemAck>{
 fun isOKStartItemAck() = isOKEventItemAck("start")
 fun isOKEndItemAck() = isOKEventItemAck("end")
 
-fun isEventItemAckWithErrors(eventName: String, status: Status, nbErrors: Int): Matcher<EventItemAck>{
-    return isA<EventItemAck>(
+fun isEventItemAckWithErrors(eventName: String, status: Status, nbErrors: Int): Matcher<EventBack>{
+    return isA<EventBack>(
         allOf(
-            has(EventItemAck::send, has(EventItem::eventName, equalTo(eventName))),
-            has(EventItemAck::status, equalTo(status)),
-            has(EventItemAck::errorInfos, hasSize(equalTo(nbErrors)))
+            has(EventBack::send, has(Event::eventName, equalTo(eventName))),
+            has(EventBack::status, equalTo(status)),
+            has(EventBack::errorInfos, hasSize(equalTo(nbErrors)))
         )
     )
 }
@@ -53,22 +51,24 @@ fun isDownloadingResponseWith(url: String, contents: MutableMap<String, Any>): M
     )
 }
 
-fun isOKEventResponseWith(eventName: String): Matcher<EventResponse>{
-    return isA<EventResponse>(
+fun isOKEventBackWith(eventName: String): Matcher<EventBack>{
+    return isA<EventBack>(
         allOf(
-            has(EventResponse::eventName, equalTo(eventName)),
-            has(EventResponse::status, equalTo(Status.OK)),
-            has(EventResponse::errorInfos, isEmpty)
+            has(EventBack::send, isA<Event>(
+                has(Event::eventName, equalTo(eventName)))),
+            has(EventBack::status, equalTo(Status.OK)),
+            has(EventBack::errorInfos, isEmpty)
         )
     )
 }
 
-fun isEventResponseWithError(eventName: String, status: Status, nbErrors: Int): Matcher<EventResponse>{
-    return isA<EventResponse>(
+fun isEventResponseWithError(eventName: String, status: Status, nbErrors: Int): Matcher<EventBack>{
+    return isA<EventBack>(
         allOf(
-            has(EventResponse::eventName, equalTo(eventName)),
-            has(EventResponse::status, equalTo(status)),
-            has(EventResponse::errorInfos, hasSize(equalTo(nbErrors)))
+            has(EventBack::send, isA<Event>(
+                has(Event::eventName, equalTo(eventName)))),
+            has(EventBack::status, equalTo(status)),
+            has(EventBack::errorInfos, hasSize(equalTo(nbErrors)))
         )
     )
 }

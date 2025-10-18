@@ -6,10 +6,9 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import org.sbm4j.ktscraping.core.AbstractExporter
-import org.sbm4j.ktscraping.core.logger
-import org.sbm4j.ktscraping.data.item.AbstractItemAck
-import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.core.components.AbstractExporter
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
 import kotlin.test.BeforeTest
 
 abstract class AbstractExporterTester: ScrapingTest(){
@@ -17,6 +16,8 @@ abstract class AbstractExporterTester: ScrapingTest(){
     lateinit var exporter: AbstractExporter
 
     val exporterName: String = "Exporter"
+
+    val sender: Controllable = mockk<Controllable>()
 
     abstract fun buildExporter(exporterName: String): AbstractExporter
 

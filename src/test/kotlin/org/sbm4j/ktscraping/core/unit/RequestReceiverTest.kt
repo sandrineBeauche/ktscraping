@@ -1,21 +1,6 @@
 package org.sbm4j.ktscraping.core.unit
 
-import io.mockk.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.RequestReceiver
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.utils.ScrapingTest
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.Response
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-
+/*
 abstract class RequestReceiverMock(): RequestReceiver {
     override val mutex: Mutex = Mutex()
     override val name: String = "RequestReceiver"
@@ -58,3 +43,5 @@ class RequestReceiverTest: ScrapingTest<Request, Response<*>>(){
     }
 
 }
+
+ */

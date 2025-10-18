@@ -5,10 +5,10 @@ import com.microsoft.playwright.options.Cookie
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.ContentType
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
@@ -16,14 +16,18 @@ import org.sbm4j.ktscraping.middleware.CookiesMiddleware
 import java.util.concurrent.Executors
 
 
-open class PlaywrightRequest(
-    override val sender: RequestSender,
+data class PlaywrightRequest(
+    override var sender: Controllable,
     override var url: String,
-    func: Page.(results: MutableMap<String, Any>) -> Unit
+    val func: Page.(results: MutableMap<String, Any>) -> Unit
 ): DownloadingRequest(sender, url){
 
     init {
         parameters[PlaywrightDownloader.PLAYWRIGHT] = func
+    }
+
+    override fun clone(): PlaywrightRequest {
+        return this.copy()
     }
 
 }

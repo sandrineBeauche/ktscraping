@@ -1,26 +1,32 @@
 package org.sbm4j.ktscraping.data.request
 
 import org.apache.hc.core5.net.URIBuilder
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.ContentType
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.core.RequestSender
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.ContentType
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.data.Channelable
 import org.sbm4j.ktscraping.middleware.ImageMiddleware
 
 open class AbstractInlineRequest(
     override var sender: Controllable,
     url: String,
-    params: Map<String, String>
+    params: Map<String, String> = emptyMap()
 ): DownloadingRequest(sender, url){
+
     init {
         var builder = URIBuilder(url)
         params.forEach{key, value -> builder = builder.addParameter(key, value)}
         this.url = builder.toString()
     }
+
+    override fun clone(): DownloadingRequest {
+        val result = AbstractInlineRequest(sender, url)
+        return result
+    }
 }
 
 class GoogleSearchImageRequest(
-    sender: RequestSender,
+    sender: Controllable,
     val researchText: String,
     val key: String,
     val searchEngine: String,

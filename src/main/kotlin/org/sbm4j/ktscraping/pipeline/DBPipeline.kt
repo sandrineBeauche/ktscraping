@@ -7,23 +7,24 @@ import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.Item
 
-class DBPipeline<T: Data>(name: String): AccumulatePipeline(name), DBControllable {
+class DBPipeline<T: Data>(name: String): AggregatePipeline(name), DBControllable {
 
     override lateinit var db: DBConnexion
 
     lateinit var objectClass: Class<T>
 
-    override fun accumulateItem(item: DataItem<*>) {
+    override fun accumulateItem(item: Item) {
         performDBItem(item)
     }
 
-    override fun generateItems(): List<Item> {
+    override fun aggregate(): List<Item> {
         val values = db.getObjects(objectClass)
         val items =
             values.map{
                 ObjectDataItem(
                     it, objectClass.kotlin,
-                    objectClass.canonicalName
+                    objectClass.canonicalName,
+                    sender = this
                 )
             } as MutableList<Item>
         return items

@@ -1,8 +1,10 @@
 package org.sbm4j.ktscraping.middleware
 
-import org.sbm4j.ktscraping.core.DownloaderMiddleware
+import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
+import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.ktscraping.data.response.Response
 
 class CookiesMiddleware(name: String = "Cookies middleware") : DownloaderMiddleware(name) {
     companion object{
@@ -23,15 +25,16 @@ class CookiesMiddleware(name: String = "Cookies middleware") : DownloaderMiddlew
         return request
     }
 
-    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
-        val cook = response.contents.get(COOKIE)
-        if(cook != null){
-            val name = response.request.parameters.get(COOKIE_NAME) as String?
-            if(name != null){
-                contexts[name] = cook
+    override suspend fun processResponse(response: Response) {
+        if(response is DownloadingResponse) {
+            val cook = response.contents.get(COOKIE)
+            if (cook != null) {
+                val name = response.send.parameters.get(COOKIE_NAME) as String?
+                if (name != null) {
+                    contexts[name] = cook
+                }
             }
         }
-        return true
     }
 
 

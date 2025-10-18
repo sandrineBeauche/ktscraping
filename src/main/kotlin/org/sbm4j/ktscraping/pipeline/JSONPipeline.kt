@@ -6,16 +6,16 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
-import org.sbm4j.ktscraping.core.AbstractPipeline
-import org.sbm4j.ktscraping.core.EventJobResult
-import org.sbm4j.ktscraping.data.Event
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.core.components.AbstractPipeline
+import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.item.*
 import kotlin.reflect.cast
 
 
 data class JsonItem(
-    override val data: JsonElement
+    override val data: JsonElement,
+    override var sender: Controllable,
+    override val name: String
 ): StandardFormatItem<JsonElement>(data) {
     override fun clone(): Item {
         return this.copy()
@@ -42,10 +42,10 @@ class JSONPipeline(name: String = "JSONPipeline") : AbstractPipeline(name) {
 
 
     @OptIn(InternalSerializationApi::class)
-    override suspend fun processDataItem(item: DataItem<*>): List<Item> {
+    override suspend fun processItem(item: Item): List<Item> {
         return if(item is ObjectDataItem<*>) {
             val elt = item.encodeDataToJson()
-            listOf(JsonItem(elt))
+            listOf(JsonItem(elt, this, "json"))
         }
         else{
             listOf(item)
@@ -53,20 +53,20 @@ class JSONPipeline(name: String = "JSONPipeline") : AbstractPipeline(name) {
     }
 }
 
-class AccumulateJSONPipeline(name: String = "AccumulateJSONPipeline") : AccumulatePipeline(name) {
+class AccumulateJSONPipeline(name: String = "AccumulateJSONPipeline") : AggregatePipeline(name) {
 
     val documents: MutableList<JsonElement> = mutableListOf()
 
-    override fun accumulateItem(item: DataItem<*>) {
-        if(item is ObjectDataItem){
+    override fun accumulateItem(item: Item) {
+        if(item is ObjectDataItem<*>){
             val elt = item.encodeDataToJson()
             documents.add(elt)
         }
     }
 
-    override fun generateItems(): List<Item> {
+    override fun aggregate(): List<Item> {
         val json = JsonArray(documents)
-        val elt = JsonItem(json)
+        val elt = JsonItem(json, this, "json")
         return listOf(elt)
     }
 }

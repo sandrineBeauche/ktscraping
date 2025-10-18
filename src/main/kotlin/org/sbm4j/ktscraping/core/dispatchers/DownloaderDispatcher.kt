@@ -1,0 +1,30 @@
+package org.sbm4j.ktscraping.core.dispatchers
+
+import org.kodein.di.DI
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.components.AbstractControllable
+import org.sbm4j.ktscraping.data.request.AbstractRequest
+
+abstract class DownloaderDispatcher(
+    override val name: String = "DownloaderDispatcher",
+    override val di: DI
+): EventDispatcher, SendPropagatorOne, AbstractControllable(){
+
+    override val senders: MutableList<SuperChannel> = mutableListOf()
+
+    override lateinit var channelIn: SuperChannel
+
+
+    abstract fun selectChannel(request: AbstractRequest): SuperChannel
+
+    suspend fun performRequests(){
+        val flow = channelIn.getSendFlow(AbstractRequest::class)
+        val coroutineName = "${name}-performRequests"
+        propagateOne(coroutineName, flow, ::selectChannel)
+    }
+
+    override suspend fun run() {
+        super.run()
+        performRequests()
+    }
+}

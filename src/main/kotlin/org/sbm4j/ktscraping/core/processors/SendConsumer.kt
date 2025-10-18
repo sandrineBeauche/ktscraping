@@ -1,32 +1,66 @@
-package org.sbm4j.ktscraping.core
+package org.sbm4j.ktscraping.core.processors
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.Send
 import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.reflect.KClass
 
-interface SendSource<T: Send, B: Back<T>>: Controllable {
+interface SendConsumer: Controllable {
+
+    var inChannel: SuperChannel
+
+    suspend fun <T: Send> performSends(
+        sendClazz: KClass<T>,
+        flow: Flow<T>,
+        func: suspend (T) -> Any?
+    ){
+        scope.launch(CoroutineName("${name}-perform${sendClazz.simpleName}")) {
+            logger.debug { "${name}: Waits for ${sendClazz.simpleName} to process" }
+            flow.collect{ send ->
+                this.launch() {
+                    try {
+                        logger.trace { "${name}: received ${send.loggingLabel} ${send.channelableId}: $send" }
+                        val result: Any? = func(send)
+
+                        if ((result is Boolean && result) || result != null) {
+                            sendPostProcess(send, result)
+                        }
+                    }
+                    catch(ex: Exception){
+                        logger.error{ "${this@SendConsumer.name}: error when processing ${sendClazz.simpleName} ${send.channelableId} - ${ex.message}" }
+                        val infos = generateErrorInfos(ex)
+                        val back = send.buildErrorBack(infos)
+                        inChannel.send(back)
+                    }
+                }
+                logger.trace { "${name}: ready to receive another ${sendClazz.simpleName}" }
+            }
+            logger.debug{"${name}: Finished to receive ${sendClazz.simpleName}"}
+        }
+    }
+
+    suspend fun sendPostProcess(send: Send, result: Any)
+}
+
+
+interface SendSource: Controllable {
 
     var outChannel: SuperChannel
 
-    val sendClazz: KClass<*>
-
-
-    val pendingMinorError: ConcurrentHashMap<UUID, MutableList<ErrorInfo>>
-
-    private suspend inline fun <S: Send> peformSend(
+    private suspend fun <S: Send> peformSendSync(
         send: S,
         callback: (Back<S>) -> Unit,
-        noinline callbackError: CallbackError? = null
+        callbackError: CallbackError? = null
     ){
         val back = outChannel.sendSync<Back<S>>(send)
 
@@ -63,7 +97,7 @@ interface SendSource<T: Send, B: Back<T>>: Controllable {
         subScope: CoroutineScope = scope
     ) = suspendCoroutine { continuation ->
         subScope.launch(CoroutineName("${name}-${request.name}")) {
-            this@SendSource.peformSend<S>(request, continuation::resume,
+            this@SendSource.peformSendSync<S>(request, continuation::resume,
                 continuation::resumeWithException)
         }
     }
@@ -80,37 +114,22 @@ interface SendSource<T: Send, B: Back<T>>: Controllable {
         subScope: CoroutineScope = scope
     ) {
         subScope.launch(CoroutineName("${name}-${request.name}")){
-            this@SendSource.peformSend(request, callback, callbackError)
+            this@SendSource.peformSendSync(request, callback, callbackError)
         }
     }
+}
 
-    /**
-     * Receive all the responses.
-     * If the response corresponds to a new created requests sent by this component, the response is sent
-     * to the corresponding coroutine in order to execute the callback, otherwise the response is processed.
-     */
-    suspend fun receiveBacks(backClazz: KClass<B>) {
-        scope.launch(CoroutineName("${name}-perform${backClazz.simpleName}")) {
-            logger.debug { "${name}: Waits for ${backClazz.simpleName} to process" }
-            outChannel.getFlow(backClazz, this@SendSource).collect { back ->
-                logger.trace { "${name}: received a ${backClazz.simpleName} for the ${sendClazz.simpleName} ${back.send.name}" }
-                scope.launch(CoroutineName("${name}-perform${backClazz.simpleName}-${back.send.name}")) {
-                    val errors = pendingMinorError.remove(back.send.channelableId)
-                    if (errors != null && errors.isNotEmpty()) {
-                        back.status = Status.ERROR
-                        back.errorInfos.addAll(errors)
-                    }
+interface SendForwarder : Controllable, SendSource, SendConsumer{
 
-                    performBack(back)
-                }
-                logger.trace{"$name: ready to receive another ${backClazz.simpleName}"}
-            }
-            logger.debug { "${name}: Finished receiving ${backClazz.simpleName}" }
+    override suspend fun sendPostProcess(send: Send, result: Any) {
+        if(result is Back<*>){
+            logger.trace { "${name}: returns a ${result.loggingLabel} for the ${send.loggingLabel} ${send.name}" }
+            inChannel.send(result)
+        }
+        else {
+            logger.trace { "${name}: forward ${send.loggingLabel} ${send.name}" }
+            outChannel.send(send)
         }
     }
-
-
-    suspend fun performBack(back: B)
-
 
 }

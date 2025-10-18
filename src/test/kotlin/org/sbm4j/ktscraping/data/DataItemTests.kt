@@ -1,5 +1,7 @@
 package org.sbm4j.ktscraping.data
 
+import io.mockk.mockk
+import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import kotlin.test.Test
@@ -12,9 +14,11 @@ data class DataTestType(val value: String): Data() {
 
 class DataItemTests {
 
+    val sender = mockk<Controllable>()
+
     @Test
     fun testDataItem1(){
-        val data1 = ObjectDataItem.build(DataTestType("value1"), "test")
+        val data1 = ObjectDataItem.build(DataTestType("value1"), "test", sender)
         val cl = data1.data::class
         println(cl)
     }

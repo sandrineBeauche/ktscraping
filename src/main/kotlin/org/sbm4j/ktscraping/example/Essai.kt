@@ -1,36 +1,28 @@
 package org.sbm4j.ktscraping.example
 
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 fun main(args: Array<String>): kotlin.Unit = runBlocking{
-    val channel: Channel<Any> = Channel(Channel.UNLIMITED)
-
+    val channel: Channel<String> =  Channel(Channel.UNLIMITED)
 
     coroutineScope {
-
         launch{
-            repeat(10){
-                channel.send("coucou-$it")
-                channel.send(it)
+            repeat(10){index ->
+                channel.send("coucou-$index")
+                channel.send("bonjour-$index")
             }
-            println("close channel")
-            channel.close()
-        }
-        launch{
-            val flow = channel.consumeAsFlow().shareIn(this,
-                SharingStarted.WhileSubscribed())
-            val result = flow.filterIsInstance<Int>().first({it == 3})
-            println("inside filter int: $result")
-            println("end of int")
-            this.cancel()
         }
 
+        launch {
+            channel.receiveAsFlow().takeIf { (it as String).contains("coucou") }?.collect { println("inside receive as flow1: $it") }
+        }
+        launch {
+            channel.receiveAsFlow().collect { println("inside receive as flow2: $it") }
+        }
     }
-
-    println("end global")
 }

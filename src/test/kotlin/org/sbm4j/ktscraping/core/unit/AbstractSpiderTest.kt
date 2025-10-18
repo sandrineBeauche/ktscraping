@@ -3,7 +3,7 @@ package org.sbm4j.ktscraping.core.unit
 import io.mockk.coVerify
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.AbstractSimpleSpider
+import org.sbm4j.ktscraping.core.components.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ObjectDataItem

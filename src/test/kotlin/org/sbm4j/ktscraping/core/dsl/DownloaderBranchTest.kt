@@ -1,29 +1,25 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import com.natpryce.hamkrest.allOf
 import com.natpryce.hamkrest.assertion.assertThat
-import com.natpryce.hamkrest.equalTo
-import com.natpryce.hamkrest.has
-import com.natpryce.hamkrest.isA
-import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.AbstractMiddleware
-import org.sbm4j.ktscraping.core.logger
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.AbstractMiddleware
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.utils.isDownloadingRequestWith
 import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.StartEvent
+import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.request.EndRequest
 import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.ktscraping.data.request.StartRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.data.response.EventResponse
+import org.sbm4j.ktscraping.data.response.Response
 
 
 class MiddlewareClassTest(name: String): AbstractMiddleware(name){
-    override suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
-        return true
+    override suspend fun processResponse(response: Response) {
     }
 
     override suspend fun processDataRequest(request: DownloadingRequest): Any? {
@@ -43,15 +39,13 @@ class DownloaderClassTest(name: String) : AbstractDownloader(name){
 class DownloaderBranchTest: CrawlerTest() {
 
     suspend fun sendStartEvent(){
-        val startReq = StartRequest(sender)
-        channelFactory.downloaderRequestChannel.send(startReq)
-        val startResp = channelFactory.downloaderResponseChannel.receive() as EventResponse
+        val startEvent = StartEvent(sender)
+        val back = channelFactory.downloaderChannel.sendSync<EventBack>(startEvent)
     }
 
     suspend fun sendEndEvent(){
-        val endReq = EndRequest(sender)
-        channelFactory.downloaderRequestChannel.send(endReq)
-        val endResp = channelFactory.downloaderResponseChannel.receive() as EventResponse
+        val endEvent = EndEvent(sender)
+        val back = channelFactory.downloaderChannel.sendSync<EventBack>(endEvent)
     }
 
     @Test
@@ -72,8 +66,7 @@ class DownloaderBranchTest: CrawlerTest() {
         sendStartEvent()
 
         val request1 = Request(sender, url)
-        channelFactory.downloaderRequestChannel.send(request1)
-        val response: DownloadingResponse = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+        val response = channelFactory.downloaderChannel.sendSync<DownloadingResponse>(request1)
 
         logger.debug { "Received the response: $response" }
 
@@ -81,8 +74,7 @@ class DownloaderBranchTest: CrawlerTest() {
         c.stop()
         channelFactory.closeChannels()
 
-
-        val respReq = response.request
+        val respReq = response.send
         assertThat(respReq, isDownloadingRequestWith(url))
     }
 
@@ -99,8 +91,8 @@ class DownloaderBranchTest: CrawlerTest() {
         val c = crawler("MainCrawler", ::testDIModule) {
             downloaderDispatcher(
                 "dispatcher1",
-                { req: DownloadingRequest ->
-                    if (req.url == url1) senders[0]
+                { req: AbstractRequest ->
+                    if (req is DownloadingRequest && req.url == url1) senders[0]
                     else senders[1]
                 })
             {
@@ -118,11 +110,11 @@ class DownloaderBranchTest: CrawlerTest() {
         val request1 = Request(sender, url1)
         val request2 = Request(sender, url2)
 
-        channelFactory.downloaderRequestChannel.send(request1)
-        channelFactory.downloaderRequestChannel.send(request2)
+        channelFactory.downloaderChannel.send(request1)
+        channelFactory.downloaderChannel.send(request2)
 
-        response1 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-        response2 = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+        response1 = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
+        response2 = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
 
         logger.debug { "Received the responses" }
 
@@ -147,8 +139,8 @@ class DownloaderBranchTest: CrawlerTest() {
         val c = crawler("MainCrawler", ::testDIModule) {
             downloaderDispatcher(
                 "dispatcher1",
-                { req: DownloadingRequest ->
-                    if (req.url == url1) senders[0]
+                { req: AbstractRequest ->
+                    if (req is DownloadingRequest && req.url == url1) senders[0]
                     else senders[1]
                 })
             {
@@ -163,7 +155,6 @@ class DownloaderBranchTest: CrawlerTest() {
             }
         }
 
-
         c.start(this)
 
         logger.debug { "interacting with crawler" }
@@ -172,11 +163,11 @@ class DownloaderBranchTest: CrawlerTest() {
         val request1 = Request(sender, url1)
         val request2 = Request(sender, url2)
 
-        channelFactory.downloaderRequestChannel.send(request1)
-        channelFactory.downloaderRequestChannel.send(request2)
+        channelFactory.downloaderChannel.send(request1)
+        channelFactory.downloaderChannel.send(request2)
 
-        val response1: DownloadingResponse = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
-        val response2: DownloadingResponse = channelFactory.downloaderResponseChannel.receive() as DownloadingResponse
+        val response1: DownloadingResponse = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
+        val response2: DownloadingResponse = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
 
         logger.debug { "Received the responses" }
 

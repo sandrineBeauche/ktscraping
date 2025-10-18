@@ -5,11 +5,12 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.util.network.*
-import org.sbm4j.ktscraping.core.AbstractDownloader
-import org.sbm4j.ktscraping.core.ContentType
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
+import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.ErrorInfo
-import org.sbm4j.ktscraping.data.item.ErrorLevel
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
@@ -23,7 +24,6 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
 
 
     override suspend fun processDataRequest(request: DownloadingRequest): Any? {
-
         val client = HttpClient(CIO)
 
         try{

@@ -1,9 +1,7 @@
 package org.sbm4j.ktscraping.data.item
 
 import kotlinx.serialization.Serializable
-import org.sbm4j.ktscraping.core.Controllable
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.core.components.Controllable
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
@@ -13,19 +11,12 @@ abstract class Data{
     fun getProperties(): Map<String, Any>{
         return mapOf()
     }
+
 }
 
 
 abstract class DataItem<T>() : Item(){
     abstract val data: T
-
-    override fun generateAck(status: Status, errors: MutableList<ErrorInfo>): DataItemAck {
-        return DataItemAck(this, status, errors)
-    }
-
-    override fun buildErrorBack(infos: ErrorInfo): Back<*> {
-        return DataItemAck(this, Status.ERROR, mutableListOf(infos))
-    }
 }
 
 data class ObjectDataItem<T: Data>(
@@ -47,7 +38,6 @@ data class ObjectDataItem<T: Data>(
         result.channelableId = this.channelableId
         return result
     }
-
 
 }
 

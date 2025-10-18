@@ -5,26 +5,21 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import org.sbm4j.ktscraping.core.RequestSender
-import org.sbm4j.ktscraping.core.SpiderMiddleware
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
-abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest, Response<*>>() {
+abstract class AbstractSpiderMiddlewareTester: DualScrapingTest() {
 
-    val sender: RequestSender = mockk<RequestSender>()
+    val sender: Controllable = mockk<Controllable>()
 
     lateinit var middleware: SpiderMiddleware
 
     val middlewareName: String = "Middleware"
 
-    val itemChannelIn: Channel<Item> = Channel<Item>(Channel.UNLIMITED)
-
-    val itemChannelOut: Channel<Item> = Channel<Item>(Channel.UNLIMITED)
 
     abstract fun buildMiddleware(middlewareName: String): SpiderMiddleware
 
@@ -38,7 +33,7 @@ abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest,
         middleware = spyk(buildMiddleware(middlewareName))
 
         every { middleware.inChannel } returns inChannel
-        every { middleware.outChannel } returns outChannel
+
     }
 
     suspend fun withMiddleware(func: suspend AbstractSpiderMiddlewareTester.() -> Unit){
@@ -50,8 +45,6 @@ abstract class AbstractSpiderMiddlewareTester: DualScrapingTest<AbstractRequest,
 
             outChannel.close()
             inChannel.close()
-            itemChannelIn.close()
-            itemChannelOut.close()
             middleware.stop()
         }
     }

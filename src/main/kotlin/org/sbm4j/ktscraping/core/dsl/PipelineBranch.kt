@@ -1,37 +1,35 @@
 package org.sbm4j.ktscraping.core.dsl
 
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.SendChannel
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
-import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.data.item.AbstractItemAck
-import org.sbm4j.ktscraping.data.item.ErrorInfo
+import org.sbm4j.ktscraping.core.Crawler
+import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.ktscraping.core.components.AbstractExporter
+import org.sbm4j.ktscraping.core.components.AbstractPipeline
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcher
+import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcherAll
+import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcherOne
 import org.sbm4j.ktscraping.data.item.Item
 
 
-fun buildPipelineChannels(): Pair<Channel<Item>, Channel<AbstractItemAck<*>>>{
-    return Pair(
-        Channel<Item>(Channel.UNLIMITED),
-        Channel<AbstractItemAck<*>>(Channel.UNLIMITED)
-    )
+fun buildPipelineChannels(): SuperChannel{
+    return SuperChannel()
 }
 
 
 fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
     val branch = PipelineBranch(
-        this.channelFactory.itemChannel,
-        this.channelFactory.itemAckChannel,
+        this.channelFactory.pipelineChannel,
         this.di)
     branch.initBranch()
     this.controllables.addAll(branch.senders)
 }
 
-fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: ItemDispatcherAll.() -> Unit){
-    val dispatcher = ItemDispatcherAll(name, this.di)
-    //dispatcher.itemIn = this.channelFactory.itemChannel
-    dispatcher.itemAckOut = this.channelFactory.itemAckChannel
+fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: PipelineDispatcherAll.() -> Unit){
+    val dispatcher = PipelineDispatcherAll(name, this.di)
+    dispatcher.channelIn = this.channelFactory.pipelineChannel
 
     dispatcher.initDispatcher()
     this.controllables.add(dispatcher)
@@ -40,24 +38,16 @@ fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: I
 
 fun Crawler.pipelineDispatcherOne(
     name: String = "dispatcher",
-    selectChannelFunc: ItemDispatcherOne.(Item) -> SendChannel<Item>,
-    init: ItemDispatcherOne.() -> Unit
+    selectChannelFunc: PipelineDispatcherOne.(Item) -> SuperChannel,
+    init: PipelineDispatcherOne.() -> Unit
 ){
-    val dispatcher = object : ItemDispatcherOne(name, this.di){
-        override fun selectChannel(item: Item): SendChannel<Item> {
+    val dispatcher = object : PipelineDispatcherOne(name, this.di){
+        override fun selectChannel(item: Item): SuperChannel {
             return selectChannelFunc(item)
         }
-
-        override var inChannel: SuperChannel
-            get() = TODO("Not yet implemented")
-            set(value) {}
-
-        override fun generateErrorInfos(ex: Exception): ErrorInfo {
-            TODO("Not yet implemented")
-        }
     }
-    //dispatcher.itemIn = this.channelFactory.itemChannel
-    dispatcher.itemAckOut = this.channelFactory.itemAckChannel
+
+    dispatcher.channelIn = this.channelFactory.pipelineChannel
 
     dispatcher.init()
     this.controllables.add(dispatcher)
@@ -65,8 +55,7 @@ fun Crawler.pipelineDispatcherOne(
 
 
 class PipelineBranch(
-    var pipelineItemIn: Channel<Item>,
-    var pipelineItemAckOut: Channel<AbstractItemAck<*>>,
+    var pipelineChannel: SuperChannel,
     override val di: DI
 ): DIAware{
 
@@ -77,20 +66,13 @@ class PipelineBranch(
                                       init: T.() -> Unit = {}): T{
         val pip = buildControllable<T>(name)
 
-        /*
         senders.add(pip)
-        pip.itemIn = pipelineItemIn
-        pip.itemAckOut = pipelineItemAckOut
+        pip.inChannel = pipelineChannel
 
-        val (newPipItem, newPipItemAck) = buildPipelineChannels()
-        pip.itemOut = newPipItem
-        pip.itemAckIn = newPipItemAck
+        val newChannel = SuperChannel()
+        pip.outChannel = newChannel
+        pipelineChannel = newChannel
 
-        pipelineItemIn = newPipItem
-        pipelineItemAckOut = newPipItemAck
-
-
-         */
         pip.init()
 
         return pip
@@ -102,20 +84,16 @@ class PipelineBranch(
         val exp = buildControllable<T>(name)
 
         senders.add(exp)
-        /*
-        exp.itemIn = pipelineItemIn
-        exp.itemAckOut = pipelineItemAckOut
+
+        exp.inChannel = pipelineChannel
         exp.init()
 
-
-         */
         return exp
     }
 
-    fun pipelineDispatcherAll(name: String = "dispatcher", init: ItemDispatcherAll.() -> Unit){
-        val dispatcher = ItemDispatcherAll(name, this.di)
-        //dispatcher.itemIn = pipelineItemIn
-        dispatcher.itemAckOut = pipelineItemAckOut
+    fun pipelineDispatcherAll(name: String = "dispatcher", init: PipelineDispatcherAll.() -> Unit){
+        val dispatcher = PipelineDispatcherAll(name, this.di)
+        dispatcher.channelIn = pipelineChannel
         dispatcher.init()
         senders.add(dispatcher)
     }
@@ -123,31 +101,23 @@ class PipelineBranch(
 
     fun pipelineDispatcherOne(
         name: String = "dispatcher",
-        selectChannelFunc: ItemDispatcherOne.(Item) -> SendChannel<Item>,
-        init: ItemDispatcherOne.() -> Unit
+        selectChannelFunc: PipelineDispatcherOne.(Item) -> SuperChannel,
+        init: PipelineDispatcherOne.() -> Unit
     ){
-        val dispatcher = object : ItemDispatcherOne(name, this.di){
-            override fun selectChannel(item: Item): SendChannel<Item> {
+        val dispatcher = object : PipelineDispatcherOne(name, this.di){
+            override fun selectChannel(item: Item): SuperChannel {
                 return selectChannelFunc(item)
             }
-
-            override var inChannel: SuperChannel
-                get() = TODO("Not yet implemented")
-                set(value) {}
-
-            override fun generateErrorInfos(ex: Exception): ErrorInfo {
-                TODO("Not yet implemented")
-            }
         }
-        //dispatcher.itemIn = pipelineItemIn
-        dispatcher.itemAckOut = pipelineItemAckOut
+
+        dispatcher.channelIn = pipelineChannel
         dispatcher.init()
         senders.add(dispatcher)
     }
 }
 
 
-inline fun <reified T: AbstractExporter> ItemDispatcher.exporter(
+inline fun <reified T: AbstractExporter> PipelineDispatcher.exporter(
                                                   name: String? = null,
                                                   init: T.() -> Unit = {}): T? {
     val exp = buildControllable<T>(name)
@@ -155,24 +125,21 @@ inline fun <reified T: AbstractExporter> ItemDispatcher.exporter(
     val crawler: Crawler by di.instance(arg = this.di)
     crawler.controllables.add(exp)
 
-    val (newItemChannel, newItemAckChannel) = buildPipelineChannels()
-    /*
-    exp.itemIn = newItemChannel
-    exp.itemAckOut = newItemAckChannel
+    val newChannel = SuperChannel()
 
+    exp.inChannel = newChannel
 
-     */
-    this.addBranch(newItemChannel, newItemAckChannel)
+    this.addBranch(newChannel)
     exp.init()
 
     return exp
 }
 
 
-fun ItemDispatcher.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
-    val (newItemChannel, newItemAckChannel) = buildPipelineChannels()
-    this.addBranch(newItemChannel, newItemAckChannel)
-    val branch = PipelineBranch(newItemChannel, newItemAckChannel, this.di)
+fun PipelineDispatcher.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
+    val newChannel = SuperChannel()
+    this.addBranch(newChannel)
+    val branch = PipelineBranch(newChannel, this.di)
     branch.initBranch()
 
     val crawler : Crawler by this.di.instance(arg = this.di)
