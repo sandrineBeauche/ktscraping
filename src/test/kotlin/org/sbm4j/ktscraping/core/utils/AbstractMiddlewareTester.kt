@@ -1,25 +1,27 @@
 package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.clearAllMocks
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.spyk
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
+import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import kotlin.test.BeforeTest
 
 abstract class AbstractMiddlewareTester: DualScrapingTest() {
-
-    val sender: Controllable = mockk<Controllable>()
+    companion object{
+        val RESP_CONTENTS = "Response_contents"
+        val RESP_STATUS = "Response_status"
+        val RESP_ERROR = "Response_error"
+    }
 
     lateinit var middleware: AbstractMiddleware
 
@@ -33,51 +35,87 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
         initChannels()
         clearAllMocks()
 
-        val sc = mockk<CoroutineScope>()
+        middleware = buildMiddleware(middlewareName)
 
-        middleware = spyk(buildMiddleware(middlewareName))
-
-        every { middleware.inChannel } returns inChannel
-        every { middleware.outChannel } returns outChannel
-    }
-
-
-    suspend fun performEvent(event: Event, eventBack: EventBack){
-        inChannel.send(event)
-        outChannel.channel.receive() as Event
-        logger.info{"received forwarded ${event.eventName} event"}
-
-        logger.info{ "send back for ${event.eventName} event"}
-        outChannel.send(eventBack)
-        inChannel.channel.receive()
-    }
-
-    suspend fun performStartEvent(){
-        val startEvent = StartEvent(sender)
-        val startResponse = startEvent.buildBack()
-
-        performEvent(startEvent, startResponse)
-    }
-
-    suspend fun performEndEvent(){
-        val endEvent = EndEvent(sender)
-        val endEventBack = endEvent.buildBack()
-
-        performEvent(endEvent, endEventBack)
+        middleware.inChannel = inChannel
+        middleware.outChannel = outChannel
     }
 
 
 
-    suspend fun withMiddleware(func: suspend AbstractMiddlewareTester.() -> Unit){
+
+    suspend fun processEvent(event: Event){
+        processSend(event)
+    }
+
+    suspend fun processDownloadingRequest(request: DownloadingRequest){
+        val resp = when(val status = request.parameters[RESP_STATUS] as Status){
+            Status.OK -> {
+                val result = request.buildBack()
+                if(request.parameters.contains(RESP_CONTENTS)) {
+                    val contents = request.parameters[RESP_CONTENTS] as MutableMap<String, Any>
+                    result.contents.putAll(contents)
+                }
+                result
+            }
+            Status.ERROR, Status.UNAUTHORIZED, Status.NOT_FOUND -> {
+                val error = request.parameters[RESP_ERROR] as ErrorInfo
+                val result = request.buildErrorBack(error)
+                result
+            }
+
+            Status.IGNORED -> {
+                val result = request.buildBack()
+                result.status = Status.IGNORED
+                result
+            }
+        }
+        outChannel.send(resp)
+    }
+
+
+    suspend fun processRequest(request: AbstractRequest){
+        processSend(request)
+    }
+
+
+    suspend fun withMiddleware(nbMessages: Int = 1, func: suspend AbstractMiddlewareTester.() -> Unit){
         coroutineScope {
-            middleware.start(this)
-            performStartEvent()
+            inChannel.init()
+            outChannel.init()
 
-            func()
+            launch{
+                middleware.start(this)
 
-            performEndEvent()
-            closeChannels()
-            middleware.stop()
+                val startEvent = StartEvent(sender)
+                inChannel.sendSync<EventBack>(startEvent)
+
+                func()
+
+                val endEvent = EndEvent(sender)
+                inChannel.sendSync<EventBack>(endEvent)
+
+                middleware.stop()
+            }
+            launch{
+                outChannel.getSendFlow().take(nbMessages + 2).collect { send ->
+                    when(send){
+                        is StartEvent, is EndEvent -> {
+                            val back = send.buildBack()
+                            outChannel.send(back)
+                        }
+                        is Event -> {
+                            processEvent(send)
+                        }
+                        is DownloadingRequest -> {
+                            processDownloadingRequest(send)
+                        }
+                        is AbstractRequest -> {
+                            processRequest(send)
+                        }
+                    }
+                }
+            }
         }
     }
 }

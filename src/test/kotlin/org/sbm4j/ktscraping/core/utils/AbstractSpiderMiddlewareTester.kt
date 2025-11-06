@@ -14,8 +14,6 @@ import kotlin.test.BeforeTest
 
 abstract class AbstractSpiderMiddlewareTester: DualScrapingTest() {
 
-    val sender: Controllable = mockk<Controllable>()
-
     lateinit var middleware: SpiderMiddleware
 
     val middlewareName: String = "Middleware"

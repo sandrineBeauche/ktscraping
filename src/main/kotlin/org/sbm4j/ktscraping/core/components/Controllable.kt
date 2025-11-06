@@ -55,6 +55,7 @@ interface Controllable {
                 logger.debug { "Cancellation exception" }
             }
         }
+        delay(3000L)
         return job
     }
 

@@ -20,8 +20,6 @@ abstract class AbstractPipelineTester: DualScrapingTest() {
 
     val pipelineName: String = "Pipeline"
 
-    val sender: Controllable = mockk<Controllable>()
-
     abstract fun buildPipeline(pipelineName: String): AbstractPipeline
 
     @BeforeTest

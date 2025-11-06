@@ -60,9 +60,12 @@ class SuperChannel() {
     suspend inline fun <reified T: Back<*>> sendSync(
         data: Send,
     ): T{
+        val flow = mainFlow.filterIsInstance<T>().filter { it.send.channelableId == data.channelableId }
+        logger.trace{ "superchannel -> send message : ${data}"}
         channel.send(data)
-        val result = mainFlow.filterIsInstance<T>()
-            .first { it.send.channelableId == data.channelableId }
+        logger.trace{ "superchannel -> sent message : ${data} and wait for a response"}
+        val result = flow.first()
+        logger.trace { "superchannel -> received response: ${result}"}
         return result
     }
 

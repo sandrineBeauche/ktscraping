@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.components
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.SlotMode
 import org.sbm4j.ktscraping.core.channels.SuperChannel
@@ -8,6 +9,7 @@ import org.sbm4j.ktscraping.core.processors.SendException
 import org.sbm4j.ktscraping.core.processors.SendSource
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.*
 import org.sbm4j.ktscraping.data.item.Data
@@ -41,9 +43,10 @@ abstract class AbstractSpider(
         logger.info { "${name}: Starting spider" }
         job = scope.launch {
             try {
-                logger.info { "${name}: send start event request to initialize the crawler" }
-                val startRequest = StartEvent(this@AbstractSpider)
-                sendSync<Event>(startRequest, this)
+                logger.info { "${name}: send start event to initialize the crawler" }
+                val startEvent = StartEvent(this@AbstractSpider)
+                val startEventBack = sendSync<Event>(startEvent, this)
+                logger.debug{"${name}: received start event back: ${startEventBack}"}
 
                 logger.info { "${name}: Crawler initialized with success... start performing scraping" }
                 performScraping(this)
@@ -53,11 +56,11 @@ abstract class AbstractSpider(
                 val error = ErrorInternal(errorInfos, this@AbstractSpider)
                 outChannel.send(error)
             } finally {
-                logger.info { "${name}: finished performing scraping... send end event request" }
+                logger.info { "${name}: finished performing scraping... send end event" }
 
-                val endRequest = EndEvent(this@AbstractSpider)
-                val endResp = sendSync(endRequest, this)
-                logger.info { "${name}: ready to stop: ${endResp}" }
+                val endEvent = EndEvent(this@AbstractSpider)
+                val endEventBack = sendSync<Event>(endEvent, this)
+                logger.info { "${name}: ready to stop: ${endEventBack}" }
             }
         }
     }

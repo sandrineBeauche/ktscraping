@@ -22,7 +22,7 @@ abstract class AbstractDownloaderTester: ScrapingTest() {
 
     lateinit var downloader: AbstractDownloader
 
-    val sender: Controllable = mockk<Controllable>()
+
 
     val downloaderName: String = "Downloader"
 
@@ -44,13 +44,11 @@ abstract class AbstractDownloaderTester: ScrapingTest() {
                 downloader.start(this)
             }
             launch{
-                val startEvent = StartEvent(sender)
-                inChannel.sendSync<EventBack>(startEvent)
+                doStartEvent()
 
                 func()
 
-                val endEvent = EndEvent(sender)
-                inChannel.sendSync<EventBack>(endEvent)
+                doEndEvent()
 
                 downloader.stop()
                 closeChannels()

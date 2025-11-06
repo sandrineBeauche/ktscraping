@@ -2,23 +2,25 @@ package org.sbm4j.ktscraping.core.components
 
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.processors.EventConsumer
+import org.sbm4j.ktscraping.core.processors.EventSink
 import org.sbm4j.ktscraping.core.processors.ItemReceiver
+import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.item.*
 import org.sbm4j.ktscraping.data.Send
 
-abstract class AbstractExporter(override val name: String): ItemReceiver, EventConsumer, AbstractControllable() {
+abstract class AbstractExporter(override val name: String): ItemReceiver, EventSink, AbstractControllable() {
 
     override lateinit var inChannel: SuperChannel
 
     override suspend fun run() {
         logger.info{"${name}: Starting Exporter"}
-        super<EventConsumer>.run()
+        super<EventSink>.run()
         super<ItemReceiver>.run()
     }
 
     override suspend fun stop() {
         logger.info{"${name}: Stopping the exporter"}
-        super<EventConsumer>.stop()
+        super<EventSink>.stop()
         super<ItemReceiver>.stop()
     }
 
@@ -27,6 +29,7 @@ abstract class AbstractExporter(override val name: String): ItemReceiver, EventC
         logger.debug{ "${name}: exporting the item $item" }
         try {
             exportItem(item)
+            logger.debug{"${name}: exported item ${item}, returns ack"}
             return item.buildBack()
         }
         catch(ex: Exception){
@@ -37,7 +40,8 @@ abstract class AbstractExporter(override val name: String): ItemReceiver, EventC
 
 
     override suspend fun sendPostProcess(send: Send, result: Any) {
-        inChannel.send(result as ItemAck)
+        logger.trace { "${name}: inside post process -> send ack" }
+        inChannel.send(result as Back<*>)
     }
 
     abstract suspend fun exportItem(item: Item)

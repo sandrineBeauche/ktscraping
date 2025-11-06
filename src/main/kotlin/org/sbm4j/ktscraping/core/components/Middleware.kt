@@ -3,6 +3,7 @@ package org.sbm4j.ktscraping.core.components
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.processors.EventBackForwarder
 import org.sbm4j.ktscraping.core.processors.EventConsumer
+import org.sbm4j.ktscraping.core.processors.ItemForwarder
 import org.sbm4j.ktscraping.core.processors.RequestForwarder
 import org.sbm4j.ktscraping.core.processors.ResponseForwarder
 import org.sbm4j.ktscraping.data.response.Response
@@ -21,14 +22,13 @@ abstract class AbstractMiddleware(override val name: String):
 
 
     override suspend fun processResponse(response: Response) {
-        TODO("Not yet implemented")
     }
 
     override suspend fun run() {
-        super<RequestForwarder>.run()
-        super<RequestForwarder>.run()
         super<EventConsumer>.run()
         super<EventBackForwarder>.run()
+        super<RequestForwarder>.run()
+        super<ResponseForwarder>.run()
     }
 }
 /**
@@ -36,12 +36,13 @@ abstract class AbstractMiddleware(override val name: String):
  */
 abstract class SpiderMiddleware(
     name:String
-): AbstractMiddleware(name)
+): AbstractMiddleware(name), ItemForwarder
 {
 
     override suspend fun run() {
         logger.info{"${name}: Starting spider middleware"}
-        super.run()
+        super<AbstractMiddleware>.run()
+        super<ItemForwarder>.run()
     }
 
     override suspend fun stop() {
@@ -62,11 +63,8 @@ abstract class DownloaderMiddleware(name: String) :
     }
 
     override suspend fun stop() {
-        logger.info{"${name}: Stopping spider middleware"}
+        logger.info{"${name}: Stopping downloader middleware"}
         super.stop()
     }
-
-
-
 
 }

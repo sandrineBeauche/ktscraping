@@ -99,3 +99,23 @@ interface EventBackForwarder: BackForwarder, EventProcessor {
         receiveBacks(EventBack::class, flow, ::resumeEvent)
     }
 }
+
+
+interface EventSink: EventConsumer{
+
+    override suspend fun consumeEvent(event: Event): Any? {
+        lateinit var result: EventBack
+        try {
+            performEvent(event)
+            result = event.buildBack()
+        }
+        catch(ex: Exception){
+            val error = this.generateErrorInfos(ex)
+            result = event.buildErrorBack(error)
+        }
+        finally {
+            performPostEvent(result)
+        }
+        return result
+    }
+}

@@ -2,6 +2,7 @@ package org.sbm4j.ktscraping.core.components
 
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.processors.EventConsumer
+import org.sbm4j.ktscraping.core.processors.EventSink
 import org.sbm4j.ktscraping.core.processors.RequestReceiver
 import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.Channelable
@@ -22,7 +23,7 @@ enum class ContentType{
 
 abstract class AbstractDownloader(
     override val name: String
-): AbstractControllable(), RequestReceiver, EventConsumer {
+): AbstractControllable(), RequestReceiver, EventSink {
 
     companion object{
         val PAYLOAD: String = "payload"
@@ -32,22 +33,6 @@ abstract class AbstractDownloader(
 
 
     override lateinit var inChannel: SuperChannel
-
-    override suspend fun consumeEvent(event: Event): Any? {
-        lateinit var result: EventBack
-        try {
-            performEvent(event)
-            result = event.buildBack()
-        }
-        catch(ex: Exception){
-            val error = this.generateErrorInfos(ex)
-            result = event.buildErrorBack(error)
-        }
-        finally {
-            performPostEvent(result)
-        }
-        return result
-    }
 
 
     override suspend fun sendPostProcess(send: Send, result: Any) {
@@ -60,13 +45,13 @@ abstract class AbstractDownloader(
 
     override suspend fun run() {
         logger.info{"${name}: Starting downloader"}
-        super<EventConsumer>.run()
+        super<EventSink>.run()
         super<RequestReceiver>.run()
     }
 
     override suspend fun stop() {
         logger.info{"${name}: Stopping downloader"}
         super<RequestReceiver>.stop()
-        super<EventConsumer>.stop()
+        super<EventSink>.stop()
     }
 }

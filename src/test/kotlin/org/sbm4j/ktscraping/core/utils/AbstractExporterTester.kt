@@ -6,9 +6,13 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.StartEvent
 import kotlin.test.BeforeTest
 
 abstract class AbstractExporterTester: ScrapingTest(){
@@ -17,32 +21,35 @@ abstract class AbstractExporterTester: ScrapingTest(){
 
     val exporterName: String = "Exporter"
 
-    val sender: Controllable = mockk<Controllable>()
 
     abstract fun buildExporter(exporterName: String): AbstractExporter
 
     @BeforeTest
     open fun setUp(){
         logger.debug { "setup abstractexporter tester" }
+        exporter = buildExporter(exporterName)
         initChannels()
-        clearAllMocks()
 
-        val sc = mockk<CoroutineScope>()
-
-        exporter = spyk(buildExporter(exporterName))
-
-        every { exporter.inChannel } returns inChannel
+        exporter.inChannel = inChannel
     }
 
     suspend fun withExporter(func: suspend AbstractExporterTester.() -> Unit){
         coroutineScope {
-            every { exporter.scope } returns this
-            exporter.start(this)
+            inChannel.init()
 
-            func()
+            launch {
+                exporter.start(this)
+            }
+            launch{
+                doStartEvent()
 
-            closeChannels()
-            exporter.stop()
+                func()
+
+                doEndEvent()
+
+                closeChannels()
+                exporter.stop()
+            }
         }
     }
 }

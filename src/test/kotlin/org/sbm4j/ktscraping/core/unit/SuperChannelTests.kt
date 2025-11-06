@@ -4,6 +4,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -201,4 +202,58 @@ class SuperChannelTests {
             }
         }
     }
+
+    @Test
+    fun testLock() = TestScope().runTest {
+        val sender = mockk<Controllable>()
+        val s1 = SendA("coucou", sender)
+        val s2 = SendA("salut", sender)
+        val channel = SuperChannel()
+        channel.init()
+
+        launch{
+            //delay(2000L)
+            channel.send(s1)
+            logger.debug{ "sent ${s1}"}
+
+            channel.send(s2)
+            logger.debug{ "sent ${s2}"}
+        }
+        launch{
+            delay(2000L)
+            logger.debug{" Wait for 2 sensds"}
+            channel.getSendFlow().collect {
+                logger.debug{ "received ${it}"}
+            }
+
+        }
+    }
+
+    @Test
+    fun test2Channels() = TestScope().runTest {
+        val channel1 = SuperChannel.build()
+        val channel2 = SuperChannel.build()
+
+        val sender = mockk<Controllable>()
+        val s1 = SendA("coucou", sender)
+        val s2 = SendA("salut", sender)
+
+        coroutineScope {
+            launch {
+                channel1.send(s1)
+            }
+            launch {
+                val rec1 = channel1.receiveSend<SendA>()
+                logger.debug { "received ${rec1}" }
+            }
+            launch {
+                channel2.send(s2)
+            }
+            launch {
+                val rec2 = channel2.receiveSend<SendA>()
+                logger.debug { "received ${rec2}" }
+            }
+        }
+    }
+
 }
