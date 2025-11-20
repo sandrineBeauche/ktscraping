@@ -44,9 +44,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
 
 
 
-    suspend fun processEvent(event: Event){
-        processSend(event)
-    }
+
 
     suspend fun processDownloadingRequest(request: DownloadingRequest){
         val resp = when(val status = request.parameters[RESP_STATUS] as Status){
@@ -86,15 +84,9 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
 
             launch{
                 middleware.start(this)
-
-                val startEvent = StartEvent(sender)
-                inChannel.sendSync<EventBack>(startEvent)
-
+                doStartEvent()
                 func()
-
-                val endEvent = EndEvent(sender)
-                inChannel.sendSync<EventBack>(endEvent)
-
+                doEndEvent()
                 middleware.stop()
             }
             launch{

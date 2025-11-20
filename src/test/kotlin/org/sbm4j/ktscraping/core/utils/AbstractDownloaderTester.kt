@@ -40,10 +40,8 @@ abstract class AbstractDownloaderTester: ScrapingTest() {
         coroutineScope {
             inChannel.init()
 
-            launch {
-                downloader.start(this)
-            }
             launch{
+                downloader.start(this)
                 doStartEvent()
 
                 func()

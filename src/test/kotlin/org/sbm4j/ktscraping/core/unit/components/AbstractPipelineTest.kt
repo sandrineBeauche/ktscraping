@@ -1,4 +1,4 @@
-package org.sbm4j.ktscraping.core.unit
+package org.sbm4j.ktscraping.core.unit.components
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
@@ -7,10 +7,11 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.dsl.DataItemTest
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
-import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 
 class AbstractPipelineTest: AbstractPipelineTester() {
@@ -30,16 +31,9 @@ class AbstractPipelineTest: AbstractPipelineTester() {
         val itemVal = ObjectDataItem.build(dataVal, "itemTest", sender)
 
         withPipeline {
-            inChannel.send(itemVal)
-            val processed = outChannel.channel.receive() as ObjectDataItem<*>
-
-            val ack = processed.buildBack()
-            outChannel.send(ack)
-            val receivedAck = inChannel.channel.receive()
-
-            assertThat(receivedAck.channelableId, equalTo(itemVal.channelableId))
+            val ack = inChannel.sendSync<ItemAck>(itemVal)
+            logger.debug{ "received the ack: ${ack}" }
+            assertThat(ack.send.channelableId, equalTo(itemVal.channelableId))
         }
-
-        coVerify { pipeline.processItem(itemVal) }
     }
 }

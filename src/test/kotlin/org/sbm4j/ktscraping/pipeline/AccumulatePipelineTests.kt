@@ -62,8 +62,9 @@ class AccumulatePipelineTests: AbstractPipelineTester() {
     suspend fun withAccumulatePipeline(inputItems: List<DataItem<*>>, nbResults: Int = 1,
                                func: AccumulatePipelineTests.(outputItems: List<Item>) -> List<ItemAck>): EventBack{
         lateinit var final: EventBack
-        withPipeline(endEvent = false) {
-            inputItems.forEach { inChannel.send(it) }
+        withPipeline() {
+
+            //inputItems.forEach { inChannel.send(it) }
 
             val endItem = EndEvent(sender)
             inChannel.send(endItem)

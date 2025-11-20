@@ -13,12 +13,17 @@ interface Pipeline : ItemForwarder, ItemAckForwarder, EventConsumer, EventBackFo
         logger.info { "${name}: Starting pipeline" }
         super<ItemForwarder>.run()
         super<ItemAckForwarder>.run()
+        super<EventConsumer>.run()
+        super<EventBackForwarder>.run()
+
     }
 
     override suspend fun stop() {
         logger.info { "${name}: Stopping pipeline" }
         super<ItemForwarder>.stop()
         super<ItemAckForwarder>.stop()
+        super<EventConsumer>.stop()
+        super<EventBackForwarder>.stop()
     }
 
 }

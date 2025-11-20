@@ -37,10 +37,8 @@ abstract class AbstractExporterTester: ScrapingTest(){
         coroutineScope {
             inChannel.init()
 
-            launch {
-                exporter.start(this)
-            }
             launch{
+                exporter.start(this)
                 doStartEvent()
 
                 func()

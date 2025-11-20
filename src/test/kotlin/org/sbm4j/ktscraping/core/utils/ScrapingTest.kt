@@ -1,10 +1,12 @@
 package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.mockk
+import kotlinx.coroutines.delay
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
@@ -26,6 +28,7 @@ abstract class ScrapingTest {
     }
 
     open suspend fun doStartEvent(){
+        //delay(1000L)
         logger.debug{"Do Start event"}
         val startEvent = StartEvent(sender)
         inChannel.sendSync<EventBack>(startEvent)
@@ -34,8 +37,8 @@ abstract class ScrapingTest {
 
     open suspend fun doEndEvent(){
         logger.debug{"Do End event"}
-        val startEvent = StartEvent(sender)
-        inChannel.sendSync<EventBack>(startEvent)
+        val endEvent = EndEvent(sender)
+        inChannel.sendSync<EventBack>(endEvent)
         logger.debug{"End event done"}
     }
 

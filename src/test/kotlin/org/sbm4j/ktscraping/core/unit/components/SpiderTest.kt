@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractSpider
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.core.processors.SendException
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorInternal
@@ -101,6 +102,7 @@ class SpiderTest: AbstractSpiderTester() {
             }
         }
 
-        assertSame(receivedError.errorInfo.controllable, errorControllable)
+        val r = (receivedError.errorInfo.ex as SendException).resp
+        assertSame(errorControllable, r.errorInfos[0].controllable)
     }
 }
