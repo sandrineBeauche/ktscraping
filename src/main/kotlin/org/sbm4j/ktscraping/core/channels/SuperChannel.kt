@@ -22,14 +22,16 @@ import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.example.main
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.reduce
 
 
-class SuperChannel() {
+class SuperChannel(val name: String = "superChannel") {
 
     companion object{
+        var lastId: AtomicInteger = AtomicInteger()
         suspend fun build(): SuperChannel{
-            val result = SuperChannel()
+            val result = SuperChannel("superChannel#${lastId.getAndIncrement()}")
             result.init()
             return result
         }
@@ -44,7 +46,7 @@ class SuperChannel() {
 
 
     suspend fun init() = coroutineScope{
-        logger.debug{ "initialize superChannel"}
+        logger.debug{ "initialize ${name}"}
 
         this@SuperChannel.scope = CoroutineScope(Dispatchers.Default)
 
@@ -54,18 +56,18 @@ class SuperChannel() {
         }
 
         mainFlow = deferred.await()
-        logger.debug{"superchannel initialized with success"}
+        logger.debug{"${name} initialized with success"}
     }
 
     suspend inline fun <reified T: Back<*>> sendSync(
         data: Send,
     ): T{
         val flow = mainFlow.filterIsInstance<T>().filter { it.send.channelableId == data.channelableId }
-        logger.trace{ "superchannel -> send message : ${data}"}
+        logger.trace{ "${name} -> send message : ${data}"}
         channel.send(data)
-        logger.trace{ "superchannel -> sent message : ${data} and wait for a response"}
+        logger.trace{ "${name} -> sent message : ${data} and wait for a response"}
         val result = flow.first()
-        logger.trace { "superchannel -> received response: ${result}"}
+        logger.trace { "${name} -> received response: ${result}"}
         return result
     }
 
@@ -132,7 +134,9 @@ suspend fun sendSyncAll(senders: List<SuperChannel>, send: Send): Back<*> = coro
     }
 
     val backs = deferredBacks.awaitAll()
+    logger.debug{ "superchannels: received all the backs, reducing ${backs}"}
 
     val result = backs.reduce { b1, b2 -> b1 + b2 }
+    logger.debug{"superchannels: reduce result is ${result}"}
     return@coroutineScope result
 }

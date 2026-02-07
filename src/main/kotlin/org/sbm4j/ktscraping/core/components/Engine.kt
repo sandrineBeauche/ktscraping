@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.core.components
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.sync.Semaphore
 import org.sbm4j.ktscraping.core.CrawlerResult
@@ -31,7 +32,7 @@ import org.sbm4j.ktscraping.stats.StatsCrawlerResult
 
 
 abstract class AbstractEngine(
-    channelFactory: ChannelFactory,
+    val channelFactory: ChannelFactory,
 ) : AbstractControllable(){
 
     override val name: String = "Engine"
@@ -43,13 +44,13 @@ abstract class AbstractEngine(
     lateinit var pipelineChannel: SuperChannel
 
 
-    abstract suspend fun processRequest(request: AbstractRequest)
+    open suspend fun processRequest(request: AbstractRequest){}
 
-    abstract suspend fun processResponse(response: Response)
+    open suspend fun processResponse(response: Response){}
 
-    abstract suspend fun processItem(item: Item)
+    open suspend fun processItem(item: Item){}
 
-    abstract suspend fun processItemAck(itemAck: ItemAck)
+    open suspend fun processItemAck(itemAck: ItemAck){}
 
     val innerRequestForwarder: AbstractControllable = object :
         RequestForwarder,
@@ -64,6 +65,10 @@ abstract class AbstractEngine(
 
         override var outChannel: SuperChannel
             get() = this@AbstractEngine.downloaderChannel
+            set(value) {}
+
+        override var scope: CoroutineScope
+            get() = this@AbstractEngine.scope
             set(value) {}
 
         override val name: String = "${this@AbstractEngine.name}-RequestForwarder"
@@ -109,6 +114,10 @@ abstract class AbstractEngine(
             get() = this@AbstractEngine.pipelineChannel
             set(value) {}
 
+        override var scope: CoroutineScope
+            get() = this@AbstractEngine.scope
+            set(value) {}
+
         override val name: String = "${this@AbstractEngine.name}-ItemForwarder"
 
         override suspend fun processItem(item: Item): Any? {
@@ -143,6 +152,10 @@ abstract class AbstractEngine(
         override val name: String = "${this@AbstractEngine.name}-EventPropagator"
 
 
+        override var scope: CoroutineScope
+            get() = this@AbstractEngine.scope
+            set(value) {}
+
         override suspend fun sendPostProcess(send: Send, result: Any) {
             val result = sendSyncAll(listOf(downloaderChannel, pipelineChannel), send)
             inChannel.send(result)
@@ -172,9 +185,13 @@ abstract class AbstractEngine(
 
     override suspend fun run() {
         logger.info { "${name}: starting engine" }
-        innerRequestForwarder.start(this.scope)
-        innerItemForwarder.start(this.scope)
-        innerEventPropagator.start(this.scope)
+        spiderChannel = channelFactory.spiderChannel
+        downloaderChannel = channelFactory.downloaderChannel
+        pipelineChannel = channelFactory.pipelineChannel
+
+        innerRequestForwarder.run()
+        innerItemForwarder.run()
+        innerEventPropagator.run()
     }
 
     override suspend fun stop() {
