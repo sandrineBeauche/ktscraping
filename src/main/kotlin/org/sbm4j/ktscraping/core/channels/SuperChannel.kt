@@ -59,7 +59,8 @@ class SuperChannel(val name: String = "superChannel") {
         logger.debug{"${name} initialized with success"}
     }
 
-    suspend inline fun <reified T: Back<*>> sendSync(
+    suspend inline fun <reified T: Back<*>>
+            sendSync(
         data: Send,
     ): T{
         val flow = mainFlow.filterIsInstance<T>().filter { it.send.channelableId == data.channelableId }

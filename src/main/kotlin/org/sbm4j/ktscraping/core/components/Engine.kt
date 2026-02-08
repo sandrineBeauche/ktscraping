@@ -17,6 +17,7 @@ import org.sbm4j.ktscraping.core.processors.ResponseForwarder
 import org.sbm4j.ktscraping.data.Send
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.EventPropagation
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
@@ -94,7 +95,10 @@ abstract class AbstractEngine(
             }
             this.performSends(clazz, flow, ::consumeEvent)
 
-            super<EventBackForwarder>.run()
+            val flowBack = outChannel.getBackFlow(EventBack::class, this).filter {
+                it.send.propagation == EventPropagation.DOWNLOADER
+            }
+            receiveBacks(EventBack::class, flowBack, ::resumeEvent)
         }
     }
 
@@ -131,6 +135,7 @@ abstract class AbstractEngine(
         }
 
         override suspend fun run() {
+            super<ItemForwarder>.run()
             super<ItemAckForwarder>.run()
 
             val clazz = Event::class
@@ -138,6 +143,11 @@ abstract class AbstractEngine(
                 it.propagation == EventPropagation.PIPELINE
             }
             this.performSends(clazz, flow, ::consumeEvent)
+
+            val flowBack = outChannel.getBackFlow(EventBack::class, this).filter {
+                it.send.propagation == EventPropagation.PIPELINE
+            }
+            receiveBacks(EventBack::class, flowBack, ::resumeEvent)
         }
     }
 
@@ -157,8 +167,13 @@ abstract class AbstractEngine(
             set(value) {}
 
         override suspend fun sendPostProcess(send: Send, result: Any) {
+            logger.debug{"$name: forward event to downloader and pipeline channel: $send"}
             val result = sendSyncAll(listOf(downloaderChannel, pipelineChannel), send)
+            logger.debug{"$name: result $result... send it back"}
+
+            result.send.channelableId = send.channelableId
             inChannel.send(result)
+            logger.debug{"$name: sent it back"}
         }
 
 

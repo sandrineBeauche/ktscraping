@@ -93,6 +93,7 @@ class EngineTest {
 
                 engine.stop()
                 channelFactory.closeChannels()
+                logger.debug{"finished interacting with engine"}
             }
             launch {
                 channelFactory.downloaderChannel
@@ -102,6 +103,7 @@ class EngineTest {
                         is DownloadingRequest -> processDownloadingRequest(send)
                     }
                 }
+                logger.debug{"Finished receiving message on downloading branch"}
             }
             launch {
                 channelFactory.pipelineChannel
@@ -111,6 +113,7 @@ class EngineTest {
                         is Item -> processPipelineItem(send)
                     }
                 }
+                logger.debug{"Finished receiving message on pipeline branch"}
             }
         }
     }
@@ -120,7 +123,7 @@ class EngineTest {
     fun testEngineSendRequest() = TestScope().runTest {
         val request1 = Request(sender, "une url")
 
-        withEngine {
+        withEngine(nbMessagePipeline = 0, nbMessageDownloader = 1) {
             val resp = channelFactory.spiderChannel.sendSync<DownloadingResponse>(request1)
 
             logger.info { "Received response: ${resp}" }
@@ -133,10 +136,10 @@ class EngineTest {
         val data = DataItemTest("value1", "req1")
         val item = ObjectDataItem(data, DataItemTest::class, "itemTest", sender)
 
-        withEngine {
+        withEngine(nbMessagePipeline = 1, nbMessageDownloader = 0) {
             val ack = channelFactory.spiderChannel.sendSync<ItemAck>(item)
 
-            logger.info { "Received item on item branch: ${ack}" }
+            logger.info { "Received item ack on item branch: ${ack}" }
         }
     }
 }
