@@ -138,6 +138,20 @@ suspend fun sendSyncAll(senders: List<SuperChannel>, send: Send): Back<*> = coro
     logger.debug{ "superchannels: received all the backs, reducing ${backs}"}
 
     val result = backs.reduce { b1, b2 -> b1 + b2 }
+    result.send.channelableId = send.channelableId
+
     logger.debug{"superchannels: reduce result is ${result}"}
     return@coroutineScope result
+}
+
+
+suspend fun sendSyncAll(sends: Map<SuperChannel, Send>): List<Back<*>> = coroutineScope {
+    val deferredBacks = sends.map{ (channel, send) ->
+        async{
+            channel.sendSync<Back<*>>(send)
+        }
+    }
+    val backs = deferredBacks.awaitAll()
+
+    return@coroutineScope backs
 }

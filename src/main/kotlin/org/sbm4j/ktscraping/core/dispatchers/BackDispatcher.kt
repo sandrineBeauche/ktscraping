@@ -40,6 +40,7 @@ interface BackDispatcher: Controllable, DIAware {
                         }
                     }
                 }
+                logger.debug { "$name: finished receiving sends" }
             }
         }
     }
@@ -70,6 +71,7 @@ interface BackDispatcher: Controllable, DIAware {
                     is EventBack -> performEventBack(back)
                 }
             }
+            logger.debug { "$name: finished receiving backs" }
         }
     }
 
@@ -105,6 +107,7 @@ interface BackDispatcher: Controllable, DIAware {
         for(sender in senders){
             sender.close()
         }
+        super.stop()
     }
 }
 

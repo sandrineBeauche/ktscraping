@@ -92,8 +92,8 @@ class DownloaderBranchTest: CrawlerTest() {
             downloaderDispatcher(
                 "dispatcher1",
                 { req: AbstractRequest ->
-                    if (req is DownloadingRequest && req.url == url1) senders[0]
-                    else senders[1]
+                    if (req is DownloadingRequest && req.url == url1) receivers[0]
+                    else receivers[1]
                 })
             {
                 downloader<DownloaderClassTest>(name = "Downloader1")
@@ -140,8 +140,8 @@ class DownloaderBranchTest: CrawlerTest() {
             downloaderDispatcher(
                 "dispatcher1",
                 { req: AbstractRequest ->
-                    if (req is DownloadingRequest && req.url == url1) senders[0]
-                    else senders[1]
+                    if (req is DownloadingRequest && req.url == url1) receivers[0]
+                    else receivers[1]
                 })
             {
                 downloaderBranch {

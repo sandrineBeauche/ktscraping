@@ -2,14 +2,12 @@ package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.clearAllMocks
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
-import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.AbstractRequest
@@ -40,10 +38,6 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
         middleware.inChannel = inChannel
         middleware.outChannel = outChannel
     }
-
-
-
-
 
 
     suspend fun processDownloadingRequest(request: DownloadingRequest){
@@ -88,6 +82,8 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
                 func()
                 doEndEvent()
                 middleware.stop()
+
+
             }
             launch{
                 outChannel.getSendFlow().take(nbMessages + 2).collect { send ->

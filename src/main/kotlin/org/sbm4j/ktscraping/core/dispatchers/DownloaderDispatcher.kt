@@ -3,6 +3,7 @@ package org.sbm4j.ktscraping.core.dispatchers
 import org.kodein.di.DI
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractControllable
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 
 abstract class DownloaderDispatcher(
@@ -10,7 +11,7 @@ abstract class DownloaderDispatcher(
     override val di: DI
 ): EventDispatcher, SendPropagatorOne, AbstractControllable(){
 
-    override val senders: MutableList<SuperChannel> = mutableListOf()
+    override val receivers: MutableList<SuperChannel> = mutableListOf()
 
     override lateinit var channelIn: SuperChannel
 
@@ -26,5 +27,11 @@ abstract class DownloaderDispatcher(
     override suspend fun run() {
         super.run()
         performRequests()
+    }
+
+    override suspend fun stop() {
+        logger.info{ "Stopping the downloader dispatcher ${name}"}
+        super<EventDispatcher>.stop()
+        super<AbstractControllable>.stop()
     }
 }

@@ -28,7 +28,6 @@ abstract class ScrapingTest {
     }
 
     open suspend fun doStartEvent(){
-        //delay(1000L)
         logger.debug{"Do Start event"}
         val startEvent = StartEvent(sender)
         inChannel.sendSync<EventBack>(startEvent)

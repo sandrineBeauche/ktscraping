@@ -12,8 +12,8 @@ import org.sbm4j.ktscraping.core.components.AbstractEngine
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.core.dsl.DataItemTest
 import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
+import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event

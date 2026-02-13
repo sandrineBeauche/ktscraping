@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.item.DataItem

@@ -171,7 +171,6 @@ abstract class AbstractEngine(
             val result = sendSyncAll(listOf(downloaderChannel, pipelineChannel), send)
             logger.debug{"$name: result $result... send it back"}
 
-            result.send.channelableId = send.channelableId
             inChannel.send(result)
             logger.debug{"$name: sent it back"}
         }

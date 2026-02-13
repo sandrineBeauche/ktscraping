@@ -4,6 +4,7 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractControllable
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.Send
 import org.sbm4j.ktscraping.data.item.Item
 
@@ -12,7 +13,7 @@ abstract class PipelineDispatcher(
     override val di: DI
 ) : EventDispatcher, AbstractControllable(), DIAware {
 
-    override val senders: MutableList<SuperChannel> = mutableListOf()
+    override val receivers: MutableList<SuperChannel> = mutableListOf()
 
     override lateinit var channelIn: SuperChannel
 
@@ -21,6 +22,12 @@ abstract class PipelineDispatcher(
     override suspend fun run() {
         super.run()
         performItems()
+    }
+
+    override suspend fun stop() {
+        logger.info{ "Stopping the pipeline dispatcher ${name}"}
+        super<EventDispatcher>.stop()
+        super<AbstractControllable>.stop()
     }
 
 }

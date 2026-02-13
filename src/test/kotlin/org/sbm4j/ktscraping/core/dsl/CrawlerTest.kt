@@ -12,17 +12,7 @@ import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.item.Data
 
 
-data class DataItemTest(
-    val value: String,
-    val reqName: String,
-    val url: String = "une url",
-): Data(){
-    override fun clone(): Data {
-        val result = this.copy()
-        return result
-    }
 
-}
 
 class TestingCrawlerResult: CrawlerResult
 

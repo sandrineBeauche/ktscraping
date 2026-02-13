@@ -4,9 +4,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.core.dsl.DataItemTest
 import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
+import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
 import org.sbm4j.ktscraping.core.utils.isOKStartItemAck
 import org.sbm4j.ktscraping.data.events.EndEvent
@@ -109,8 +110,8 @@ class PipelineBranchTest: CrawlerTest() {
                 { item: Item ->
                     val it = item as ObjectDataItem<*>
                     val data = (it.data) as DataItemTest
-                    if (data.value == "value1") senders[0]
-                    else senders[1]
+                    if (data.value == "value1") receivers[0]
+                    else receivers[1]
                 })
             {
                 exporter<ExporterClassTest>("exporter1")

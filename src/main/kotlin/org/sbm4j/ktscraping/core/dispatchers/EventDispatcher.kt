@@ -3,9 +3,7 @@ package org.sbm4j.ktscraping.core.dispatchers
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import org.kodein.di.DI
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.core.components.AbstractControllable
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.logger
@@ -13,14 +11,14 @@ import org.sbm4j.ktscraping.core.channels.sendSyncAll
 import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.Send
 import org.sbm4j.ktscraping.data.events.Event
-import org.sbm4j.ktscraping.data.request.AbstractRequest
 
-interface SendPropagatorOne: Controllable {
+interface SendPropagator: Controllable{
+    val receivers: MutableList<SuperChannel>
 
-    val senders: MutableList<SuperChannel>
+    var channelIn: SuperChannel
+}
 
-    val channelIn: SuperChannel
-
+interface SendPropagatorOne: SendPropagator {
 
     suspend fun <T: Send> propagateOne(coroutineName: String, flow: Flow<T>, selectChannelFunc: (T) -> SuperChannel){
         scope.launch(CoroutineName(coroutineName)) {
@@ -35,18 +33,14 @@ interface SendPropagatorOne: Controllable {
     }
 }
 
-interface SendPropagatorAll: Controllable {
-
-    val senders: MutableList<SuperChannel>
-
-    val channelIn: SuperChannel
+interface SendPropagatorAll: SendPropagator {
 
     suspend fun propagateAll(coroutineName: String, flow: Flow<Send>, message: String = ""){
         scope.launch(CoroutineName(coroutineName)) {
             flow.collect { send ->
                 launch(CoroutineName("${coroutineName}-${send.name}")) {
                     logger.trace { "${name}: Received ${send.name} and dispatch it to all" }
-                    val result = sendSyncAll(senders, send)
+                    val result = sendSyncAll(receivers, send)
                     logger.trace { "${name}: Received back for ${send.name} and forward it" }
                     channelIn.send(result)
                 }
@@ -64,7 +58,7 @@ interface EventDispatcher: Controllable, DIAware, SendPropagatorAll {
     }
 
     fun addBranch(channel: SuperChannel){
-        this.senders.add(channel)
+        this.receivers.add(channel)
     }
 
     override suspend fun run() {
@@ -73,10 +67,9 @@ interface EventDispatcher: Controllable, DIAware, SendPropagatorAll {
     }
 
     override suspend fun stop() {
-        logger.info{ "Stopping the dispatcher ${name}"}
         this.channelIn.close()
-        for(sender in senders){
-            sender.close()
+        for(receiver in receivers){
+            receiver.close()
         }
     }
 }
