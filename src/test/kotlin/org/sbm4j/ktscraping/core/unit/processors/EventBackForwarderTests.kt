@@ -26,7 +26,7 @@ class TestingEventBackForwarder(
     }
 
     override suspend fun run() {
-        super.run()
+        super<EventBackForwarder>.run()
     }
 
 }
@@ -38,27 +38,24 @@ class EventBackForwarderTests {
     @Test
     fun testEventBack() = TestScope().runTest {
         coroutineScope {
-            val inChannel = SuperChannel.build()
-            val outChannel = SuperChannel.build()
+            val inChannel = SuperChannel.build(this)
+            val outChannel = SuperChannel.build(this)
 
             val forwarder = TestingEventBackForwarder(inChannel, outChannel)
 
-            launch {
-                forwarder.start(this)
-            }
-            launch {
-                val event = StartEvent(sender)
-                val back = event.buildBack()
+            forwarder.start(this).join()
 
-                outChannel.send(back)
-                val receivedBack = inChannel.getBackFlow().first()
+            val event = StartEvent(sender)
+            val back = event.buildBack()
+            outChannel.send(back)
 
-                logger.debug { "received back from start event: ${receivedBack}" }
+            val receivedBack = inChannel.getBackFlow().first()
 
-                forwarder.stop()
-                inChannel.close()
-                outChannel.close()
-            }
+            logger.debug { "received back from start event: ${receivedBack}" }
+
+            forwarder.stop()
+            inChannel.close()
+            outChannel.close()
         }
     }
 }

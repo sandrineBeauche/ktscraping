@@ -7,14 +7,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.CrawlerResult
-import org.sbm4j.ktscraping.core.channels.ChannelFactory
+import org.sbm4j.ktscraping.core.channels.ChannelManager
 import org.sbm4j.ktscraping.core.components.AbstractEngine
-import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
 import org.sbm4j.ktscraping.core.utils.DataItemTest
-import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
@@ -30,8 +28,8 @@ import kotlin.test.Test
 
 
 class TestingEngine(
-    channelFactory: ChannelFactory,
-) : AbstractEngine(channelFactory) {
+    channelManager: ChannelManager,
+) : AbstractEngine(channelManager) {
     override fun computeResult(): CrawlerResult {
         return TestingCrawlerResult()
     }
@@ -43,60 +41,62 @@ class EngineTest {
 
     val sender: Controllable = mockk<Controllable>()
 
-    lateinit var channelFactory: ChannelFactory
+    lateinit var channelManager: ChannelManager
 
     lateinit var engine: TestingEngine
 
     @BeforeTest
     fun setUp() {
-        channelFactory = ChannelFactory()
-        engine = TestingEngine(channelFactory)
+        channelManager = ChannelManager()
+        engine = TestingEngine(channelManager)
     }
 
     suspend fun processDownloadEvent(event: Event){
         val ack = event.buildBack()
-        channelFactory.downloaderChannel.send(ack)
+        channelManager.downloaderChannel.send(ack)
     }
 
     suspend fun processPipelineEvent(event: Event){
         val ack = event.buildBack()
-        channelFactory.pipelineChannel.send(ack)
+        channelManager.pipelineChannel.send(ack)
     }
 
     suspend fun processDownloadingRequest(request: DownloadingRequest){
         val response = request.buildBack()
-        channelFactory.downloaderChannel.send(response)
+        channelManager.downloaderChannel.send(response)
     }
 
     suspend fun processPipelineItem(item: Item){
         val ack = item.buildBack()
-        channelFactory.pipelineChannel.send(ack)
+        channelManager.pipelineChannel.send(ack)
     }
 
     suspend fun withEngine(
         nbMessageDownloader: Int = 1, nbMessagePipeline: Int = 1,
         func: suspend EngineTest.() -> Unit
     ) {
-        channelFactory.initChannels()
+
         coroutineScope {
+            channelManager.initChannels(this)
+
             launch {
                 engine.start(this)
 
                 logger.info { "Starting interacting with engine" }
                 val start = StartEvent(sender)
-                channelFactory.spiderChannel.sendSync<EventBack>(start)
+                channelManager.spiderChannel.sendSync<EventBack>(start)
 
                 func()
 
                 val end = EndEvent(sender)
-                channelFactory.spiderChannel.sendSync<EventBack>(end)
+                channelManager.spiderChannel.sendSync<EventBack>(end)
 
                 engine.stop()
-                channelFactory.closeChannels()
+                channelManager.closeChannels()
                 logger.debug{"finished interacting with engine"}
             }
             launch {
-                channelFactory.downloaderChannel
+                channelManager.downloaderChannel
                     .getSendFlow().take(nbMessageDownloader + 2).collect { send ->
                     when(send){
                         is Event -> processDownloadEvent(send)
@@ -106,7 +106,7 @@ class EngineTest {
                 logger.debug{"Finished receiving message on downloading branch"}
             }
             launch {
-                channelFactory.pipelineChannel
+                channelManager.pipelineChannel
                     .getSendFlow().take(nbMessagePipeline + 2).collect { send ->
                     when(send){
                         is Event -> processPipelineEvent(send)
@@ -124,7 +124,7 @@ class EngineTest {
         val request1 = Request(sender, "une url")
 
         withEngine(nbMessagePipeline = 0, nbMessageDownloader = 1) {
-            val resp = channelFactory.spiderChannel.sendSync<DownloadingResponse>(request1)
+            val resp = channelManager.spiderChannel.sendSync<DownloadingResponse>(request1)
 
             logger.info { "Received response: ${resp}" }
         }
@@ -137,7 +137,7 @@ class EngineTest {
         val item = ObjectDataItem(data, DataItemTest::class, "itemTest", sender)
 
         withEngine(nbMessagePipeline = 1, nbMessageDownloader = 0) {
-            val ack = channelFactory.spiderChannel.sendSync<ItemAck>(item)
+            val ack = channelManager.spiderChannel.sendSync<ItemAck>(item)
 
             logger.info { "Received item ack on item branch: ${ack}" }
         }

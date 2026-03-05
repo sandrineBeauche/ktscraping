@@ -31,7 +31,7 @@ class PipelineBranchTest: CrawlerTest() {
 
     suspend fun sendStartItem(){
         val startEvent = StartEvent(sender)
-        val startAck = channelFactory.pipelineChannel.sendSync<EventBack>(startEvent)
+        val startAck = channelManager.pipelineChannel.sendSync<EventBack>(startEvent)
         logger.info{ "received ack for the start event item " }
 
         assertThat(startAck, isOKStartItemAck())
@@ -40,7 +40,7 @@ class PipelineBranchTest: CrawlerTest() {
 
     suspend fun sendEndItem(){
         val endItem = EndEvent(sender)
-        val endAck = channelFactory.pipelineChannel.sendSync<EventBack>(endItem)
+        val endAck = channelManager.pipelineChannel.sendSync<EventBack>(endItem)
         logger.info{ "received ack for the end event item " }
 
         assertThat(endAck, isOKEndItemAck())
@@ -63,13 +63,13 @@ class PipelineBranchTest: CrawlerTest() {
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
-        val ack = channelFactory.pipelineChannel.sendSync<ItemAck>(item1)
+        val ack = channelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
         assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
 
     }
 
@@ -91,13 +91,13 @@ class PipelineBranchTest: CrawlerTest() {
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
-        val ack = channelFactory.pipelineChannel.sendSync<ItemAck>(item1)
+        val ack = channelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
         assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
     }
 
 
@@ -127,12 +127,12 @@ class PipelineBranchTest: CrawlerTest() {
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
-        val ack = channelFactory.pipelineChannel.sendSync<ItemAck>(item1)
+        val ack = channelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
         assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
     }
 }

@@ -20,6 +20,7 @@ class TestingEventConsumer(
     override var inChannel: SuperChannel,
     override val name: String = "TestingEventConsumer"
 ): EventConsumer, AbstractControllable(){
+
     override suspend fun sendPostProcess(send: Send, result: Any) {
         logger.debug{"${name}: processed ${send.loggingLabel}: ${send}"}
         val back = send.buildBack()
@@ -39,11 +40,11 @@ class EventConsumerTests {
     @Test
     fun testEventConsume1() = TestScope().runTest {
         coroutineScope {
-            val channel = SuperChannel.build()
+            val channel = SuperChannel.build(this)
 
             val consumer = TestingEventConsumer(channel)
 
-            consumer.start(this)
+            consumer.start(this).join()
 
             val event = StartEvent(sender)
             val back = channel.sendSync<EventBack>(event)

@@ -18,7 +18,6 @@ interface ItemReceiver : SendConsumer {
 
 interface ItemForwarder: ItemReceiver, SendForwarder {
     override suspend fun run() {
-        super.run()
     }
 }
 

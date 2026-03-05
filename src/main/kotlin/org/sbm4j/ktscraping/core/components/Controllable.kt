@@ -3,6 +3,7 @@ package org.sbm4j.ktscraping.core.components
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
+import org.sbm4j.ktscraping.core.childScope
 import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorLevel
@@ -40,30 +41,27 @@ interface Controllable {
     var job: Job
 
 
+
     /**
      * Starts the kt scraping component. The component is then executed in a coroutine subscope of the given scope
-     * @param scope the parent coroutine scope
+     * @param parentScope the parent coroutine scope
      */
-    suspend fun start(scope: CoroutineScope): Job{
-        job = scope.launch {
-            try {
-                this@Controllable.scope = this
-                run()
-                logger.trace{"${name}: finished run"}
-            }
-            catch(ex: CancellationException){
-                logger.debug { "Cancellation exception" }
-            }
+    suspend fun start(parentScope: CoroutineScope): Job{
+        return parentScope.launch(CoroutineName("${name}-starting")) {
+            scope = childScope(parentScope, "${name}-root")
+            job = scope.coroutineContext[Job]!!
+            run()
+            delay(500L)
+            logger.trace{"${name}: finished run"}
         }
-        delay(3000L)
-        return job
     }
 
     /**
      * Runs the component. This method should be responsible to launch subscope to listen
      * the input channels.
      */
-    suspend fun run()
+    suspend fun run(){
+    }
 
     /**
      * Stops the kt scraping component

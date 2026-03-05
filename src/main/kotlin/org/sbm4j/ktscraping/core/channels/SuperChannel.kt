@@ -1,38 +1,25 @@
 package org.sbm4j.ktscraping.core.channels
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import org.sbm4j.ktscraping.core.childScope
+import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.Channelable
 import org.sbm4j.ktscraping.data.Send
-import kotlin.reflect.KClass
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.repackaged.net.bytebuddy.implementation.bind.annotation.Super
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.example.main
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.reduce
+import kotlin.reflect.KClass
 
 
 class SuperChannel(val name: String = "superChannel") {
 
     companion object{
         var lastId: AtomicInteger = AtomicInteger()
-        suspend fun build(): SuperChannel{
+        suspend fun build(parentScope: CoroutineScope): SuperChannel{
             val result = SuperChannel("superChannel#${lastId.getAndIncrement()}")
-            result.init()
+            result.init(parentScope)
             return result
         }
     }
@@ -45,17 +32,13 @@ class SuperChannel(val name: String = "superChannel") {
     lateinit var scope: CoroutineScope
 
 
-    suspend fun init() = coroutineScope{
+    fun init(parentScope: CoroutineScope){
         logger.debug{ "initialize ${name}"}
+        scope = childScope(parentScope, "${name}-root")
 
-        this@SuperChannel.scope = CoroutineScope(Dispatchers.Default)
+        val flow = channel.consumeAsFlow()
+        mainFlow = flow.shareIn(scope, SharingStarted.WhileSubscribed())
 
-        val deferred = async {
-            val flow = channel.consumeAsFlow()
-            flow.shareIn(this@SuperChannel.scope, SharingStarted.WhileSubscribed())
-        }
-
-        mainFlow = deferred.await()
         logger.debug{"${name} initialized with success"}
     }
 

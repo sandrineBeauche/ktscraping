@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.mockk
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.logger
@@ -19,8 +19,12 @@ abstract class ScrapingTest {
 
     val sender: Controllable = mockk<Controllable>()
 
-    open fun initChannels(){
+    open fun buildChannels(){
         inChannel = SuperChannel()
+    }
+
+    open fun initChannels(parentScope: CoroutineScope){
+        inChannel.init(parentScope)
     }
 
     open fun closeChannels(){

@@ -1,15 +1,10 @@
 package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.clearAllMocks
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.spyk
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
@@ -27,7 +22,7 @@ abstract class AbstractPipelineTester: DualScrapingTest() {
 
     @BeforeTest
     open fun setUp(){
-        initChannels()
+        buildChannels()
         clearAllMocks()
 
         pipeline = buildPipeline(pipelineName)
@@ -44,21 +39,17 @@ abstract class AbstractPipelineTester: DualScrapingTest() {
 
     suspend fun withPipeline(nbMessages: Int = 1, func: suspend AbstractPipelineTester.() -> Unit) {
         coroutineScope {
-            inChannel.init()
-            outChannel.init()
+            initChannels(this)
 
             launch {
-                pipeline.start(this)
+                pipeline.start(this).join()
 
-                val startEvent = StartEvent(sender)
-                inChannel.sendSync<EventBack>(startEvent)
-
+                doStartEvent()
                 func()
 
-                val endEvent = EndEvent(sender)
-                inChannel.sendSync<EventBack>(endEvent)
-
+                doEndEvent()
                 pipeline.stop()
+                closeChannels()
             }
             launch {
                 outChannel.getSendFlow().take(nbMessages + 2).collect { send ->

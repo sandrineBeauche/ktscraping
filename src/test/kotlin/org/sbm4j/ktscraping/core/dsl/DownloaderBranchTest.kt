@@ -40,12 +40,12 @@ class DownloaderBranchTest: CrawlerTest() {
 
     suspend fun sendStartEvent(){
         val startEvent = StartEvent(sender)
-        val back = channelFactory.downloaderChannel.sendSync<EventBack>(startEvent)
+        val back = channelManager.downloaderChannel.sendSync<EventBack>(startEvent)
     }
 
     suspend fun sendEndEvent(){
         val endEvent = EndEvent(sender)
-        val back = channelFactory.downloaderChannel.sendSync<EventBack>(endEvent)
+        val back = channelManager.downloaderChannel.sendSync<EventBack>(endEvent)
     }
 
     @Test
@@ -66,13 +66,13 @@ class DownloaderBranchTest: CrawlerTest() {
         sendStartEvent()
 
         val request1 = Request(sender, url)
-        val response = channelFactory.downloaderChannel.sendSync<DownloadingResponse>(request1)
+        val response = channelManager.downloaderChannel.sendSync<DownloadingResponse>(request1)
 
         logger.debug { "Received the response: $response" }
 
         sendEndEvent()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
 
         val respReq = response.send
         assertThat(respReq, isDownloadingRequestWith(url))
@@ -110,17 +110,17 @@ class DownloaderBranchTest: CrawlerTest() {
         val request1 = Request(sender, url1)
         val request2 = Request(sender, url2)
 
-        channelFactory.downloaderChannel.send(request1)
-        channelFactory.downloaderChannel.send(request2)
+        channelManager.downloaderChannel.send(request1)
+        channelManager.downloaderChannel.send(request2)
 
-        response1 = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
-        response2 = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
+        response1 = channelManager.downloaderChannel.receiveBack<DownloadingResponse>()
+        response2 = channelManager.downloaderChannel.receiveBack<DownloadingResponse>()
 
         logger.debug { "Received the responses" }
 
         sendEndEvent()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
 
         assertThat(response1, isDownloadingResponseWith(url1,
             mutableMapOf("downloader" to "Downloader1")))
@@ -163,17 +163,17 @@ class DownloaderBranchTest: CrawlerTest() {
         val request1 = Request(sender, url1)
         val request2 = Request(sender, url2)
 
-        channelFactory.downloaderChannel.send(request1)
-        channelFactory.downloaderChannel.send(request2)
+        channelManager.downloaderChannel.send(request1)
+        channelManager.downloaderChannel.send(request2)
 
-        val response1: DownloadingResponse = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
-        val response2: DownloadingResponse = channelFactory.downloaderChannel.receiveBack<DownloadingResponse>()
+        val response1: DownloadingResponse = channelManager.downloaderChannel.receiveBack<DownloadingResponse>()
+        val response2: DownloadingResponse = channelManager.downloaderChannel.receiveBack<DownloadingResponse>()
 
         logger.debug { "Received the responses" }
 
         sendEndEvent()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
 
         assertThat(response1, isDownloadingResponseWith(url1,
             mutableMapOf("downloader" to "Downloader1")))

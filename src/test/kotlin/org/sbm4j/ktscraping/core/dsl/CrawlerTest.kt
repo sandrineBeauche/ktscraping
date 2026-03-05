@@ -5,22 +5,19 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.test.TestScope
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.core.channels.ChannelFactory
+import org.sbm4j.ktscraping.core.channels.ChannelManager
 import org.sbm4j.ktscraping.core.components.AbstractSpider
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.item.Data
-
-
 
 
 class TestingCrawlerResult: CrawlerResult
 
 class EmptyTestingCrawler(
     name: String = "TestCrawler",
-    channelFactory: ChannelFactory,
+    channelManager: ChannelManager,
     override val di: DI
-) : AbstractCrawler(name, channelFactory){
+) : AbstractCrawler(name, channelManager){
 
     override suspend fun run() {
         logger.info{"Starting testing crawler ${name}"}
@@ -34,7 +31,7 @@ class EmptyTestingCrawler(
 
     override suspend fun waitFinished(): CrawlerResult {
         controllables.filterIsInstance<AbstractSpider>()
-            .map { it.job }
+            .map { it.job!! }
             .joinAll()
         return TestingCrawlerResult()
     }
@@ -47,12 +44,12 @@ abstract class CrawlerTest {
 
     val sender: Controllable = mockk<Controllable>()
 
-    val channelFactory : ChannelFactory = ChannelFactory()
+    val channelManager : ChannelManager = ChannelManager()
 
     fun testDIModule(name: String): DI.Module {
         val mod = DI.Module(name = "testDIModule"){
-            bind<Crawler> { multiton { di: DI -> EmptyTestingCrawler(name, instance(), di) }}
-            bindSingleton<ChannelFactory> { channelFactory }
+            bind<Crawler> { multiton { di: DI -> EmptyTestingCrawler(name, instance(arg = di), di) }}
+            bind<ChannelManager> { multiton {di: DI -> channelManager }}
         }
         return mod
     }

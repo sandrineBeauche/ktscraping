@@ -52,46 +52,54 @@ class SendSourceTests {
 
     @Test
     fun testSendSource() = TestScope().runTest {
-        val channel = SuperChannel.build()
-
-        val component = spyk(TestingSendSource(channel))
-
         coroutineScope {
-            launch {
-                component.start(this)
-            }
-            launch {
-                val send = channel.getSendFlow().first()
-                val back = send.buildBack()
-                channel.send(back)
-            }
-        }
+            val channel = SuperChannel.build(this)
 
-        verify { component.okBack(any())}
+            val component = spyk(TestingSendSource(channel))
+
+            coroutineScope {
+                launch {
+                    component.start(this).join()
+                    logger.debug{"Component finished. Stop it"}
+                    component.stop()
+                }
+                launch {
+                    val send = channel.getSendFlow().first()
+                    val back = send.buildBack()
+                    channel.send(back)
+                }
+            }
+
+            channel.close()
+            verify { component.okBack(any()) }
+        }
     }
 
 
     @Test
     fun testSendSourceErrors() = TestScope().runTest {
-        val channel = SuperChannel()
-        channel.init()
-
-        val component = spyk(TestingSendSource(channel))
-
         coroutineScope {
-            launch {
-                component.start(this)
+            val channel = SuperChannel.build(this)
+
+            val component = spyk(TestingSendSource(channel))
+
+            coroutineScope {
+                launch {
+                    component.start(this).join()
+                    logger.debug { "Component finished. Stop it" }
+                    component.stop()
+                }
+                launch {
+                    val send = channel.getSendFlow().first()
+                    val errorsInfos = ErrorInfo(Exception(), anotherControllable, ErrorLevel.MAJOR)
+                    val back = send.buildErrorBack(errorsInfos)
+                    channel.send(back)
+                }
             }
-            launch {
-                val send = channel.getSendFlow().first()
-                val errorsInfos = ErrorInfo(Exception(), anotherControllable, ErrorLevel.MAJOR)
-                val back = send.buildErrorBack(errorsInfos)
-                channel.send(back)
-            }
+
+            channel.close()
+            verify { component.errorBack(any()) }
         }
-
-        verify { component.errorBack(any())}
     }
-
 
 }

@@ -25,7 +25,6 @@ abstract class DownloaderDispatcher(
     }
 
     override suspend fun run() {
-        super.run()
         performRequests()
     }
 

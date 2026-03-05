@@ -46,27 +46,25 @@ class BackForwarderTests {
     @Test
     fun testBackForward1() = TestScope().runTest {
         coroutineScope {
-            val inChannel = SuperChannel.build()
-            val outChannel = SuperChannel.build()
+            val inChannel = SuperChannel.build(this)
+            val outChannel = SuperChannel.build(this)
 
             val forwarder = TestingBackForwarder(inChannel, outChannel)
 
-            launch {
-                forwarder.start(this)
-            }
-            launch {
-                val event = StartEvent(sender)
-                val back = event.buildBack()
+            forwarder.start(this).join()
 
-                outChannel.send(back)
-                val forwarded = inChannel.getBackFlow(EventBack::class).first()
+            val event = StartEvent(sender)
+            val back = event.buildBack()
 
-                assertThat(forwarded, isOKEventBackWith("start"))
+            outChannel.send(back)
+            val forwarded = inChannel.getBackFlow(EventBack::class).first()
 
-                forwarder.stop()
-                inChannel.close()
-                outChannel.close()
-            }
+            assertThat(forwarded, isOKEventBackWith("start"))
+
+            forwarder.stop()
+            inChannel.close()
+            outChannel.close()
+
         }
     }
 
@@ -74,30 +72,28 @@ class BackForwarderTests {
     @Test
     fun testBackForward2() = TestScope().runTest {
         coroutineScope {
-            val inChannel = SuperChannel.build()
-            val outChannel = SuperChannel.build()
+            val inChannel = SuperChannel.build(this)
+            val outChannel = SuperChannel.build(this)
 
             val forwarder = TestingBackForwarder(inChannel, outChannel)
 
-            launch {
-                forwarder.start(this)
-            }
-            launch {
-                val event = StartEvent(sender)
-                val back = event.buildBack()
+            forwarder.start(this).join()
 
-                val error = ErrorInfo(Exception(), sender, ErrorLevel.MINOR)
-                forwarder.pendingMinorError[event.channelableId] = mutableListOf(error)
+            val event = StartEvent(sender)
+            val back = event.buildBack()
 
-                outChannel.send(back)
-                val forwarded = inChannel.getBackFlow(EventBack::class).first()
+            val error = ErrorInfo(Exception(), sender, ErrorLevel.MINOR)
+            forwarder.pendingMinorError[event.channelableId] = mutableListOf(error)
 
-                assertThat(forwarded, isEventResponseWithError("start", Status.ERROR, 1))
+            outChannel.send(back)
+            val forwarded = inChannel.getBackFlow(EventBack::class).first()
 
-                forwarder.stop()
-                inChannel.close()
-                outChannel.close()
-            }
+            assertThat(forwarded, isEventResponseWithError("start", Status.ERROR, 1))
+
+            forwarder.stop()
+            inChannel.close()
+            outChannel.close()
+
         }
     }
 }

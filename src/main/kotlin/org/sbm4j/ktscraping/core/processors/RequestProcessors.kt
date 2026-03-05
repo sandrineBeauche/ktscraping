@@ -83,7 +83,6 @@ interface RequestReceiver: SendConsumer {
 
 interface RequestForwarder: RequestReceiver, SendForwarder {
     override suspend fun run() {
-        super.run()
     }
 
 }

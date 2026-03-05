@@ -6,10 +6,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.response.Response
 import kotlin.test.BeforeTest
 
 abstract class AbstractSpiderMiddlewareTester: DualScrapingTest() {
@@ -23,20 +20,18 @@ abstract class AbstractSpiderMiddlewareTester: DualScrapingTest() {
 
     @BeforeTest
     fun setUp(){
-        initChannels()
+        buildChannels()
         clearAllMocks()
 
-        val sc = mockk<CoroutineScope>()
+        middleware = buildMiddleware(middlewareName)
 
-        middleware = spyk(buildMiddleware(middlewareName))
-
-        every { middleware.inChannel } returns inChannel
+        middleware.inChannel = inChannel
 
     }
 
     suspend fun withMiddleware(func: suspend AbstractSpiderMiddlewareTester.() -> Unit){
         coroutineScope {
-            every { middleware.scope } returns this
+            initChannels(this)
             middleware.start(this)
 
             func()

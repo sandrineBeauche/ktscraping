@@ -58,9 +58,9 @@ interface SendDispatcherTester{
         logger.debug{"End event done: $result"}
     }
 
-    suspend fun initChannels(){
-        inChannel.init()
-        outChannels.forEach {it.init()}
+    suspend fun initChannels(parentScope: CoroutineScope){
+        inChannel.init(parentScope)
+        outChannels.forEach {it.init(parentScope)}
     }
 
     suspend fun closeChannels(){
@@ -74,7 +74,7 @@ interface SendDispatcherTester{
 
     suspend fun withDispatcher(nbMessages: List<Int>, func: suspend SendDispatcherTester.() -> Unit) {
         coroutineScope {
-            initChannels()
+            initChannels(this)
 
             launch {
                 dispatcher.start(this)

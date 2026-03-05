@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.unit
 
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.take
@@ -89,88 +90,36 @@ data class BackD(
     }
 }
 
-class TestingControllableA(
-    override val name: String = "ControllableA"
-) : AbstractControllable(){
-
-    lateinit var channelableAOut: SuperChannel
 
 
-    override suspend fun run() {
-        scope.launch {
-            repeat(5){
-                val chanA = SendA("messsage #$it from A", sender = this@TestingControllableA)
-                val chanB = channelableAOut.sendSync<BackB>(chanA)
-                logger.debug{"${name}: received ${chanB.loggingLabel} ${chanB.name} for the ${chanA.loggingLabel} ${chanA.name}: ${chanB}"}
-            }
-            logger.debug{"${name}: finished to send sends"}
-        }
-        scope.launch {
-            channelableAOut.getBackFlow(this@TestingControllableA).take(5).collect { chanB ->
-                logger.debug{"${name}: received ${chanB.loggingLabel} ${chanB.name} from ${chanB.send.loggingLabel} ${chanB.send.name} (${chanB.send}) -> ${chanB}"}
-            }
-            logger.debug{"${name}: finished to receive backs"}
-        }
-    }
-}
-
-class TestingControllableB(
-    override val name: String = "ControllableB",
-) : AbstractControllable(){
-
-    lateinit var channelableAIn: SuperChannel
-
-
-    override suspend fun run() {
-        scope.launch {
-            repeat(5){
-                val chanA = SendA("another message", sender = this@TestingControllableB)
-                val chanB = chanA.buildBack()
-                channelableAIn.send(chanB)
-                delay(10)
-            }
-            logger.debug{"${name}: finished to send backs"}
-        }
-        scope.launch {
-            channelableAIn.getSendFlow().take(5).collect { chanA ->
-                logger.debug{"${name}: received ${chanA.name} from ${chanA.sender.name} and answers with a back"}
-                val chanB = chanA.buildBack()
-                channelableAIn.send(chanB)
-            }
-            logger.debug{"${name}: finished to answers to sends"}
-        }
-    }
-}
 
 class SuperChannelTests {
 
     @Test
     fun testSendBackExchange() = TestScope().runTest{
+        val contA = mockk<AbstractControllable>()
+        val contB = mockk<AbstractControllable>()
+
         coroutineScope {
-            val channel = SuperChannel()
+            val channel = SuperChannel.build(this)
 
-            channel.init()
-
-            val contA = TestingControllableA()
-            contA.channelableAOut = channel
-            contA.start(this)
-
-            val contB = TestingControllableB()
-            contB.channelableAIn = channel
-            contB.start(this)
-
-            logger.debug{"Waiting for run to finish"}
-            contA.job.join()
-            contB.job.join()
-            logger.debug { "After join jobs" }
-
-            contA.stop()
-            logger.debug{"After stop A"}
-            contB.stop()
-            logger.debug{"After stop B"}
-
-            channel.close()
-            logger.debug{"After channel close()"}
+            launch(CoroutineName("launchA")){
+                repeat(5){
+                    val chanA = SendA("messsage #$it from A", sender = contA)
+                    val chanB = channel.sendSync<BackB>(chanA)
+                    logger.debug{"received ${chanB.loggingLabel} ${chanB.name} for the ${chanA.loggingLabel} ${chanA.name}: ${chanB}"}
+                }
+                logger.debug{"finished to send sends"}
+                channel.close()
+            }
+            launch(CoroutineName("launchB")){
+                channel.getSendFlow().take(5).collect { chanA ->
+                    logger.debug{"received ${chanA.name} from ${chanA.sender.name} and answers with a back"}
+                    val chanB = chanA.buildBack()
+                    channel.send(chanB)
+                }
+                logger.debug{"finished to answers to sends"}
+            }
         }
     }
 
@@ -179,27 +128,31 @@ class SuperChannelTests {
         val sender = mockk<Controllable>()
 
         coroutineScope {
-            val channel = SuperChannel.build()
+            val channel = SuperChannel.build(this)
 
-            launch {
-                repeat(3){
-                    val s1 = SendA("coucou$it", sender)
-                    channel.send(s1)
+            coroutineScope {
+                launch {
+                    repeat(3){
+                        val s1 = SendA("coucou$it", sender)
+                        channel.send(s1)
 
-                    val s2 = SendC("salut$it", sender)
-                    channel.send(s2)
+                        val s2 = SendC("salut$it", sender)
+                        channel.send(s2)
+                    }
+                }
+                launch {
+                    channel.getSendFlow(SendA::class).take(3).collect {
+                        logger.debug { "received the sendA: ${it}" }
+                    }
+                }
+                launch {
+                    channel.getSendFlow(SendC::class).take(3).collect {
+                        logger.debug { "received the sendC: ${it}" }
+                    }
                 }
             }
-            launch {
-                channel.getSendFlow(SendA::class).take(3).collect {
-                    logger.debug { "received the sendA: ${it}" }
-                }
-            }
-            launch {
-                channel.getSendFlow(SendC::class).take(3).collect {
-                    logger.debug { "received the sendC: ${it}" }
-                }
-            }
+
+            channel.close()
         }
     }
 
@@ -208,52 +161,29 @@ class SuperChannelTests {
         val sender = mockk<Controllable>()
         val s1 = SendA("coucou", sender)
         val s2 = SendA("salut", sender)
-        val channel = SuperChannel()
-        channel.init()
-
-        launch{
-            //delay(2000L)
-            channel.send(s1)
-            logger.debug{ "sent ${s1}"}
-
-            channel.send(s2)
-            logger.debug{ "sent ${s2}"}
-        }
-        launch{
-            delay(2000L)
-            logger.debug{" Wait for 2 sensds"}
-            channel.getSendFlow().collect {
-                logger.debug{ "received ${it}"}
-            }
-
-        }
-    }
-
-    @Test
-    fun test2Channels() = TestScope().runTest {
-        val channel1 = SuperChannel.build()
-        val channel2 = SuperChannel.build()
-
-        val sender = mockk<Controllable>()
-        val s1 = SendA("coucou", sender)
-        val s2 = SendA("salut", sender)
 
         coroutineScope {
-            launch {
-                channel1.send(s1)
+            val channel = SuperChannel.build(this)
+            coroutineScope {
+                launch{
+                    channel.send(s1)
+                    logger.debug{ "sent ${s1}"}
+
+                    channel.send(s2)
+                    logger.debug{ "sent ${s2}"}
+                }
+                launch{
+                    delay(2000L)
+                    logger.debug{" Wait for 2 sensds"}
+                    channel.getSendFlow().take(2).collect {
+                        logger.debug{ "received ${it}"}
+                    }
+
+                }
             }
-            launch {
-                val rec1 = channel1.receiveSend<SendA>()
-                logger.debug { "received ${rec1}" }
-            }
-            launch {
-                channel2.send(s2)
-            }
-            launch {
-                val rec2 = channel2.receiveSend<SendA>()
-                logger.debug { "received ${rec2}" }
-            }
+            channel.close()
         }
+
     }
 
 }

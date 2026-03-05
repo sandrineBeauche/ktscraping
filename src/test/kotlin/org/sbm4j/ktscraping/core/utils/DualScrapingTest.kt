@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.Send
@@ -15,9 +16,14 @@ abstract class DualScrapingTest: ScrapingTest() {
     val errorSender = mockk<Controllable>()
 
 
-    override fun initChannels(){
-        super.initChannels()
+    override fun buildChannels() {
+        super.buildChannels()
         outChannel = SuperChannel()
+    }
+
+    override fun initChannels(parentScope: CoroutineScope) {
+        super.initChannels(parentScope)
+        outChannel.init(parentScope)
     }
 
     override fun closeChannels(){

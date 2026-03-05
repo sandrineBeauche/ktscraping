@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.core.components
 
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -41,7 +42,7 @@ abstract class AbstractSpider(
 
     override suspend fun run() {
         logger.info { "${name}: Starting spider" }
-        job = scope.launch {
+        scope.launch(CoroutineName("${name}-performScraping")) {
             try {
                 logger.info { "${name}: send start event to initialize the crawler" }
                 val startEvent = StartEvent(this@AbstractSpider)
@@ -63,11 +64,13 @@ abstract class AbstractSpider(
                 logger.info { "${name}: ready to stop: ${endEventBack}" }
             }
         }
+        logger.debug{"${name}: done launching run in spider"}
     }
 
 
     override suspend fun stop() {
-        this.outChannel.close()
+        super<SendSource>.stop()
+        super<AbstractControllable>.stop()
     }
 
     suspend fun <T> task(
@@ -177,7 +180,7 @@ abstract class AbstractSimpleSpider(
         val req = Request(this, urlRequest)
         logger.info { "$name sends a new request ${req.name}" }
         try {
-            val resp = this.sendSync(req)
+            val resp = this.sendSync<Request>(req)
 
             parse(resp as DownloadingResponse)
         } catch (ex: Throwable) {

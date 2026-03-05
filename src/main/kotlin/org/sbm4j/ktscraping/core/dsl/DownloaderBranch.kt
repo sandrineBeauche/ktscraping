@@ -14,7 +14,7 @@ import org.sbm4j.ktscraping.data.request.AbstractRequest
 
 fun Crawler.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
     val branch = DownloaderBranch(
-        this.channelFactory.downloaderChannel,
+        this.channelManager.downloaderChannel,
         this.di)
     branch.initBranch()
     this.controllables.addAll(branch.senders)
@@ -32,7 +32,7 @@ fun Crawler.downloaderDispatcher(
         }
     }
 
-    dispatcher.channelIn = this.channelFactory.downloaderChannel
+    dispatcher.channelIn = this.channelManager.downloaderChannel
 
     dispatcher.initDispatcher()
     this.controllables.add(dispatcher)

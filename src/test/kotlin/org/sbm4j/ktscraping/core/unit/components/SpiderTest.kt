@@ -2,6 +2,7 @@ package org.sbm4j.ktscraping.core.unit.components
 
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
@@ -45,8 +46,12 @@ class SpiderTest: AbstractSpiderTester() {
                 resp = sendSync(req) as DownloadingResponse
 
                 logger.debug{"${name}: received a response and send an item"}
-                val expectedItem = ObjectDataItem.Companion.build(data, "test", this)
+                val expectedItem = ObjectDataItem.build(data, "test", this)
                 outChannel.send(expectedItem)
+
+                logger.debug{"${name}: waiting..."}
+                delay(1000L)
+                logger.debug{"${name}: finished waiting"}
             }
 
         }
@@ -67,7 +72,7 @@ class SpiderTest: AbstractSpiderTester() {
                     outChannel.send(resp)
                 }
                 is ObjectDataItem<*> -> {
-                    logger.debug{"received an item: ${receivedItem}"}
+                    logger.debug{"received an item: ${send}"}
                     receivedItem = send
                 }
             }

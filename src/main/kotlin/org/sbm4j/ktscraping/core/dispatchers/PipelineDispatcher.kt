@@ -20,7 +20,6 @@ abstract class PipelineDispatcher(
     abstract suspend fun performItems()
 
     override suspend fun run() {
-        super.run()
         performItems()
     }
 

@@ -47,50 +47,45 @@ class SendForwarderTests {
     @Test
     fun testSendForwarder1() = TestScope().runTest {
         coroutineScope {
-            val inChannel = SuperChannel.build()
-            val outChannel = SuperChannel.build()
+            val inChannel = SuperChannel.build(this)
+            val outChannel = SuperChannel.build(this)
 
             val forwarder = TestingSendForwarder(inChannel, outChannel)
 
-            launch {
-                forwarder.start(this)
-            }
-            launch {
-                val event = StartEvent(sender)
-                inChannel.send(event)
+            forwarder.start(this).join()
 
-                val forwarded = outChannel.getSendFlow().first()
+            val event = StartEvent(sender)
+            inChannel.send(event)
 
-                assertThat(forwarded, sameInstance(event))
+            val forwarded = outChannel.getSendFlow().first()
 
-                forwarder.stop()
-                inChannel.close()
-                outChannel.close()
-            }
+            assertThat(forwarded, sameInstance(event))
+
+            forwarder.stop()
+
+            inChannel.close()
+            outChannel.close()
         }
     }
 
     @Test
     fun testSendForwarder2() = TestScope().runTest {
         coroutineScope {
-            val inChannel = SuperChannel.build()
-            val outChannel = SuperChannel.build()
+            val inChannel = SuperChannel.build(this)
+            val outChannel = SuperChannel.build(this)
 
             val forwarder = TestingSendForwarder(inChannel, outChannel)
+            val event = EndEvent(sender)
 
-            launch {
-                forwarder.start(this)
-            }
-            launch {
-                val event = EndEvent(sender)
-                val back = inChannel.sendSync<EventBack>(event)
+            forwarder.start(this)
 
-                assertThat(back.send, sameInstance(event))
+            val back = inChannel.sendSync<EventBack>(event)
 
-                forwarder.stop()
-                inChannel.close()
-                outChannel.close()
-            }
+            assertThat(back.send, sameInstance(event))
+
+            forwarder.stop()
+            inChannel.close()
+            outChannel.close()
         }
     }
 }

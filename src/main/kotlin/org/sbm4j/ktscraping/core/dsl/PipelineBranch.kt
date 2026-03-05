@@ -21,7 +21,7 @@ fun buildPipelineChannels(): SuperChannel{
 
 fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
     val branch = PipelineBranch(
-        this.channelFactory.pipelineChannel,
+        this.channelManager.pipelineChannel,
         this.di)
     branch.initBranch()
     this.controllables.addAll(branch.senders)
@@ -29,7 +29,7 @@ fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
 
 fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: PipelineDispatcherAll.() -> Unit){
     val dispatcher = PipelineDispatcherAll(name, this.di)
-    dispatcher.channelIn = this.channelFactory.pipelineChannel
+    dispatcher.channelIn = this.channelManager.pipelineChannel
 
     dispatcher.initDispatcher()
     this.controllables.add(dispatcher)
@@ -47,7 +47,7 @@ fun Crawler.pipelineDispatcherOne(
         }
     }
 
-    dispatcher.channelIn = this.channelFactory.pipelineChannel
+    dispatcher.channelIn = this.channelManager.pipelineChannel
 
     dispatcher.init()
     this.controllables.add(dispatcher)

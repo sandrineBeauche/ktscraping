@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.unit.dispatchers
 
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
@@ -82,9 +83,9 @@ class BackDispatcherTests{
         logger.debug{"End event done: $result"}
     }
 
-    suspend fun initChannels(){
-        outChannel.init()
-        inChannels.forEach {it.init()}
+    fun initChannels(parentScope: CoroutineScope){
+        outChannel.init(parentScope)
+        inChannels.forEach {it.init(parentScope)}
     }
 
     suspend fun closeChannels(){
@@ -96,7 +97,7 @@ class BackDispatcherTests{
 
     suspend fun withDispatcher(nbMessages: Int = 1, func: suspend BackDispatcherTests.() -> Unit){
         coroutineScope {
-            initChannels()
+            initChannels(this)
 
             launch{
                 dispatcher.start(this)

@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.sync.Semaphore
 import org.sbm4j.ktscraping.core.CrawlerResult
 import org.sbm4j.ktscraping.core.ProgressMonitor
-import org.sbm4j.ktscraping.core.channels.ChannelFactory
+import org.sbm4j.ktscraping.core.channels.ChannelManager
 import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.channels.sendSyncAll
 import org.sbm4j.ktscraping.core.processors.EventBackForwarder
@@ -24,7 +24,6 @@ import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
 import org.sbm4j.ktscraping.data.response.Response
 import org.sbm4j.ktscraping.exporters.ItemDelete
@@ -33,7 +32,7 @@ import org.sbm4j.ktscraping.stats.StatsCrawlerResult
 
 
 abstract class AbstractEngine(
-    val channelFactory: ChannelFactory,
+    val channelManager: ChannelManager,
 ) : AbstractControllable(){
 
     override val name: String = "Engine"
@@ -199,9 +198,9 @@ abstract class AbstractEngine(
 
     override suspend fun run() {
         logger.info { "${name}: starting engine" }
-        spiderChannel = channelFactory.spiderChannel
-        downloaderChannel = channelFactory.downloaderChannel
-        pipelineChannel = channelFactory.pipelineChannel
+        spiderChannel = channelManager.spiderChannel
+        downloaderChannel = channelManager.downloaderChannel
+        pipelineChannel = channelManager.pipelineChannel
 
         innerRequestForwarder.run()
         innerItemForwarder.run()
@@ -227,9 +226,9 @@ abstract class AbstractEngine(
 
 
 class Engine(
-    channelFactory: ChannelFactory,
+    channelManager: ChannelManager,
     val progressMonitor: ProgressMonitor
-) : AbstractEngine(channelFactory){
+) : AbstractEngine(channelManager){
 
     val stats: StatsCrawlerResult = StatsCrawlerResult()
 

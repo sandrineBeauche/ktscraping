@@ -85,48 +85,45 @@ class SendConsumerTests {
     @Test
     fun testSendConsumer() = TestScope().runTest {
         coroutineScope {
-            val channel = SuperChannel.build()
+            val channel = SuperChannel.build(this)
 
             val consumer = TestingSendConcumer(channel)
+            consumer.start(this).join()
 
-            launch {
-                consumer.start(this)
-            }
-            launch {
-                val event = StartEvent(sender)
-                val back = channel.sendSync<EventBack>(event)
-                logger.debug { "received back from start event: ${back}" }
+            val event = StartEvent(sender)
+            val back = channel.sendSync<EventBack>(event)
+            logger.debug { "received back from start event: ${back}" }
 
-                consumer.stop()
-                channel.close()
-            }
+            consumer.stop()
+            channel.close()
         }
     }
 
     @Test
     fun testMultipleSendTypeConsumer() = TestScope().runTest {
         coroutineScope {
-            val channel = SuperChannel.build()
+            val channel = SuperChannel.build(this)
 
             val consumer = TestingSendConcumer2(channel)
+            consumer.start(this).join()
 
-            launch {
-                consumer.start(this)
-            }
-            launch {
+            coroutineScope {
                 repeat(3) {
-                    val event = StartEvent(sender)
-                    val back = channel.sendSync<EventBack>(event)
-                    logger.debug { "received back from start event: ${back}" }
-
-                    val request = Request(sender, "an url")
-                    val back2 = channel.sendSync<DownloadingResponse>(request)
-                    logger.debug { "received back from request: ${back2}" }
+                    launch {
+                        val event = StartEvent(sender)
+                        val back = channel.sendSync<EventBack>(event)
+                        logger.debug { "received back from start event: ${back}" }
+                    }
+                    launch{
+                        val request = Request(sender, "an url")
+                        val back2 = channel.sendSync<DownloadingResponse>(request)
+                        logger.debug { "received back from request: ${back2}" }
+                    }
                 }
-
-                consumer.stop()
-                channel.close()
             }
+
+            consumer.stop()
+            channel.close()
         }
     }
 }

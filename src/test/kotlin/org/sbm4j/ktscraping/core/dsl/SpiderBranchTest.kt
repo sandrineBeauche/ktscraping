@@ -6,26 +6,29 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.natpryce.hamkrest.isA
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
+import org.sbm4j.ktscraping.core.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.item.DataItem
-import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
-class SpiderClassTest(name:String): AbstractSimpleSpider(name){
+class TestingSpiderClass(name:String): AbstractSimpleSpider(name){
     override suspend fun parse(resp: DownloadingResponse) {
         logger.debug { "Building a new item for request ${resp.send.name}"}
         val req = resp.send
-        val data = DataItemTest(state["returnValue"] as String, req.name, req.url)
+        val value = state["returnValue"] as String
+        val data = DataItemTest(value, req.name, req.url)
 
         this.outChannel.send(ObjectDataItem.build(data, "itemTest", this))
     }
@@ -34,36 +37,26 @@ class SpiderClassTest(name:String): AbstractSimpleSpider(name){
     }
 }
 
-class SpiderMiddlewareClassTest(name: String) : SpiderMiddleware(name) {
-    suspend fun processDownloadingResponse(response: DownloadingResponse, request: DownloadingRequest): Boolean {
+class TestingSpiderMiddlewareClass(name: String) : SpiderMiddleware(name){
+    override suspend fun processDataRequest(request: DownloadingRequest): Any? {
         return true
     }
-
-    suspend fun processRequest(request: DownloadingRequest): Any? {
-        return true
-    }
-
-    suspend fun processDataItem(item: DataItem<*>): List<Item> {
-        return listOf(item)
-    }
-
 }
+
 
 class SpiderBranchTest: CrawlerTest() {
 
 
-    suspend fun answerStartRequestEvent(){
-        val startReq = channelFactory.spiderChannel.receiveSend<StartEvent>()
+    suspend fun answerStartEvent(event: StartEvent, channel: SuperChannel) {
         logger.debug{ "Received starting event"}
-        val startResp = startReq.buildBack()
-        channelFactory.spiderChannel.send(startResp)
+        val startResp = event.buildBack()
+        channel.send(startResp)
     }
 
-    suspend fun answerEndEvent(){
-        val endReq = channelFactory.spiderChannel.receiveSend<EndEvent>()
+    suspend fun answerEndEvent(event: EndEvent, channel: SuperChannel) {
         logger.debug{ "Received ending event request"}
-        val endResp = endReq.buildBack()
-        channelFactory.spiderChannel.send(endResp)
+        val endResp = event.buildBack()
+        channel.send(endResp)
     }
 
     @Test
@@ -73,34 +66,49 @@ class SpiderBranchTest: CrawlerTest() {
 
         val c = crawler("MainCrawler", ::testDIModule) {
             spiderBranch {
-                spiderMiddleware<SpiderMiddlewareClassTest>()
-                spider<SpiderClassTest>(spiderName) {
+                spiderMiddleware<TestingSpiderMiddlewareClass>()
+                spider<TestingSpiderClass>(spiderName) {
                     urlRequest = expectedUrl
                     state["returnValue"] = name
                 }
             }
         }
 
-        c.start(this)
+        val spiderChannel = c.channelManager.spiderChannel
 
-        logger.debug { "interacting with crawler" }
-        answerStartRequestEvent()
+        coroutineScope {
+            c.channelManager.initChannels(this)
 
-        val request = channelFactory.spiderChannel.receiveSend<DownloadingRequest>()
-        assertThat(request.url, equalTo(expectedUrl))
+            launch {
+                val job = c.start(this)
+                job.join()
+                c.waitFinished()
+                c.stop()
+            }
+            launch{
+                logger.debug { "interacting with crawler" }
+                spiderChannel.getSendFlow().take(4).collect{ send ->
+                    when(send){
+                        is StartEvent -> answerStartEvent(send, spiderChannel)
+                        is EndEvent -> answerEndEvent(send, spiderChannel)
+                        is DownloadingRequest -> {
+                            logger.debug { "Received the request: $send" }
+                            assertThat(send.url, equalTo(expectedUrl))
+                            val response = send.buildBack()
+                            spiderChannel.send(response)
+                        }
+                        is ObjectDataItem<*> -> {
+                            val data = send.data as DataItemTest
+                            assertThat(data.value, equalTo(spiderName))
+                            logger.debug { "Received the final item: $data" }
+                            val ack = send.buildBack()
+                            spiderChannel.send(ack)
+                        }
+                    }
+                }
+            }
+        }
 
-        val response = DownloadingResponse(request)
-        channelFactory.spiderChannel.send(response)
-
-        val item = channelFactory.spiderChannel.receiveSend<ObjectDataItem<*>>()
-        val data = item.data as DataItemTest
-        assertThat(data.value, equalTo(spiderName))
-        logger.debug { "Received the final item: $data" }
-
-        answerEndEvent()
-        c.waitFinished()
-        c.stop()
-        channelFactory.closeChannels()
     }
 
 
@@ -113,11 +121,11 @@ class SpiderBranchTest: CrawlerTest() {
 
         val c = crawler("MainCrawler", ::testDIModule) {
             spiderDispatcher {
-                spider<SpiderClassTest>(name = "spider1") {
+                spider<TestingSpiderClass>(name = "spider1") {
                     urlRequest = url1
                     state["returnValue"] = value1
                 }
-                spider<SpiderClassTest>(name = "spider2") {
+                spider<TestingSpiderClass>(name = "spider2") {
                     urlRequest = url2
                     state["returnValue"] = value2
                 }
@@ -127,26 +135,26 @@ class SpiderBranchTest: CrawlerTest() {
         c.start(this)
 
         logger.debug { "interacting with crawler" }
-        answerStartRequestEvent()
+        //answerStartEvent()
 
-        val request1 = channelFactory.spiderChannel.receiveSend<DownloadingRequest>()
-        val request2 = channelFactory.spiderChannel.receiveSend<DownloadingRequest>()
+        val request1 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
+        val request2 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
 
         val response1 = DownloadingResponse(request1)
         val response2 = DownloadingResponse(request2)
 
-        channelFactory.spiderChannel.send(response1)
-        channelFactory.spiderChannel.send(response2)
+        channelManager.spiderChannel.send(response1)
+        channelManager.spiderChannel.send(response2)
 
-        val item1: DataItemTest = (channelFactory.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        val item2: DataItemTest = (channelFactory.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        val item1: DataItemTest = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        val item2: DataItemTest = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
 
         logger.debug { "Received the final items:\n $item1 \n $item2" }
 
-        answerEndEvent()
+        //answerEndEvent()
         c.waitFinished()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
 
         assertThat(
             item1, isA<DataItemTest>(
@@ -180,18 +188,18 @@ class SpiderBranchTest: CrawlerTest() {
 
         val c = crawler("MainCrawler", ::testDIModule) {
             spiderBranch {
-                spiderMiddleware<SpiderMiddlewareClassTest>()
+                spiderMiddleware<TestingSpiderMiddlewareClass>()
                 spiderDispatcher {
                     spiderBranch {
-                        spiderMiddleware<SpiderMiddlewareClassTest>()
-                        spider<SpiderClassTest>(name = "spider1") {
+                        spiderMiddleware<TestingSpiderMiddlewareClass>()
+                        spider<TestingSpiderClass>(name = "spider1") {
                             urlRequest = url1
                             state["returnValue"] = value1
                         }
                     }
                     spiderBranch {
-                        spiderMiddleware<SpiderMiddlewareClassTest>()
-                        spider<SpiderClassTest>(name = "spider2") {
+                        spiderMiddleware<TestingSpiderMiddlewareClass>()
+                        spider<TestingSpiderClass>(name = "spider2") {
                             urlRequest = url2
                             state["returnValue"] = value2
                         }
@@ -204,24 +212,24 @@ class SpiderBranchTest: CrawlerTest() {
         c.start(this)
 
         logger.debug { "interacting with crawler" }
-        answerStartRequestEvent()
-        val request1 = channelFactory.spiderChannel.receiveSend<DownloadingRequest>()
-        val request2 = channelFactory.spiderChannel.receiveSend<DownloadingRequest>()
+        //answerStartEvent()
+        val request1 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
+        val request2 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
 
         val response1 = DownloadingResponse(request1)
         val response2 = DownloadingResponse(request2)
 
-        channelFactory.spiderChannel.send(response1)
-        channelFactory.spiderChannel.send(response2)
+        channelManager.spiderChannel.send(response1)
+        channelManager.spiderChannel.send(response2)
 
-        item1 = (channelFactory.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        item2 = (channelFactory.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        item1 = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        item2 = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
         logger.debug { "Received the final items:\n $item1 \n $item2" }
 
-        answerEndEvent()
+        //answerEndEvent()
         c.waitFinished()
         c.stop()
-        channelFactory.closeChannels()
+        channelManager.closeChannels()
 
 
         assertThat(

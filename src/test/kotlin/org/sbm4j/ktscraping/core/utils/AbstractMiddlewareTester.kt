@@ -30,7 +30,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
 
     @BeforeTest
     fun setUp(){
-        initChannels()
+        buildChannels()
         clearAllMocks()
 
         middleware = buildMiddleware(middlewareName)
@@ -73,17 +73,15 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
 
     suspend fun withMiddleware(nbMessages: Int = 1, func: suspend AbstractMiddlewareTester.() -> Unit){
         coroutineScope {
-            inChannel.init()
-            outChannel.init()
+            initChannels(this)
 
             launch{
-                middleware.start(this)
+                middleware.start(this).join()
                 doStartEvent()
                 func()
                 doEndEvent()
                 middleware.stop()
-
-
+                closeChannels()
             }
             launch{
                 outChannel.getSendFlow().take(nbMessages + 2).collect { send ->
