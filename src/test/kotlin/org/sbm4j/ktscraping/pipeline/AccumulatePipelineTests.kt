@@ -6,12 +6,11 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.core.utils.isEndItemAckWithErrors
 import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
@@ -20,11 +19,12 @@ import org.sbm4j.ktscraping.data.internal.ErrorLevel
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.meercat.components.SendSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 data class IntDataItem(override val data: Int,
-                       override var sender: Controllable,
+                       override var sender: SendSource,
                        override val name: String = "DataItem-${data}"
 ): DataItem<Int>(){
     override fun clone(): Item {

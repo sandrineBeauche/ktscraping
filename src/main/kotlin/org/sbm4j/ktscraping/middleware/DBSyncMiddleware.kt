@@ -1,9 +1,8 @@
 package org.sbm4j.ktscraping.middleware
 
-import kotlinx.coroutines.CoroutineScope
-import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.meercat.components.EventJobResult
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.exporters.ItemDelete

@@ -4,23 +4,22 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Send
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 interface BackDispatcher: Controllable, DIAware {
 
-    val senders : MutableList<SuperChannel>
+    val channelsIns : MutableList<SuperChannel>
 
     val channelOut: SuperChannel
 
@@ -29,7 +28,7 @@ interface BackDispatcher: Controllable, DIAware {
     val pendingEvent: ConcurrentHashMap<String, MutableList<Event>>
 
     suspend fun performSends(){
-        for ((index, channel) in senders.withIndex()) {
+        for ((index, channel) in channelsIns.withIndex()) {
             scope.launch(CoroutineName("${name}-performSends-${index}")) {
                 channel.getSendFlow().collect { send ->
                     when(send){
@@ -51,7 +50,7 @@ interface BackDispatcher: Controllable, DIAware {
         val events = pendingEvent.getOrPut(event) { mutableListOf() }
         events.add(request)
         pendingAnswerable[request.channelableId] = sender
-        if(events.size >= senders.size){
+        if(events.size >= channelsIns.size){
             channelOut.send(request)
         }
     }
@@ -67,8 +66,8 @@ interface BackDispatcher: Controllable, DIAware {
         scope.launch(CoroutineName("${name}-performBacks")) {
             channelOut.getBackFlow().collect { back ->
                 when (back) {
-                    is DownloadingResponse, is Item -> performAnswerableBack(back)
                     is EventBack -> performEventBack(back)
+                    else -> performAnswerableBack(back)
                 }
             }
             logger.debug { "$name: finished receiving backs" }
@@ -104,7 +103,7 @@ interface BackDispatcher: Controllable, DIAware {
     override suspend fun stop() {
         logger.info{ "Stopping the back dispatcher ${name}"}
         this.channelOut.close()
-        for(sender in senders){
+        for(sender in channelsIns){
             sender.close()
         }
         super.stop()
@@ -116,7 +115,7 @@ class SpiderDispatcher(
     override val di: DI
 ): BackDispatcher, AbstractControllable(){
 
-    override val senders: MutableList<SuperChannel> = mutableListOf()
+    override val channelsIns: MutableList<SuperChannel> = mutableListOf()
 
     override lateinit var channelOut: SuperChannel
 
@@ -126,6 +125,6 @@ class SpiderDispatcher(
 
 
     fun addBranch(channel: SuperChannel){
-        this.senders.add(channel)
+        this.channelsIns.add(channel)
     }
 }

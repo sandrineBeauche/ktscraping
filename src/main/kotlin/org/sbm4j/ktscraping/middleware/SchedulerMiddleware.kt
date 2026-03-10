@@ -6,10 +6,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response
 
 class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMiddleware(name) {

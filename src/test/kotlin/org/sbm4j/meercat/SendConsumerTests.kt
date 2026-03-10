@@ -1,24 +1,23 @@
-package org.sbm4j.ktscraping.core.unit.processors
+package org.sbm4j.meercat
 
 import io.mockk.mockk
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.core.processors.SendConsumer
-import org.sbm4j.ktscraping.data.Channelable
-import org.sbm4j.ktscraping.data.Send
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.channels.Channelable
+import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.SendConsumer
+import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.components.logger
 import kotlin.test.Test
 
 class TestingSendConcumer(
@@ -80,7 +79,7 @@ class TestingSendConcumer2(
 
 class SendConsumerTests {
 
-    val sender = mockk<Controllable>()
+    val sender = mockk<SendSource>()
 
     @Test
     fun testSendConsumer() = TestScope().runTest {

@@ -1,9 +1,9 @@
 package org.sbm4j.ktscraping.data
 
 import io.mockk.mockk
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
+import org.sbm4j.meercat.components.SendSource
 import kotlin.test.Test
 
 data class DataTestType(val value: String): Data() {
@@ -14,7 +14,7 @@ data class DataTestType(val value: String): Data() {
 
 class DataItemTests {
 
-    val sender = mockk<Controllable>()
+    val sender = mockk<SendSource>()
 
     @Test
     fun testDataItem1(){

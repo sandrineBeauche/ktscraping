@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import org.sbm4j.ktscraping.core.components.AbstractExporter
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.ktscraping.data.item.Data

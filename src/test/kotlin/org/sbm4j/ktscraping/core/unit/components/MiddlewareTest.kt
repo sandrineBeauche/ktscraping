@@ -3,10 +3,10 @@ package org.sbm4j.ktscraping.core.unit.components
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.components.EventJobResult
 import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.request.DownloadingRequest

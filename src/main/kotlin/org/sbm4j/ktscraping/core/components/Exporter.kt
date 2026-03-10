@@ -1,12 +1,13 @@
 package org.sbm4j.ktscraping.core.components
 
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.processors.EventConsumer
-import org.sbm4j.ktscraping.core.processors.EventSink
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.EventSink
 import org.sbm4j.ktscraping.core.processors.ItemReceiver
-import org.sbm4j.ktscraping.data.Back
+import org.sbm4j.meercat.channels.Back
 import org.sbm4j.ktscraping.data.item.*
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.logger
 
 abstract class AbstractExporter(override val name: String): ItemReceiver, EventSink, AbstractControllable() {
 

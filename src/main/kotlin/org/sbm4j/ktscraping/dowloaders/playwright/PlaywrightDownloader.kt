@@ -7,17 +7,17 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.middleware.CookiesMiddleware
+import org.sbm4j.meercat.components.SendSource
 import java.util.concurrent.Executors
 
 
 data class PlaywrightRequest(
-    override var sender: Controllable,
+    override var sender: SendSource,
     override var url: String,
     val func: Page.(results: MutableMap<String, Any>) -> Unit
 ): DownloadingRequest(sender, url){

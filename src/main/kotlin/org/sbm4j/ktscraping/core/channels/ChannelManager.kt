@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.channels
 
 import kotlinx.coroutines.CoroutineScope
+import org.sbm4j.meercat.channels.SuperChannel
 
 class ChannelManager() {
     val spiderChannel: SuperChannel = SuperChannel("SuperChannel-spider")

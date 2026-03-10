@@ -7,8 +7,8 @@ import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
 import org.sbm4j.ktscraping.core.channels.ChannelManager
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.components.logger
 
 
 class TestingCrawlerResult: CrawlerResult
@@ -42,7 +42,7 @@ abstract class CrawlerTest {
 
     val scope = TestScope()
 
-    val sender: Controllable = mockk<Controllable>()
+    val sender: SendSource = mockk<SendSource>()
 
     val channelManager : ChannelManager = ChannelManager()
 

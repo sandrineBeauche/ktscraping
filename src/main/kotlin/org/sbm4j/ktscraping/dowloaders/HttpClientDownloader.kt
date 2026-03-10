@@ -7,10 +7,9 @@ import io.ktor.client.statement.*
 import io.ktor.util.network.*
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorLevel
-import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
@@ -42,8 +41,7 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
         catch(ex: UnresolvedAddressException){
             val message = "Address ${request.url} not found for request ${request.name}"
             val infos = ErrorInfo(ex, this, ErrorLevel.MAJOR, message)
-            val response = DownloadingResponse(request, ContentType.NOTHING,
-                Status.NOT_FOUND, mutableListOf(infos))
+            val response = DownloadingResponse(request, ContentType.NOTHING, Status.FAIL, mutableListOf(infos))
             return response
         }
         catch(ex: Exception){

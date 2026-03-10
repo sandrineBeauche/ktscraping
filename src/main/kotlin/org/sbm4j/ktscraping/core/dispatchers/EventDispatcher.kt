@@ -4,12 +4,12 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.core.channels.sendSyncAll
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.channels.sendSyncAll
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Send
 import org.sbm4j.ktscraping.data.events.Event
 
 interface SendPropagator: Controllable{

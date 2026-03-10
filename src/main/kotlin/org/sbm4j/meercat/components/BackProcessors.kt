@@ -1,14 +1,12 @@
-package org.sbm4j.ktscraping.core.processors
+package org.sbm4j.meercat.components
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.channels.SuperChannel
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass

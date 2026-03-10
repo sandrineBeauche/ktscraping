@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.data.item
 
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import java.util.*
 

@@ -3,12 +3,11 @@ package org.sbm4j.ktscraping.data.request
 import org.apache.hc.core5.net.URIBuilder
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Channelable
 import org.sbm4j.ktscraping.middleware.ImageMiddleware
+import org.sbm4j.meercat.components.SendSource
 
 open class AbstractInlineRequest(
-    override var sender: Controllable,
+    override var sender: SendSource,
     url: String,
     params: Map<String, String> = emptyMap()
 ): DownloadingRequest(sender, url){
@@ -26,7 +25,7 @@ open class AbstractInlineRequest(
 }
 
 class GoogleSearchImageRequest(
-    sender: Controllable,
+    sender: SendSource,
     val researchText: String,
     val key: String,
     val searchEngine: String,

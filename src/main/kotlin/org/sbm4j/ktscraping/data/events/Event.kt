@@ -1,11 +1,10 @@
 package org.sbm4j.ktscraping.data.events
 
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Send
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Channelable
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.components.SendSource
 import java.util.UUID
 
 enum class EventPropagation{
@@ -16,7 +15,7 @@ enum class EventPropagation{
 }
 
 abstract class Event(
-    override var sender: Controllable,
+    override var sender: SendSource,
     val eventName: String,
     val propagation: EventPropagation = EventPropagation.BOTH,
     override val name: String = "${eventName}-Event"
@@ -50,7 +49,7 @@ data class EventBack(
 }
 
 data class StartEvent(
-    override var sender: Controllable
+    override var sender: SendSource
 ): Event(sender, "start"){
 
     override fun clone(): Event {
@@ -59,7 +58,7 @@ data class StartEvent(
 }
 
 data class EndEvent(
-    override var sender: Controllable
+    override var sender: SendSource
 ): Event(sender, "end"){
 
     override fun clone(): Event {

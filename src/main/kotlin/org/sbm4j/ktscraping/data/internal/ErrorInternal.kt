@@ -1,7 +1,8 @@
 package org.sbm4j.ktscraping.data.internal
 
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Channelable
+import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.meercat.channels.Channelable
+import org.sbm4j.meercat.components.SendSource
 
 data class ErrorInfo(
     val ex: Exception,
@@ -20,7 +21,7 @@ enum class ErrorLevel{
 
 data class ErrorInternal(
     val errorInfo: ErrorInfo,
-    override var sender: Controllable,
+    override var sender: SendSource,
     val data: Channelable? = null
 ): Internal(){
 

@@ -1,22 +1,24 @@
-package org.sbm4j.ktscraping.core.unit.processors
+package org.sbm4j.meercat
 
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.logger
 import org.sbm4j.ktscraping.core.processors.SendException
-import org.sbm4j.ktscraping.core.processors.SendSource
-import org.sbm4j.ktscraping.data.Back
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.components.logger
 import kotlin.test.Test
 
 class TestingSendSource(
@@ -50,9 +52,12 @@ class SendSourceTests {
 
     val anotherControllable = mockk<AbstractControllable>()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun testSendSource() = TestScope().runTest {
         coroutineScope {
+            DebugProbes.install() // si pas déjà fait
+
             val channel = SuperChannel.build(this)
 
             val component = spyk(TestingSendSource(channel))
@@ -61,12 +66,15 @@ class SendSourceTests {
                 launch {
                     component.start(this).join()
                     logger.debug{"Component finished. Stop it"}
-                    component.stop()
                 }
                 launch {
                     val send = channel.getSendFlow().first()
                     val back = send.buildBack()
                     channel.send(back)
+
+                    //DebugProbes.dumpCoroutines()
+                    //component.job.join()
+                    component.stop()
                 }
             }
 

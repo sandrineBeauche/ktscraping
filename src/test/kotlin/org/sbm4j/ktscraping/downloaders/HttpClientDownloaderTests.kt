@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.dowloaders.HttpClientDownloader
@@ -54,7 +54,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
             response = inChannel.channel.receive() as DownloadingResponse
         }
 
-        assertThat(response.status, equalTo(Status.NOT_FOUND))
+        assertThat(response.status, equalTo(Status.FAIL))
     }
 
 

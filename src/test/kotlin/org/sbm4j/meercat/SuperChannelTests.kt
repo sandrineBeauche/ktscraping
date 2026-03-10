@@ -1,30 +1,28 @@
-package org.sbm4j.ktscraping.core.unit
+package org.sbm4j.meercat
 
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Channelable.Companion.lastId
-import org.sbm4j.ktscraping.data.Send
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Channelable.Companion.lastId
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.components.logger
 import java.util.*
 import kotlin.test.Test
 
 
 data class SendA(
     val message: String,
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "A${lastId.getAndIncrement()}"
 ) : Send {
 
@@ -45,7 +43,7 @@ data class SendA(
 
 data class SendC(
     val message: String,
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "A${lastId.getAndIncrement()}"
 ) : Send {
 
@@ -97,8 +95,7 @@ class SuperChannelTests {
 
     @Test
     fun testSendBackExchange() = TestScope().runTest{
-        val contA = mockk<AbstractControllable>()
-        val contB = mockk<AbstractControllable>()
+        val contA = mockk<SendSource>()
 
         coroutineScope {
             val channel = SuperChannel.build(this)
@@ -125,7 +122,7 @@ class SuperChannelTests {
 
     @Test
     fun testMultipleSendType() = TestScope().runTest {
-        val sender = mockk<Controllable>()
+        val sender = mockk<SendSource>()
 
         coroutineScope {
             val channel = SuperChannel.build(this)
@@ -158,7 +155,7 @@ class SuperChannelTests {
 
     @Test
     fun testLock() = TestScope().runTest {
-        val sender = mockk<Controllable>()
+        val sender = mockk<SendSource>()
         val s1 = SendA("coucou", sender)
         val s2 = SendA("salut", sender)
 

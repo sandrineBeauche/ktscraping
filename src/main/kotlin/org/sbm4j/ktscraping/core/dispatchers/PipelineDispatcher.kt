@@ -2,10 +2,9 @@ package org.sbm4j.ktscraping.core.dispatchers
 
 import org.kodein.di.DI
 import org.kodein.di.DIAware
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.item.Item
 
 abstract class PipelineDispatcher(

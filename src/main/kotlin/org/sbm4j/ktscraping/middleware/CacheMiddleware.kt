@@ -7,8 +7,8 @@ import kotlinx.serialization.json.Json
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response

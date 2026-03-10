@@ -1,14 +1,11 @@
-package org.sbm4j.ktscraping.core.channels
+package org.sbm4j.meercat.channels
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import org.sbm4j.ktscraping.core.childScope
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Channelable
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.meercat.components.logger
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.KClass
 
@@ -17,9 +14,11 @@ class SuperChannel(val name: String = "superChannel") {
 
     companion object{
         var lastId: AtomicInteger = AtomicInteger()
-        suspend fun build(parentScope: CoroutineScope): SuperChannel{
+        suspend fun build(parentScope: CoroutineScope, init: Boolean = true): SuperChannel{
             val result = SuperChannel("superChannel#${lastId.getAndIncrement()}")
-            result.init(parentScope)
+            if(init) {
+                result.init(parentScope)
+            }
             return result
         }
     }
@@ -37,7 +36,7 @@ class SuperChannel(val name: String = "superChannel") {
         scope = childScope(parentScope, "${name}-root")
 
         val flow = channel.consumeAsFlow()
-        mainFlow = flow.shareIn(scope, SharingStarted.WhileSubscribed())
+        mainFlow = flow.shareIn(scope, SharingStarted.WhileSubscribed(0), replay = 0)
 
         logger.debug{"${name} initialized with success"}
     }
@@ -46,13 +45,23 @@ class SuperChannel(val name: String = "superChannel") {
             sendSync(
         data: Send,
     ): T{
-        val flow = mainFlow.filterIsInstance<T>().filter { it.send.channelableId == data.channelableId }
-        logger.trace{ "${name} -> send message : ${data}"}
-        channel.send(data)
-        logger.trace{ "${name} -> sent message : ${data} and wait for a response"}
-        val result = flow.first()
-        logger.trace { "${name} -> received response: ${result}"}
-        return result
+        val job = Job(scope.coroutineContext[Job])
+        val sendScope = CoroutineScope(scope.coroutineContext + job + CoroutineName("${name}-sendSync"))
+
+        try {
+            return withContext(sendScope.coroutineContext) {
+                val flow = mainFlow.filterIsInstance<T>().filter { it.send.channelableId == data.channelableId }
+                logger.trace { "${name} -> send message : ${data}" }
+                channel.send(data)
+                logger.trace { "${name} -> sent message : ${data} and wait for a response" }
+                val result = flow.first()
+                logger.trace { "${name} -> received response: ${result}" }
+                result
+            }
+        }
+        finally{
+            job.cancel()
+        }
     }
 
     fun  getSendFlow(): Flow<Send> {
@@ -86,7 +95,7 @@ class SuperChannel(val name: String = "superChannel") {
         channel.send(data)
     }
 
-    suspend fun receiveAllSend(): Send{
+    suspend fun receiveAllSend(): Send {
         return mainFlow.filterIsInstance(Send::class).first()
     }
 

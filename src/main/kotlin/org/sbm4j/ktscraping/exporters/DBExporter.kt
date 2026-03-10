@@ -1,13 +1,13 @@
 package org.sbm4j.ktscraping.exporters
 
 import org.sbm4j.ktscraping.core.components.AbstractExporter
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.meercat.components.EventJobResult
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.db.DBControllable
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.meercat.components.SendSource
 import kotlin.reflect.KProperty
 
 data class ItemUpdate(
@@ -16,7 +16,7 @@ data class ItemUpdate(
     override val data: Any,
     val values: Map<String, Any>,
     val label: String = "update",
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "${label}-${entityType.simpleName}-${lastId.getAndIncrement()}"
 ): DataItem<Any>() {
     override fun clone(): Item {
@@ -29,7 +29,7 @@ data class ItemDelete(
     val keyName: KProperty<*>,
     override val data: Any,
     val label: String = "delete",
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "${label}-${entityType.simpleName}-${lastId.getAndIncrement()}"
 ): DataItem<Any>() {
     override fun clone(): Item {

@@ -5,7 +5,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.isDownloadingRequestWith
 import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
 import org.sbm4j.ktscraping.data.events.EndEvent

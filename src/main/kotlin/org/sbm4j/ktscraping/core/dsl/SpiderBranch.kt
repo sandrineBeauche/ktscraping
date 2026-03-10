@@ -5,9 +5,9 @@ import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.Crawler
 import org.sbm4j.ktscraping.core.channels.ChannelManager
-import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.meercat.components.Controllable
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.core.dispatchers.SpiderDispatcher
 

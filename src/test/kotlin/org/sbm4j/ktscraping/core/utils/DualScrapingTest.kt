@@ -2,9 +2,9 @@ package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.meercat.channels.Send
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorLevel

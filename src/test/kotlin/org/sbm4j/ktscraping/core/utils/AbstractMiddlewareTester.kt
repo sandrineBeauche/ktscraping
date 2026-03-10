@@ -5,7 +5,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.StartEvent
@@ -50,7 +50,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
                 }
                 result
             }
-            Status.ERROR, Status.UNAUTHORIZED, Status.NOT_FOUND -> {
+            Status.ERROR, Status.FAIL -> {
                 val error = request.parameters[RESP_ERROR] as ErrorInfo
                 val result = request.buildErrorBack(error)
                 result

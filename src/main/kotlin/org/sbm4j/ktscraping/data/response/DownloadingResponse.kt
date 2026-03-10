@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.data.response
 
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 

@@ -1,18 +1,15 @@
-package org.sbm4j.ktscraping.core.processors
+package org.sbm4j.meercat.components
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Send
-import org.sbm4j.ktscraping.data.Status
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
+import org.sbm4j.ktscraping.core.processors.CallbackError
+import org.sbm4j.ktscraping.core.processors.SendException
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.channels.SuperChannel
 import kotlin.reflect.KClass
 
 interface SendConsumer: Controllable {
@@ -85,6 +82,7 @@ interface SendSource: Controllable {
         }
     }
 
+    /*
     /**
      * sends synchronously a request and returns the response. This exchange with the request and the response
      * is done in a dedicated scope, that is a subscope of the given coroutine scope.
@@ -95,10 +93,32 @@ interface SendSource: Controllable {
     suspend fun <S: Send> sendSync(
         request: S,
         subScope: CoroutineScope = scope
-    ) = suspendCoroutine { continuation ->
+    ) = suspendCancellableCoroutine { continuation ->
+        withContext(CoroutineName("${name}-${request.name}")) {
+        peformSendSync(request, continuation::resume, continuation::resumeWithException)
+    }
+
         subScope.launch(CoroutineName("${name}-${request.name}")) {
-            this@SendSource.peformSendSync<S>(request, continuation::resume,
-                continuation::resumeWithException)
+            this@SendSource.peformSendSync<S>(
+                request, continuation::resume,
+                continuation::resumeWithException
+            )
+        }
+    }*/
+
+    suspend fun <S: Send> sendSync(
+        send: S,
+        subScope: CoroutineScope = scope
+    ): Back<S> {
+        val back = outChannel.sendSync<Back<S>>(send)
+
+        logger.trace { "${name}: received the ${back.loggingLabel} for the ${send.loggingLabel} ${send.name} and call callback" }
+        when (back.status) {
+            Status.OK -> return back
+            else -> {
+                val ex = SendException("Error when fetching the ${send.loggingLabel} ${send.sender}", back)
+                throw ex
+            }
         }
     }
 

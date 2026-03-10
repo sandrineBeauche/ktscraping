@@ -9,8 +9,7 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.CrawlerResult
 import org.sbm4j.ktscraping.core.channels.ChannelManager
 import org.sbm4j.ktscraping.core.components.AbstractEngine
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
 import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.events.EndEvent
@@ -23,6 +22,7 @@ import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.components.SendSource
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -39,7 +39,7 @@ class TestingEngine(
 
 class EngineTest {
 
-    val sender: Controllable = mockk<Controllable>()
+    val sender: SendSource = mockk<SendSource>()
 
     lateinit var channelManager: ChannelManager
 

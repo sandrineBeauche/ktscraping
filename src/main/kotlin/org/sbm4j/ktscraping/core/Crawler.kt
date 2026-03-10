@@ -5,11 +5,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.joinAll
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.channels.ChannelManager
-import org.sbm4j.ktscraping.core.components.AbstractControllable
+import org.sbm4j.meercat.components.AbstractControllable
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.meercat.components.Controllable
 import org.sbm4j.ktscraping.core.components.Engine
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 
 
 interface CrawlerResult{

@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.core.utils
 
 import com.natpryce.hamkrest.*
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.request.DownloadingRequest

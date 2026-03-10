@@ -8,18 +8,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.kodein.di.DI
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.channels.sendSyncAll
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.components.logger
-import org.sbm4j.ktscraping.core.dispatchers.BackDispatcher
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.channels.sendSyncAll
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.dispatchers.SpiderDispatcher
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.components.SendSource
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -30,7 +29,7 @@ class BackDispatcherTests{
 
     lateinit var inChannels: List<SuperChannel>
 
-    lateinit var senders: List<Controllable>
+    lateinit var senders: List<SendSource>
 
     val di: DI = mockk<DI>()
 
@@ -46,12 +45,12 @@ class BackDispatcherTests{
         inChannels = List(nbSenders){SuperChannel()}
 
         dispatcher.channelOut = outChannel
-        dispatcher.senders.addAll(inChannels)
+        dispatcher.channelsIns.addAll(inChannels)
 
-        senders = List(nbSenders){mockk<Controllable>()}
+        senders = List(nbSenders){mockk<SendSource>()}
     }
 
-    fun generateRequestResponse(sender: Controllable,
+    fun generateRequestResponse(sender: SendSource,
                                 url: String = "an url",
                                 status: Status = Status.OK,
                                 errorInfos: ErrorInfo? = null): Pair<Request, DownloadingResponse> {

@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.data.item
 
 import kotlinx.serialization.Serializable
-import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.meercat.components.SendSource
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
@@ -23,10 +23,10 @@ data class ObjectDataItem<T: Data>(
     override val data: T,
     val clazz: KClass<T>,
     val label: String = "data",
-    override var sender: Controllable
+    override var sender: SendSource
 ): DataItem<T>(){
     companion object{
-        inline fun <reified T: Data> build(data: T, label: String, sender: Controllable): ObjectDataItem<T> {
+        inline fun <reified T: Data> build(data: T, label: String, sender: SendSource): ObjectDataItem<T> {
             return ObjectDataItem(data, T::class, label, sender)
         }
     }

@@ -1,11 +1,11 @@
 package org.sbm4j.ktscraping.data.internal
 
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.ProgressSlot
 import org.sbm4j.ktscraping.core.ProgressState
 import org.sbm4j.ktscraping.core.SlotMode
-import org.sbm4j.ktscraping.data.Back
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Back
+import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.channels.Status
 
 abstract class ProgressInternal(
     open val slot: String,
@@ -26,7 +26,7 @@ data class StartTaskProgressInternal(
     val message: String = "",
     val nbSteps: Int = 0,
     val slotMode: SlotMode = SlotMode.PROGRESS_BAR_DEFINED,
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "startTask-${slot}"
 ): ProgressInternal(slot) {
 
@@ -54,7 +54,7 @@ data class StartTaskProgressInternal(
 data class StartStepProgressItem(
     override val slot: String,
     val message: String = "",
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "StartStep-${slot}",
 ): ProgressInternal(slot) {
     override fun updateProgressState(state: ProgressState) {
@@ -79,7 +79,7 @@ data class StartStepProgressItem(
 data class StepDoneProgressItem(
     override val slot: String,
     val nbSteps: Int = 1,
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "StepDone-${slot}"
 ): ProgressInternal(slot){
     override fun updateProgressState(state: ProgressState) {

@@ -7,7 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
 import org.sbm4j.ktscraping.core.utils.isOKStartItemAck

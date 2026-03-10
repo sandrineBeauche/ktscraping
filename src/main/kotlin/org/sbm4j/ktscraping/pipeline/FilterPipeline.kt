@@ -1,8 +1,7 @@
 package org.sbm4j.ktscraping.pipeline
 
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.ktscraping.data.Status
-import org.sbm4j.ktscraping.data.item.DataItem
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.item.Item
 
 class FilterPipeline(name: String) : AbstractPipeline(name) {

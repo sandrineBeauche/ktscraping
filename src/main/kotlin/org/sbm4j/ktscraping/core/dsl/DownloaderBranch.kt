@@ -4,10 +4,10 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.Crawler
-import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.core.components.Controllable
+import org.sbm4j.meercat.components.Controllable
 import org.sbm4j.ktscraping.core.dispatchers.DownloaderDispatcher
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 

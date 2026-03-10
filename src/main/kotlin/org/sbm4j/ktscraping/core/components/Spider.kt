@@ -2,15 +2,13 @@ package org.sbm4j.ktscraping.core.components
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.SlotMode
-import org.sbm4j.ktscraping.core.channels.SuperChannel
+import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.processors.SendException
-import org.sbm4j.ktscraping.core.processors.SendSource
+import org.sbm4j.meercat.components.SendSource
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
-import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.*
 import org.sbm4j.ktscraping.data.item.Data
@@ -18,6 +16,8 @@ import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.exporters.ItemUpdate
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.logger
 
 
 class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {

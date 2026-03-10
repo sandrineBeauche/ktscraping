@@ -1,12 +1,12 @@
 package org.sbm4j.ktscraping.core.utils
 
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.components.SendSource
 
-fun generateRequestResponse(sender: Controllable,
+fun generateRequestResponse(sender: SendSource,
                             url: String = "an url",
                             status: Status = Status.OK,
                             errorInfos: ErrorInfo? = null): Pair<Request, DownloadingResponse> {

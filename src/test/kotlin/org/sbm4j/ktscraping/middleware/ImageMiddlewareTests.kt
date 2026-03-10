@@ -10,7 +10,7 @@ import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest

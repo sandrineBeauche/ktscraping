@@ -1,7 +1,7 @@
-package org.sbm4j.ktscraping.data
+package org.sbm4j.meercat.channels
 
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.components.SendSource
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -22,7 +22,7 @@ interface Channelable: Cloneable {
 }
 
 interface Send: Channelable{
-    var sender: Controllable
+    var sender: SendSource
 
     fun buildErrorBack(infos: ErrorInfo, status: Status = Status.ERROR): Back<*>
 
@@ -33,9 +33,8 @@ interface Send: Channelable{
 
 enum class Status{
     OK,
-    UNAUTHORIZED,
-    NOT_FOUND,
     ERROR,
+    FAIL,
     IGNORED;
 
     operator fun plus(other: Status): Status {

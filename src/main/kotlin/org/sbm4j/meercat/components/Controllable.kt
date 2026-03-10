@@ -1,10 +1,9 @@
-package org.sbm4j.ktscraping.core.components
+package org.sbm4j.meercat.components
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import org.sbm4j.ktscraping.core.childScope
-import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorLevel
 import java.util.UUID

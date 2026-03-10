@@ -1,9 +1,9 @@
 package org.sbm4j.ktscraping.core.dispatchers
 
 import org.kodein.di.DI
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 
 abstract class DownloaderDispatcher(

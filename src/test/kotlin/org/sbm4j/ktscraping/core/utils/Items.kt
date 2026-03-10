@@ -1,9 +1,9 @@
 package org.sbm4j.ktscraping.core.utils
 
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.meercat.components.SendSource
 
 data class DataItemTest(
     val value: String,
@@ -18,7 +18,7 @@ data class DataItemTest(
 
 data class IntDataItem(
     override val data: Int,
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String = "IntData-#$data"
 ): DataItem<Int>(){
     override fun clone(): Item {

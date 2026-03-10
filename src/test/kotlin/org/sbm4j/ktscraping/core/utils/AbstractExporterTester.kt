@@ -3,7 +3,7 @@ package org.sbm4j.ktscraping.core.utils
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractExporter
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.components.logger
 import kotlin.test.BeforeTest
 
 abstract class AbstractExporterTester: ScrapingTest(){

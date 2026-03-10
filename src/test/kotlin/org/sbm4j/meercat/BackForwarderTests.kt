@@ -1,23 +1,22 @@
-package org.sbm4j.ktscraping.core.unit.processors
+package org.sbm4j.meercat
 
 import com.natpryce.hamkrest.assertion.assertThat
 import io.mockk.mockk
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.AbstractControllable
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.core.processors.BackForwarder
 import org.sbm4j.ktscraping.core.utils.isEventResponseWithError
 import org.sbm4j.ktscraping.core.utils.isOKEventBackWith
-import org.sbm4j.ktscraping.data.Status
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.BackForwarder
+import org.sbm4j.meercat.components.SendSource
 import kotlin.test.Test
 
 class TestingBackForwarder(
@@ -41,7 +40,7 @@ class TestingBackForwarder(
 
 class BackForwarderTests {
 
-    val sender = mockk<Controllable>()
+    val sender = mockk<SendSource>()
 
     @Test
     fun testBackForward1() = TestScope().runTest {

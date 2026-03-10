@@ -1,12 +1,14 @@
 package org.sbm4j.ktscraping.core.components
 
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.processors.EventBackForwarder
-import org.sbm4j.ktscraping.core.processors.EventConsumer
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.EventBackForwarder
+import org.sbm4j.meercat.components.EventConsumer
 import org.sbm4j.ktscraping.core.processors.ItemForwarder
 import org.sbm4j.ktscraping.core.processors.RequestForwarder
 import org.sbm4j.ktscraping.core.processors.ResponseForwarder
 import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.meercat.components.logger
 
 abstract class AbstractMiddleware(override val name: String):
     AbstractControllable(),

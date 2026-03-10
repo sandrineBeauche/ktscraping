@@ -1,15 +1,13 @@
 package org.sbm4j.ktscraping.data.request
 
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Channelable
-import org.sbm4j.ktscraping.data.Send
-import org.sbm4j.ktscraping.data.Status
+import org.sbm4j.meercat.channels.Status
 import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.components.SendSource
 
 abstract class DownloadingRequest(
-    sender: Controllable,
+    sender: SendSource,
     open var url: String
 ): AbstractRequest(sender){
 
@@ -49,7 +47,7 @@ abstract class DownloadingRequest(
 }
 
 data class Request(
-    override var sender: Controllable,
+    override var sender: SendSource,
     override var url: String
 ): DownloadingRequest(sender, url){
 

@@ -7,14 +7,14 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.data.item.*
+import org.sbm4j.meercat.components.SendSource
 import kotlin.reflect.cast
 
 
 data class JsonItem(
     override val data: JsonElement,
-    override var sender: Controllable,
+    override var sender: SendSource,
     override val name: String
 ): StandardFormatItem<JsonElement>(data) {
     override fun clone(): Item {

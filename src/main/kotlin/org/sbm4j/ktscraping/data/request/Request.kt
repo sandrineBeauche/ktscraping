@@ -1,12 +1,12 @@
 package org.sbm4j.ktscraping.data.request
 
-import org.sbm4j.ktscraping.core.components.Controllable
-import org.sbm4j.ktscraping.data.Send
+import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.components.SendSource
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 
-abstract class AbstractRequest(override var sender: Controllable): Send {
+abstract class AbstractRequest(override var sender: SendSource): Send {
     companion object {
         val lastId = AtomicInteger(0)
     }

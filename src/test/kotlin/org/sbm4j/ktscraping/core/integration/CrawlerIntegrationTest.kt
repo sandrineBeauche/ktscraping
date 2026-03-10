@@ -7,7 +7,6 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.ktscraping.core.components.Controllable
 import org.sbm4j.ktscraping.core.defaultDIModule
 import org.sbm4j.ktscraping.core.dsl.crawler
 import org.sbm4j.ktscraping.core.dsl.downloaderBranch
@@ -22,10 +21,11 @@ import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.components.SendSource
 import kotlin.test.Test
 
 data class IntegrationTestItem(override val data: String,
-                               override var sender: Controllable,
+                               override var sender: SendSource,
                                override val name: String = "IntegrationItem${lastId.getAndIncrement()}"
 ): DataItem<String>() {
     override fun clone(): Item {

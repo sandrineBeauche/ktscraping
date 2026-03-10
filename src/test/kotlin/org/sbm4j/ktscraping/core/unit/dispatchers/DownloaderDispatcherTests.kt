@@ -3,8 +3,8 @@ package org.sbm4j.ktscraping.core.unit.dispatchers
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.kodein.di.DI
-import org.sbm4j.ktscraping.core.channels.SuperChannel
-import org.sbm4j.ktscraping.core.components.logger
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.dispatchers.DownloaderDispatcher
 import org.sbm4j.ktscraping.core.dispatchers.SendPropagator
 import org.sbm4j.ktscraping.core.utils.AbstractSendDispatcherTester
