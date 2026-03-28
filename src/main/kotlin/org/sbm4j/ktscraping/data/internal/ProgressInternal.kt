@@ -3,9 +3,10 @@ package org.sbm4j.ktscraping.data.internal
 import org.sbm4j.ktscraping.core.ProgressSlot
 import org.sbm4j.ktscraping.core.ProgressState
 import org.sbm4j.ktscraping.core.SlotMode
-import org.sbm4j.meercat.channels.Back
-import org.sbm4j.meercat.components.SendSource
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Back
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
+import org.sbm4j.meercat.data.Status
 
 abstract class ProgressInternal(
     open val slot: String,
@@ -18,6 +19,9 @@ abstract class ProgressInternal(
         return state.progress
     }
 
+    override fun getKeyBarrier(): String {
+        return this.slot
+    }
 
 }
 

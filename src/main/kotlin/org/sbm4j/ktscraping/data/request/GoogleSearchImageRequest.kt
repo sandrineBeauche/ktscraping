@@ -4,7 +4,7 @@ import org.apache.hc.core5.net.URIBuilder
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.middleware.ImageMiddleware
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 open class AbstractInlineRequest(
     override var sender: SendSource,

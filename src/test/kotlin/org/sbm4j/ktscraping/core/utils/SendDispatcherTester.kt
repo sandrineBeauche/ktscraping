@@ -7,12 +7,12 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.kodein.di.DI
 import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.components.logger
-import org.sbm4j.ktscraping.core.dispatchers.SendPropagator
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.dispatchers.Propagator
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.collections.forEach
 import kotlin.test.BeforeTest
 
@@ -25,7 +25,7 @@ interface SendDispatcherTester{
 
     val di: DI
 
-    var dispatcher: SendPropagator
+    var dispatcher: Propagator
 
     val nbBranches: Int
 
@@ -37,12 +37,12 @@ interface SendDispatcherTester{
         outChannels = List(nbBranches){ SuperChannel() }
 
         dispatcher.channelIn = inChannel
-        dispatcher.receivers.addAll(outChannels)
+        dispatcher.channelOuts.addAll(outChannels)
 
         sender = mockk<SendSource>()
     }
 
-    fun buildDispatcher(): SendPropagator
+    fun buildDispatcher(): Propagator
 
     suspend fun doStartEvent(){
         logger.debug{"Do Start event"}
@@ -100,7 +100,7 @@ abstract class AbstractSendDispatcherTester: SendDispatcherTester{
 
     override val di: DI = mockk<DI>()
 
-    override lateinit var dispatcher: SendPropagator
+    override lateinit var dispatcher: Propagator
 
     override val nbBranches: Int = 3
 

@@ -4,7 +4,7 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import io.mockk.mockk
 import org.sbm4j.ktscraping.data.request.Request
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.test.Test
 
 class RequestTests {

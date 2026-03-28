@@ -1,28 +1,31 @@
 package org.sbm4j.ktscraping.core.dsl
 
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.test.TestScope
 import org.kodein.di.*
 import org.sbm4j.ktscraping.core.*
-import org.sbm4j.ktscraping.core.channels.ChannelManager
+import org.sbm4j.ktscraping.core.channels.CrawlerChannelManager
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.meercat.components.SendSource
-import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 
 class TestingCrawlerResult: CrawlerResult
 
 class EmptyTestingCrawler(
     name: String = "TestCrawler",
-    channelManager: ChannelManager,
+    crawlerChannelManager: CrawlerChannelManager,
     override val di: DI
-) : AbstractCrawler(name, channelManager){
+) : AbstractCrawler(name, crawlerChannelManager){
 
-    override suspend fun run() {
+    override suspend fun start(parentScope: CoroutineScope, rootName: String): Job? {
         logger.info{"Starting testing crawler ${name}"}
-        super.run()
+        return super.start(parentScope, rootName)
     }
+
 
     override suspend fun stop() {
         logger.info{"Stopping testing crawler ${name}"}
@@ -30,9 +33,7 @@ class EmptyTestingCrawler(
     }
 
     override suspend fun waitFinished(): CrawlerResult {
-        controllables.filterIsInstance<AbstractSpider>()
-            .map { it.job!! }
-            .joinAll()
+        topologyManager.waitCompleted()
         return TestingCrawlerResult()
     }
 }
@@ -44,12 +45,12 @@ abstract class CrawlerTest {
 
     val sender: SendSource = mockk<SendSource>()
 
-    val channelManager : ChannelManager = ChannelManager()
+    val crawlerChannelManager : CrawlerChannelManager = CrawlerChannelManager()
 
     fun testDIModule(name: String): DI.Module {
         val mod = DI.Module(name = "testDIModule"){
             bind<Crawler> { multiton { di: DI -> EmptyTestingCrawler(name, instance(arg = di), di) }}
-            bind<ChannelManager> { multiton {di: DI -> channelManager }}
+            bind<CrawlerChannelManager> { multiton { di: DI -> crawlerChannelManager }}
         }
         return mod
     }

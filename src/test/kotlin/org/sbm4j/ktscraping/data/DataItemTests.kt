@@ -3,7 +3,7 @@ package org.sbm4j.ktscraping.data
 import io.mockk.mockk
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.test.Test
 
 data class DataTestType(val value: String): Data() {

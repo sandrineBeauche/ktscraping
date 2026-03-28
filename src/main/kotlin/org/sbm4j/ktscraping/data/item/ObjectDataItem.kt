@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.data.item
 
 import kotlinx.serialization.Serializable
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
@@ -31,7 +31,7 @@ data class ObjectDataItem<T: Data>(
         }
     }
 
-    override val name: String = "ObjectDataItem"
+    override val name: String = "ObjectDataItem-${clazz.simpleName}"
 
     override fun clone(): Item {
         val result = this.copy(data = clazz.cast(data.clone()))
@@ -39,6 +39,9 @@ data class ObjectDataItem<T: Data>(
         return result
     }
 
+    override fun getKeyBarrier(): String {
+        return this.name
+    }
 }
 
 

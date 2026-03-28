@@ -10,15 +10,15 @@ import kotlinx.coroutines.test.runTest
 import org.kodein.di.DI
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.channels.sendSyncAll
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.dispatchers.SpiderDispatcher
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 

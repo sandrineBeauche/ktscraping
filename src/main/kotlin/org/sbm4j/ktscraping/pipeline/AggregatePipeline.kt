@@ -1,14 +1,14 @@
 package org.sbm4j.ktscraping.pipeline
 
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.meercat.components.EventJobResult
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
-import org.sbm4j.ktscraping.data.internal.ErrorLevel
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 

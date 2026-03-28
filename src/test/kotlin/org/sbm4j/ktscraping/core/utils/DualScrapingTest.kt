@@ -3,17 +3,17 @@ package org.sbm4j.ktscraping.core.utils
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.components.Controllable
-import org.sbm4j.meercat.channels.Send
+import org.sbm4j.ktscraping.core.components.Component
+import org.sbm4j.meercat.data.Send
 import org.sbm4j.ktscraping.data.events.Event
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
-import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
 
 abstract class DualScrapingTest: ScrapingTest() {
 
     lateinit var outChannel: SuperChannel
 
-    val errorSender = mockk<Controllable>()
+    val errorSender = mockk<Component>()
 
 
     override fun buildChannels() {
@@ -39,7 +39,8 @@ abstract class DualScrapingTest: ScrapingTest() {
             val error = ErrorInfo(
                 Exception("Exception for the ${send.loggingLabel} ${send}"),
                 errorSender,
-                ErrorLevel.MAJOR)
+                ErrorLevel.MAJOR
+            )
             send.buildErrorBack(error)
         }
         outChannel.send(back)

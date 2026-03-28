@@ -7,12 +7,12 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.middleware.CookiesMiddleware
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import java.util.concurrent.Executors
 
 

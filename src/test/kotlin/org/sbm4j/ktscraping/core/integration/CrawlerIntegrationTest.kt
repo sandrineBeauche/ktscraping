@@ -21,7 +21,7 @@ import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.test.Test
 
 data class IntegrationTestItem(override val data: String,
@@ -30,6 +30,10 @@ data class IntegrationTestItem(override val data: String,
 ): DataItem<String>() {
     override fun clone(): Item {
         return this.copy()
+    }
+
+    override fun getKeyBarrier(): String {
+        return data
     }
 }
 

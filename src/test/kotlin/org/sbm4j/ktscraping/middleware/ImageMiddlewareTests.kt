@@ -10,12 +10,12 @@ import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.nodes.logger
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 

@@ -7,11 +7,11 @@ import kotlinx.serialization.json.Json
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
-import org.sbm4j.meercat.components.logger
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.meercat.nodes.logger
 import java.io.File
 import java.util.*
 import kotlin.time.Duration

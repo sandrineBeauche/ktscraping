@@ -1,22 +1,18 @@
 package org.sbm4j.ktscraping.core.processors
 
-import org.sbm4j.meercat.components.logger
-import org.sbm4j.meercat.channels.Back
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.meercat.components.BackForwarder
-import org.sbm4j.meercat.components.SendConsumer
-import org.sbm4j.meercat.components.SendForwarder
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.BackForwarder
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendConsumer
+import org.sbm4j.meercat.nodes.sendProcessors.SendForwarder
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 typealias CallbackError = suspend (Throwable) -> Unit
 
 
 class NoRequestSenderException(message: String) : Exception(message)
-
-class SendException(message: String, val resp: Back<*>, cause: Throwable? = null) :
-    Exception(message, cause)
 
 
 
@@ -88,5 +84,4 @@ interface RequestReceiver: SendConsumer {
 interface RequestForwarder: RequestReceiver, SendForwarder {
     override suspend fun run() {
     }
-
 }

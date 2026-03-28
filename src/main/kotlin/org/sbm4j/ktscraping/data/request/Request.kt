@@ -1,7 +1,7 @@
 package org.sbm4j.ktscraping.data.request
 
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 

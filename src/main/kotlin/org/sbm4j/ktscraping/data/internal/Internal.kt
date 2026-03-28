@@ -1,8 +1,9 @@
 package org.sbm4j.ktscraping.data.internal
 
-import org.sbm4j.meercat.channels.Back
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Back
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.Status
 import java.util.*
 
 

@@ -15,13 +15,13 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractSimpleSpider
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.nodes.logger
 
 class TestingSpiderClass(name:String): AbstractSimpleSpider(name){
     override suspend fun parse(resp: DownloadingResponse) {
@@ -81,7 +81,7 @@ class SpiderBranchTest: CrawlerTest() {
 
             launch {
                 val job = c.start(this)
-                job.join()
+                job?.join()
                 c.waitFinished()
                 c.stop()
             }
@@ -137,24 +137,24 @@ class SpiderBranchTest: CrawlerTest() {
         logger.debug { "interacting with crawler" }
         //answerStartEvent()
 
-        val request1 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
-        val request2 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
+        val request1 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
+        val request2 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
 
         val response1 = DownloadingResponse(request1)
         val response2 = DownloadingResponse(request2)
 
-        channelManager.spiderChannel.send(response1)
-        channelManager.spiderChannel.send(response2)
+        crawlerChannelManager.spiderChannel.send(response1)
+        crawlerChannelManager.spiderChannel.send(response2)
 
-        val item1: DataItemTest = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        val item2: DataItemTest = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        val item1: DataItemTest = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        val item2: DataItemTest = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
 
         logger.debug { "Received the final items:\n $item1 \n $item2" }
 
         //answerEndEvent()
         c.waitFinished()
         c.stop()
-        channelManager.closeChannels()
+        crawlerChannelManager.closeChannels()
 
         assertThat(
             item1, isA<DataItemTest>(
@@ -213,23 +213,23 @@ class SpiderBranchTest: CrawlerTest() {
 
         logger.debug { "interacting with crawler" }
         //answerStartEvent()
-        val request1 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
-        val request2 = channelManager.spiderChannel.receiveSend<DownloadingRequest>()
+        val request1 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
+        val request2 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
 
         val response1 = DownloadingResponse(request1)
         val response2 = DownloadingResponse(request2)
 
-        channelManager.spiderChannel.send(response1)
-        channelManager.spiderChannel.send(response2)
+        crawlerChannelManager.spiderChannel.send(response1)
+        crawlerChannelManager.spiderChannel.send(response2)
 
-        item1 = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        item2 = (channelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        item1 = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
+        item2 = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
         logger.debug { "Received the final items:\n $item1 \n $item2" }
 
         //answerEndEvent()
         c.waitFinished()
         c.stop()
-        channelManager.closeChannels()
+        crawlerChannelManager.closeChannels()
 
 
         assertThat(

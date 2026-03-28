@@ -1,8 +1,7 @@
 package org.sbm4j.ktscraping.middleware
 
-import org.sbm4j.meercat.components.EventJobResult
+import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.exporters.ItemDelete
@@ -11,6 +10,7 @@ import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.meercat.nodes.logger
 import kotlin.reflect.KProperty1
 
 

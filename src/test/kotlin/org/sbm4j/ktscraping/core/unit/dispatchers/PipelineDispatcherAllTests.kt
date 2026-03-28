@@ -2,16 +2,16 @@ package org.sbm4j.ktscraping.core.unit.dispatchers
 
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcherAll
-import org.sbm4j.ktscraping.core.dispatchers.SendPropagator
 import org.sbm4j.ktscraping.core.utils.AbstractSendDispatcherTester
 import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.meercat.nodes.dispatchers.Propagator
+import org.sbm4j.meercat.nodes.logger
 import kotlin.test.Test
 
 class PipelineDispatcherAllTests: AbstractSendDispatcherTester() {
-    override fun buildDispatcher(): SendPropagator {
+    override fun buildDispatcher(): Propagator {
         return PipelineDispatcherAll("PipelineDispatcher", di)
     }
 

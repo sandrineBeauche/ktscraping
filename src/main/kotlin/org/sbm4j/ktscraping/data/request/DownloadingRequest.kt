@@ -1,10 +1,10 @@
 package org.sbm4j.ktscraping.data.request
 
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.meercat.channels.Status
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 abstract class DownloadingRequest(
     sender: SendSource,
@@ -44,6 +44,10 @@ abstract class DownloadingRequest(
     }
 
     abstract override fun clone(): DownloadingRequest
+
+    override fun getKeyBarrier(): String {
+        return this.url
+    }
 }
 
 data class Request(

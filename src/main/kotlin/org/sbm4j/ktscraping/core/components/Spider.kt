@@ -2,11 +2,9 @@ package org.sbm4j.ktscraping.core.components
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.SlotMode
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.ktscraping.core.processors.SendException
-import org.sbm4j.meercat.components.SendSource
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.StartEvent
@@ -16,8 +14,13 @@ import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.meercat.components.AbstractControllable
-import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.data.SendException
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.Initiator
+import org.sbm4j.meercat.nodes.sendProcessors.NodeStatus
 
 
 class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {
@@ -26,9 +29,9 @@ class SpiderStepException(message: String? = null, cause: Throwable? = null) : E
 
 abstract class AbstractSpider(
     override val name: String = "Spider"
-) : SendSource, AbstractControllable() {
+) : Initiator, AbstractComponent() {
 
-
+    override lateinit var initiatorStatus: MutableStateFlow<NodeStatus>
 
     override lateinit var outChannel: SuperChannel
 
@@ -69,8 +72,8 @@ abstract class AbstractSpider(
 
 
     override suspend fun stop() {
-        super<SendSource>.stop()
-        super<AbstractControllable>.stop()
+        super<Initiator>.stop()
+        super<AbstractComponent>.stop()
     }
 
     suspend fun <T> task(

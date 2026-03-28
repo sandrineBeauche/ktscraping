@@ -2,9 +2,9 @@ package org.sbm4j.ktscraping.core.processors
 
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.meercat.components.BackForwarder
-import org.sbm4j.meercat.components.SendConsumer
-import org.sbm4j.meercat.components.SendForwarder
+import org.sbm4j.meercat.nodes.BackForwarder
+import org.sbm4j.meercat.nodes.sendProcessors.SendConsumer
+import org.sbm4j.meercat.nodes.sendProcessors.SendForwarder
 
 interface ItemReceiver : SendConsumer {
 

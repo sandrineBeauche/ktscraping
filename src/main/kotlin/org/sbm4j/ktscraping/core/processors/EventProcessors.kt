@@ -1,12 +1,17 @@
-package org.sbm4j.meercat.components
+package org.sbm4j.ktscraping.core.processors
 
 import kotlinx.coroutines.Deferred
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.ErrorInfo
+
+import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.nodes.BackForwarder
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendConsumer
+
 import java.util.concurrent.ConcurrentHashMap
 
 

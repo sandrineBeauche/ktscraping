@@ -7,11 +7,11 @@ import io.ktor.client.statement.*
 import io.ktor.util.network.*
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.meercat.channels.Status
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
-import org.sbm4j.ktscraping.data.internal.ErrorLevel
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
 
 enum class BodyType{
     TEXT,

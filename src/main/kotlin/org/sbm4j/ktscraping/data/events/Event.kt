@@ -1,10 +1,10 @@
 package org.sbm4j.ktscraping.data.events
 
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.channels.Back
-import org.sbm4j.meercat.channels.Status
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.Back
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import java.util.UUID
 
 enum class EventPropagation{
@@ -31,8 +31,11 @@ abstract class Event(
         return EventBack(this, Status.ERROR, mutableListOf(infos))
     }
 
-    public abstract override fun clone(): Event
+    abstract override fun clone(): Event
 
+    override fun getKeyBarrier(): String {
+        return this.eventName
+    }
 }
 
 data class EventBack(

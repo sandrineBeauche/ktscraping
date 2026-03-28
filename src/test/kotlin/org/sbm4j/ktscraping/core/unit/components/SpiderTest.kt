@@ -7,13 +7,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.meercat.components.Controllable
-import org.sbm4j.meercat.components.logger
-import org.sbm4j.ktscraping.core.processors.SendException
+import org.sbm4j.ktscraping.core.components.Component
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorInternal
-import org.sbm4j.ktscraping.data.internal.ErrorLevel
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
@@ -21,6 +17,10 @@ import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.data.SendException
+import org.sbm4j.meercat.nodes.logger
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -87,7 +87,7 @@ class SpiderTest: AbstractSpiderTester() {
         lateinit var req: AbstractRequest
         lateinit var resp: DownloadingResponse
 
-        val errorControllable = mockk<Controllable>()
+        val errorComponent = mockk<Component>()
 
         lateinit var receivedError: ErrorInternal
 
@@ -96,7 +96,7 @@ class SpiderTest: AbstractSpiderTester() {
                 is DownloadingRequest -> {
                     logger.debug{"Received the request ${send}"}
                     assertTrue { send.url == url }
-                    val error = ErrorInfo(Exception("an exception"), errorControllable, ErrorLevel.MAJOR)
+                    val error = ErrorInfo(Exception("an exception"), errorComponent, ErrorLevel.MAJOR)
                     resp = send.buildErrorBack(error)
                     outChannel.send(resp)
                 }
@@ -108,6 +108,6 @@ class SpiderTest: AbstractSpiderTester() {
         }
 
         val r = (receivedError.errorInfo.ex as SendException).resp
-        assertSame(errorControllable, r.errorInfos[0].controllable)
+        assertSame(errorComponent, r.errorInfos[0].node)
     }
 }

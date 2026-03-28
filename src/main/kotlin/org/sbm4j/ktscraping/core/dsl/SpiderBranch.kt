@@ -4,10 +4,10 @@ import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.kodein.di.instance
 import org.sbm4j.ktscraping.core.Crawler
-import org.sbm4j.ktscraping.core.channels.ChannelManager
+import org.sbm4j.ktscraping.core.channels.CrawlerChannelManager
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.ktscraping.core.components.Component
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.core.dispatchers.SpiderDispatcher
 
@@ -17,7 +17,7 @@ fun Crawler.spiderBranch(initBranch: SpiderBranch.() -> Unit){
         this.channelManager.spiderChannel,
         this.di)
     branch.initBranch()
-    this.controllables.addAll(branch.senders)
+    this.topologyManager.nodes.addAll(branch.senders)
 }
 
 fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: SpiderDispatcher.() -> Unit){
@@ -25,7 +25,7 @@ fun Crawler.spiderDispatcher(name: String = "dispatcher", initDispatcher: Spider
     dispatcher.channelOut = this.channelManager.spiderChannel
 
     dispatcher.initDispatcher()
-    this.controllables.add(dispatcher)
+    this.topologyManager.nodes.add(dispatcher)
 }
 
 
@@ -35,9 +35,9 @@ class SpiderBranch(
     override val di: DI
 ) : DIAware {
 
-    val senders : MutableList<Controllable> = mutableListOf()
+    val senders : MutableList<Component> = mutableListOf()
 
-    val channelManager: ChannelManager by di.instance(arg = di)
+    val crawlerChannelManager: CrawlerChannelManager by di.instance(arg = di)
 
     inline fun <reified T : SpiderMiddleware>spiderMiddleware(
                                                name: String? = null,
@@ -47,7 +47,7 @@ class SpiderBranch(
         senders.add(mid)
 
         mid.outChannel = channel
-        val newChannel = channelManager.buildChannel()
+        val newChannel = crawlerChannelManager.buildChannel()
         mid.inChannel = newChannel
         channel = newChannel
 
@@ -84,7 +84,7 @@ inline fun <reified T: AbstractSpider> SpiderDispatcher.spider(
     val spid = buildControllable<T>(name)
 
     val crawler: Crawler by di.instance(arg = this.di)
-    crawler.controllables.add(spid)
+    crawler.topologyManager.nodes.add(spid)
 
     val newChannel = crawler.channelManager.buildChannel()
     spid.outChannel = newChannel
@@ -104,5 +104,5 @@ fun SpiderDispatcher.spiderBranch(initBranch: SpiderBranch.() -> Unit){
     val branch = SpiderBranch(channel, this.di)
     branch.initBranch()
 
-    crawler.controllables.addAll(branch.senders)
+    crawler.topologyManager.nodes.addAll(branch.senders)
 }

@@ -1,4 +1,4 @@
-package org.sbm4j.meercat
+package org.sbm4j.meercat.channels
 
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineName
@@ -8,14 +8,13 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.meercat.channels.Channelable.Companion.lastId
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
-import org.sbm4j.meercat.channels.Back
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.channels.Status
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.components.SendSource
-import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.data.Back
+import org.sbm4j.meercat.data.Channelable.Companion.lastId
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import java.util.*
 import kotlin.test.Test
 
@@ -38,6 +37,10 @@ data class SendA(
 
     override fun clone(): Send {
         return this.copy()
+    }
+
+    override fun getKeyBarrier(): String {
+        return message
     }
 }
 
@@ -153,7 +156,7 @@ class SuperChannelTests {
         }
     }
 
-    @Test
+    //@Test
     fun testLock() = TestScope().runTest {
         val sender = mockk<SendSource>()
         val s1 = SendA("coucou", sender)

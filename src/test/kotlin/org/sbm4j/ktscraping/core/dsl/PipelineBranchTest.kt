@@ -7,7 +7,6 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
 import org.sbm4j.ktscraping.core.utils.isOKStartItemAck
@@ -15,6 +14,7 @@ import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.item.*
+import org.sbm4j.meercat.nodes.logger
 
 class PipelineClassTest(name: String): AbstractPipeline(name){
 }
@@ -31,7 +31,7 @@ class PipelineBranchTest: CrawlerTest() {
 
     suspend fun sendStartItem(){
         val startEvent = StartEvent(sender)
-        val startAck = channelManager.pipelineChannel.sendSync<EventBack>(startEvent)
+        val startAck = crawlerChannelManager.pipelineChannel.sendSync<EventBack>(startEvent)
         logger.info{ "received ack for the start event item " }
 
         assertThat(startAck, isOKStartItemAck())
@@ -40,7 +40,7 @@ class PipelineBranchTest: CrawlerTest() {
 
     suspend fun sendEndItem(){
         val endItem = EndEvent(sender)
-        val endAck = channelManager.pipelineChannel.sendSync<EventBack>(endItem)
+        val endAck = crawlerChannelManager.pipelineChannel.sendSync<EventBack>(endItem)
         logger.info{ "received ack for the end event item " }
 
         assertThat(endAck, isOKEndItemAck())
@@ -63,13 +63,13 @@ class PipelineBranchTest: CrawlerTest() {
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
-        val ack = channelManager.pipelineChannel.sendSync<ItemAck>(item1)
+        val ack = crawlerChannelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
         assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
-        channelManager.closeChannels()
+        crawlerChannelManager.closeChannels()
 
     }
 
@@ -91,13 +91,13 @@ class PipelineBranchTest: CrawlerTest() {
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
-        val ack = channelManager.pipelineChannel.sendSync<ItemAck>(item1)
+        val ack = crawlerChannelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
         assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
-        channelManager.closeChannels()
+        crawlerChannelManager.closeChannels()
     }
 
 
@@ -110,8 +110,8 @@ class PipelineBranchTest: CrawlerTest() {
                 { item: Item ->
                     val it = item as ObjectDataItem<*>
                     val data = (it.data) as DataItemTest
-                    if (data.value == "value1") receivers[0]
-                    else receivers[1]
+                    if (data.value == "value1") channelOuts[0]
+                    else channelOuts[1]
                 })
             {
                 exporter<ExporterClassTest>("exporter1")
@@ -127,12 +127,12 @@ class PipelineBranchTest: CrawlerTest() {
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
-        val ack = channelManager.pipelineChannel.sendSync<ItemAck>(item1)
+        val ack = crawlerChannelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
         assertThat(ack.channelableId, equalTo(item1.channelableId))
 
         sendEndItem()
         c.stop()
-        channelManager.closeChannels()
+        crawlerChannelManager.closeChannels()
     }
 }

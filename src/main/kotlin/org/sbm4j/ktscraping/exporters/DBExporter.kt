@@ -1,13 +1,13 @@
 package org.sbm4j.ktscraping.exporters
 
 import org.sbm4j.ktscraping.core.components.AbstractExporter
-import org.sbm4j.meercat.components.EventJobResult
+import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.db.DBConnexion
 import org.sbm4j.ktscraping.db.DBControllable
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.reflect.KProperty
 
 data class ItemUpdate(
@@ -22,6 +22,10 @@ data class ItemUpdate(
     override fun clone(): Item {
         return this.copy()
     }
+
+    override fun getKeyBarrier(): String {
+        return "$label-${entityType.simpleName}"
+    }
 }
 
 data class ItemDelete(
@@ -34,6 +38,10 @@ data class ItemDelete(
 ): DataItem<Any>() {
     override fun clone(): Item {
         return this.copy()
+    }
+
+    override fun getKeyBarrier(): String {
+        return "$label-${entityType.simpleName}"
     }
 }
 

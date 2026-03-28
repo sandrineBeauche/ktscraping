@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.serializer
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.data.item.*
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.reflect.cast
 
 
@@ -25,7 +25,9 @@ data class JsonItem(
         return JSONPipeline.json.encodeToString(data)
     }
 
-
+    override fun getKeyBarrier(): String {
+        return name
+    }
 }
 
 @OptIn(InternalSerializationApi::class)

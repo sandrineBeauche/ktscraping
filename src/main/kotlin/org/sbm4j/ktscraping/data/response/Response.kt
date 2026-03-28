@@ -1,8 +1,8 @@
 package org.sbm4j.ktscraping.data.response
 
-import org.sbm4j.meercat.channels.Back
-import org.sbm4j.meercat.channels.Status
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.data.Back
+import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import java.util.UUID
 

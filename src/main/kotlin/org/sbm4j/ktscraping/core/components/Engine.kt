@@ -5,17 +5,17 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.sync.Semaphore
 import org.sbm4j.ktscraping.core.CrawlerResult
 import org.sbm4j.ktscraping.core.ProgressMonitor
-import org.sbm4j.ktscraping.core.channels.ChannelManager
+import org.sbm4j.ktscraping.core.channels.CrawlerChannelManager
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.channels.sendSyncAll
-import org.sbm4j.meercat.components.EventBackForwarder
-import org.sbm4j.meercat.components.EventConsumer
+import org.sbm4j.ktscraping.core.processors.EventBackForwarder
+import org.sbm4j.ktscraping.core.processors.EventConsumer
 import org.sbm4j.ktscraping.core.processors.ItemAckForwarder
 import org.sbm4j.ktscraping.core.processors.ItemForwarder
 import org.sbm4j.ktscraping.core.processors.RequestForwarder
 import org.sbm4j.ktscraping.core.processors.ResponseForwarder
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.EventPropagation
@@ -29,13 +29,13 @@ import org.sbm4j.ktscraping.data.response.Response
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.stats.StatsCrawlerResult
-import org.sbm4j.meercat.components.AbstractControllable
-import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.nodes.AbstractProcessingNode
+import org.sbm4j.meercat.nodes.logger
 
 
 abstract class AbstractEngine(
-    val channelManager: ChannelManager,
-) : AbstractControllable(){
+    val crawlerChannelManager: CrawlerChannelManager,
+) : AbstractComponent(){
 
     override val name: String = "Engine"
 
@@ -54,12 +54,12 @@ abstract class AbstractEngine(
 
     open suspend fun processItemAck(itemAck: ItemAck){}
 
-    val innerRequestForwarder: AbstractControllable = object :
+    val innerRequestForwarder: AbstractProcessingNode = object :
         RequestForwarder,
         ResponseForwarder,
         EventConsumer,
         EventBackForwarder,
-        AbstractControllable()
+        AbstractComponent()
     {
         override var inChannel: SuperChannel
             get() = this@AbstractEngine.spiderChannel
@@ -104,12 +104,12 @@ abstract class AbstractEngine(
     }
 
 
-    val innerItemForwarder: AbstractControllable = object:
+    val innerItemForwarder: AbstractComponent = object:
         ItemForwarder,
         ItemAckForwarder,
         EventConsumer,
         EventBackForwarder,
-        AbstractControllable()
+        AbstractComponent()
     {
         override var inChannel: SuperChannel
             get() = this@AbstractEngine.spiderChannel
@@ -152,9 +152,9 @@ abstract class AbstractEngine(
         }
     }
 
-    val innerEventPropagator: AbstractControllable = object:
+    val innerEventPropagator: AbstractComponent = object:
         EventConsumer,
-        AbstractControllable()
+        AbstractComponent()
     {
         override var inChannel: SuperChannel
             get() = this@AbstractEngine.spiderChannel
@@ -200,9 +200,9 @@ abstract class AbstractEngine(
 
     override suspend fun run() {
         logger.info { "${name}: starting engine" }
-        spiderChannel = channelManager.spiderChannel
-        downloaderChannel = channelManager.downloaderChannel
-        pipelineChannel = channelManager.pipelineChannel
+        spiderChannel = crawlerChannelManager.spiderChannel
+        downloaderChannel = crawlerChannelManager.downloaderChannel
+        pipelineChannel = crawlerChannelManager.pipelineChannel
 
         innerRequestForwarder.run()
         innerItemForwarder.run()
@@ -228,9 +228,9 @@ abstract class AbstractEngine(
 
 
 class Engine(
-    channelManager: ChannelManager,
+    crawlerChannelManager: CrawlerChannelManager,
     val progressMonitor: ProgressMonitor
-) : AbstractEngine(channelManager){
+) : AbstractEngine(crawlerChannelManager){
 
     val stats: StatsCrawlerResult = StatsCrawlerResult()
 

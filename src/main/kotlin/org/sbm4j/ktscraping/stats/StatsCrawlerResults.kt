@@ -39,7 +39,7 @@ data class StatsCrawlerResult(
             builder.append("\nerrors:\n")
             errors.forEach {
                 val infos = it.errorInfo
-                builder.append("${infos.level}: error in ${infos.controllable.name} for the data ${it.data}\n")
+                builder.append("${infos.level}: error in ${infos.node.name} for the data ${it.data}\n")
                 builder.append(infos.ex.printStackTrace())
                 builder.append("\n")
             }

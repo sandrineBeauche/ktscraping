@@ -7,10 +7,10 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.meercat.components.logger
-import org.sbm4j.meercat.channels.Send
+import org.sbm4j.meercat.data.Send
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
+import org.sbm4j.meercat.nodes.logger
 import kotlin.test.BeforeTest
 
 abstract class AbstractSpiderTester: ScrapingTest(){
@@ -70,12 +70,12 @@ abstract class AbstractSpiderTester: ScrapingTest(){
                                 }
                             }
                         }
-                        spider.job.join()
+                        spider.waitCompleted()
                         spider.stop()
                         logger.debug { "Spider is stopped" }
                     }
                     launch(CoroutineName("component-run")) {
-                        spider.start(this).join()
+                        spider.start(this)?.join()
                         logger.debug { "finished to start spider" }
 
 

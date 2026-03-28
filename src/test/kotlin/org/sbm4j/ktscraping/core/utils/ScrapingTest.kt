@@ -3,15 +3,15 @@ package org.sbm4j.ktscraping.core.utils
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.components.logger
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.meercat.components.SendSource
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.nodes.logger
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 abstract class ScrapingTest {
 

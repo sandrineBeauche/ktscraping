@@ -7,7 +7,7 @@ import org.sbm4j.ktscraping.core.Crawler
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.ktscraping.core.components.Component
 import org.sbm4j.ktscraping.core.dispatchers.DownloaderDispatcher
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 
@@ -17,7 +17,7 @@ fun Crawler.downloaderBranch(initBranch: DownloaderBranch.() -> Unit){
         this.channelManager.downloaderChannel,
         this.di)
     branch.initBranch()
-    this.controllables.addAll(branch.senders)
+    this.topologyManager.nodes.addAll(branch.senders)
 }
 
 
@@ -35,7 +35,7 @@ fun Crawler.downloaderDispatcher(
     dispatcher.channelIn = this.channelManager.downloaderChannel
 
     dispatcher.initDispatcher()
-    this.controllables.add(dispatcher)
+    this.topologyManager.nodes.add(dispatcher)
 }
 
 
@@ -44,7 +44,7 @@ class DownloaderBranch(
     override val di: DI
 ): DIAware{
 
-    val senders: MutableList<Controllable> = mutableListOf()
+    val senders: MutableList<Component> = mutableListOf()
 
     inline fun <reified T: AbstractMiddleware>middleware(
                                   name: String? = null,
@@ -98,7 +98,7 @@ inline fun <reified T: AbstractDownloader> DownloaderDispatcher.downloader(
     val down = buildControllable<T>(name)
 
     val crawler: Crawler by di.instance(arg = this.di)
-    crawler.controllables.add(down)
+    crawler.topologyManager.nodes.add(down)
 
     val channel = SuperChannel()
     down.inChannel = channel
@@ -116,5 +116,5 @@ fun DownloaderDispatcher.downloaderBranch(initBranch: DownloaderBranch.() -> Uni
     branch.initBranch()
 
     val crawler : Crawler by this.di.instance(arg = this.di)
-    crawler.controllables.addAll(branch.senders)
+    crawler.topologyManager.nodes.addAll(branch.senders)
 }

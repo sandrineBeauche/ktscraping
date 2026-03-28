@@ -1,22 +1,8 @@
 package org.sbm4j.ktscraping.data.internal
 
-import org.sbm4j.meercat.components.Controllable
-import org.sbm4j.meercat.channels.Channelable
-import org.sbm4j.meercat.components.SendSource
-
-data class ErrorInfo(
-    val ex: Exception,
-    val controllable: Controllable,
-    val level: ErrorLevel,
-    val message: String = ""
-)
-
-enum class ErrorLevel{
-    MINOR,
-    MAJOR,
-    FATAL
-}
-
+import org.sbm4j.meercat.data.Channelable
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 
 data class ErrorInternal(
@@ -29,5 +15,9 @@ data class ErrorInternal(
 
     override fun clone(): ErrorInternal {
         return this.copy()
+    }
+
+    override fun getKeyBarrier(): String {
+        return this.errorInfo.ex.javaClass.simpleName
     }
 }

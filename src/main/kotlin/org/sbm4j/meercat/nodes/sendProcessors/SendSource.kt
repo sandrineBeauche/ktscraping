@@ -1,59 +1,51 @@
-package org.sbm4j.meercat.components
+package org.sbm4j.meercat.nodes.sendProcessors
 
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.processors.CallbackError
-import org.sbm4j.ktscraping.core.processors.SendException
-import org.sbm4j.meercat.channels.Back
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.channels.Status
 import org.sbm4j.meercat.channels.SuperChannel
-import kotlin.reflect.KClass
+import org.sbm4j.meercat.data.Back
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.SendException
+import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.nodes.Node
+import org.sbm4j.meercat.nodes.logger
 
-interface SendConsumer: Controllable {
+/**
+ * Represents a source node in the Meercat topology, responsible for emitting [Send] messages
+ * and receiving the corresponding [Back] responses.
+ *
+ * A [SendSource] dispatches messages through its [outChannel] and provides two messaging
+ * strategies:
+ * - [sendSync]: suspends the current coroutine until the [Back] response is received,
+ *   throwing a [SendException] if the response status is not [Status.OK].
+ * - [send]: dispatches the message in a new coroutine and handles the response asynchronously
+ *   through callbacks.
+ */
+interface SendSource: Node {
 
-    var inChannel: SuperChannel
-
-    suspend fun <T: Send> performSends(
-        sendClazz: KClass<T>,
-        flow: Flow<T>,
-        func: suspend (T) -> Any?
-    ){
-        scope.launch(CoroutineName("${name}-perform${sendClazz.simpleName}")) {
-            logger.debug { "${name}: Waits for ${sendClazz.simpleName} to process" }
-            flow.collect{ send ->
-                this.launch() {
-                    try {
-                        logger.trace { "${name}: received ${send.loggingLabel} ${send.channelableId}: $send" }
-                        val result: Any? = func(send)
-
-                        if ((result is Boolean && result) || result != null) {
-                            sendPostProcess(send, result)
-                        }
-                    }
-                    catch(ex: Exception){
-                        logger.error{ "${this@SendConsumer.name}: error when processing ${sendClazz.simpleName} ${send.channelableId} - ${ex.message}" }
-                        val infos = generateErrorInfos(ex)
-                        val back = send.buildErrorBack(infos)
-                        inChannel.send(back)
-                    }
-                }
-                logger.trace { "${name}: ready to receive another ${sendClazz.simpleName}" }
-            }
-            logger.debug{"${name}: Finished to receive ${sendClazz.simpleName}"}
-        }
-    }
-
-    suspend fun sendPostProcess(send: Send, result: Any)
-}
-
-
-interface SendSource: Controllable {
-
+    /**
+     * The [SuperChannel] through which this source emits [Send] messages
+     * and receives [Back] responses.
+     */
     var outChannel: SuperChannel
 
+    /**
+     * Sends a [Send] message through [outChannel] and suspends until the matching [Back]
+     * response is received, then dispatches it to the appropriate callback.
+     *
+     * If the response status is not [Status.OK] and a [callbackError] is provided,
+     * the error callback is invoked with a [SendException]. Otherwise, the main [callback]
+     * is called regardless of the status.
+     * Any exception thrown inside [callback] is caught and forwarded to [callbackError]
+     * if provided.
+     *
+     * @param S the type of [Send] message
+     * @param send the [Send] message to dispatch
+     * @param callback the callback invoked with the [Back] response on success
+     * @param callbackError an optional callback invoked with a [SendException] on error
+     */
     private suspend fun <S: Send> peformSendSync(
         send: S,
         callback: (Back<S>) -> Unit,
@@ -106,6 +98,17 @@ interface SendSource: Controllable {
         }
     }*/
 
+    /**
+     * Sends a [Send] message through [outChannel] and suspends until the matching [Back]
+     * response is received.
+     *
+     * @param S the type of [Send] message
+     * @param send the [Send] message to dispatch
+     * @param subScope the coroutine scope in which the send operation is performed,
+     * defaults to the node's own [scope]
+     * @return the [Back] response matching the sent message
+     * @throws SendException if the response status is not [Status.OK]
+     */
     suspend fun <S: Send> sendSync(
         send: S,
         subScope: CoroutineScope = scope
@@ -123,9 +126,19 @@ interface SendSource: Controllable {
     }
 
     /**
-     * Sends a request in a new coroutine and executes the callback when receiving the response
-     * @param request the request to be sent
-     * @param callback the callback to be executed
+     * Dispatches a [Send] message in a new coroutine and handles the [Back] response
+     * asynchronously through callbacks, without suspending the caller.
+     *
+     * If the response status is not [Status.OK] and a [callbackError] is provided,
+     * the error callback is invoked with a [SendException]. Otherwise, [callback] is called
+     * regardless of the status.
+     *
+     * @param S the type of [Send] message
+     * @param request the [Send] message to dispatch
+     * @param callback the callback invoked with the [Back] response on success
+     * @param callbackError an optional callback invoked with a [SendException] on error
+     * @param subScope the coroutine scope in which the new coroutine is launched,
+     * defaults to the node's own [scope]
      */
     suspend fun <S: Send> send(
         request: S,
@@ -137,19 +150,4 @@ interface SendSource: Controllable {
             this@SendSource.peformSendSync(request, callback, callbackError)
         }
     }
-}
-
-interface SendForwarder : Controllable, SendSource, SendConsumer{
-
-    override suspend fun sendPostProcess(send: Send, result: Any) {
-        if(result is Back<*>){
-            logger.trace { "${name}: returns a ${result.loggingLabel} for the ${send.loggingLabel} ${send.name}" }
-            inChannel.send(result)
-        }
-        else {
-            logger.trace { "${name}: forward ${send.loggingLabel} ${send.name}" }
-            outChannel.send(send)
-        }
-    }
-
 }

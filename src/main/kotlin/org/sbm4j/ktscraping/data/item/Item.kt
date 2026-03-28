@@ -1,8 +1,9 @@
 package org.sbm4j.ktscraping.data.item
 
-import org.sbm4j.meercat.channels.Send
-import org.sbm4j.meercat.channels.Status
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.Status
+
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 

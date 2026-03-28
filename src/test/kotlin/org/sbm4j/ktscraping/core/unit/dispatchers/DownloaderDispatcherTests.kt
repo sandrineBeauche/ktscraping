@@ -4,13 +4,12 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.kodein.di.DI
 import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.dispatchers.DownloaderDispatcher
-import org.sbm4j.ktscraping.core.dispatchers.SendPropagator
 import org.sbm4j.ktscraping.core.utils.AbstractSendDispatcherTester
 import org.sbm4j.ktscraping.core.utils.generateRequestResponse
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.nodes.logger
 import kotlin.test.Test
 
 class TestingDownloaderDispatcher(override val di: DI): DownloaderDispatcher(di = di){
@@ -20,7 +19,7 @@ class TestingDownloaderDispatcher(override val di: DI): DownloaderDispatcher(di 
 
     override fun selectChannel(request: AbstractRequest): SuperChannel {
         val key = request.parameters[indexKey] as Int
-        return this.receivers[key]
+        return this.channelOuts[key]
     }
 
 }
@@ -29,7 +28,7 @@ class TestingDownloaderDispatcher(override val di: DI): DownloaderDispatcher(di 
 
 class DownloaderRequestDispatcherTests : AbstractSendDispatcherTester() {
 
-    override fun buildDispatcher(): SendPropagator {
+    override fun buildDispatcher(): DownloaderDispatcher {
         return TestingDownloaderDispatcher(di = di)
     }
 

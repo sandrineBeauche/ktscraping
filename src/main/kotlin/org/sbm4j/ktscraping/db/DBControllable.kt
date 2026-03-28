@@ -1,10 +1,10 @@
 package org.sbm4j.ktscraping.db
 
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.meercat.nodes.logger
 
 interface DBControllable {
 

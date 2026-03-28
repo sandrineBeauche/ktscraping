@@ -1,15 +1,20 @@
 package org.sbm4j.ktscraping.core
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.joinAll
 import org.kodein.di.*
-import org.sbm4j.ktscraping.core.channels.ChannelManager
-import org.sbm4j.meercat.components.AbstractControllable
+import org.sbm4j.ktscraping.core.channels.CrawlerChannelManager
+import org.sbm4j.ktscraping.core.components.AbstractComponent
 import org.sbm4j.ktscraping.core.components.AbstractSpider
-import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.ktscraping.core.components.Component
 import org.sbm4j.ktscraping.core.components.Engine
-import org.sbm4j.meercat.components.logger
+import org.sbm4j.meercat.TopologyManager
+import org.sbm4j.meercat.channels.ChannelManager
+import org.sbm4j.meercat.nodes.Controllable
+import org.sbm4j.meercat.nodes.logger
 
 
 interface CrawlerResult{
@@ -20,7 +25,7 @@ fun defaultDIModule(name: String): DI.Module {
     val mod = DI.Module(name = "defaultDIModule"){
             bind<Crawler> { multiton { di: DI -> DefaultCrawler(instance(arg = di), name, instance(), di) }}
             bindSingleton<Engine> { Engine(instance(), instance()) }
-            bind<ChannelManager> { multiton {di: DI -> ChannelManager() }}
+            bind<CrawlerChannelManager> { multiton { di: DI -> CrawlerChannelManager() }}
             bindSingleton<ProgressMonitor> { ProgressMonitor() }
         }
     return mod
@@ -29,57 +34,46 @@ fun defaultDIModule(name: String): DI.Module {
 
 interface Crawler : Controllable, DIAware{
 
-    val controllables: MutableList<Controllable>
-
-    val channelManager : ChannelManager
-
-
-    override suspend fun run() {
-        channelManager.initChannels(this.scope)
-        for(cont in controllables){
-            cont.start(this.scope)
-        }
-    }
-
-    override suspend fun stop() {
-        for(cont in controllables){
-            cont.stop()
-        }
-        super.stop()
-        channelManager.closeChannels()
-        try {
-            this.scope.cancel()
-        }
-        catch(ex: CancellationException){
-            logger.info { "Crawler stopped"  }
-        }
-    }
-
     suspend fun waitFinished(): CrawlerResult
+
+    val topologyManager: TopologyManager
+
+    val channelManager: CrawlerChannelManager
 }
 
 
 abstract class AbstractCrawler(
-    override val name: String = "AbstractCrawler",
-    override val channelManager: ChannelManager,
-): Crawler, AbstractControllable() {
-    override val controllables: MutableList<Controllable> = mutableListOf()
+    val name: String = "AbstractCrawler",
+    override val channelManager: CrawlerChannelManager,
+): Crawler {
+
+    override lateinit var scope: CoroutineScope
+
+    override val topologyManager: TopologyManager = TopologyManager(channelManager)
+
+    override suspend fun start(parentScope: CoroutineScope, rootName: String): Job? {
+        return super.start(parentScope, "${name}-root")
+    }
 }
 
 
 class DefaultCrawler(
-    channelManager: ChannelManager,
+    crawlerChannelManager: CrawlerChannelManager,
     name: String = "MainCrawler",
     val engine: Engine,
     override val di: DI
-    ) : AbstractCrawler(name, channelManager) {
+    ) : AbstractCrawler(name, crawlerChannelManager) {
 
 
-    override suspend fun run() {
+
+    override suspend fun start(parentScope: CoroutineScope, rootName: String): Job? {
         logger.info{"${name}: Starting crawler"}
+        super.start(parentScope, rootName)
         engine.start(this.scope)
-        super.run()
+        this.topologyManager.start(parentScope, rootName)
+        return null
     }
+
 
     override suspend fun stop() {
         logger.info{ "${name}: Stopping crawler" }
@@ -90,9 +84,7 @@ class DefaultCrawler(
     override suspend fun waitFinished(): CrawlerResult {
         engine.waitStarted()
         logger.debug{ "${name}: Crawler started. Waiting for spiders finishing"}
-        controllables.filterIsInstance<AbstractSpider>()
-            .map { it.job!! }
-            .joinAll()
+        this.topologyManager.waitCompleted()
         logger.debug { "${name}: crawler finished all spiders, stop all" }
         val result = engine.computeResult()
         return result

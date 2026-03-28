@@ -3,15 +3,18 @@ package org.sbm4j.ktscraping.middleware
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.meercat.nodes.logger
 
 class SchedulerMiddleware(name: String = "Scheduler middleware"): DownloaderMiddleware(name) {
+
+    val mutex: Mutex = Mutex()
 
     var nbConnexions: Int = 10
         set(value) {

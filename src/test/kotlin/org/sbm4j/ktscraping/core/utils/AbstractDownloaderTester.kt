@@ -29,7 +29,7 @@ abstract class AbstractDownloaderTester: ScrapingTest() {
             initChannels(this)
 
             launch{
-                downloader.start(this).join()
+                downloader.start(this)?.join()
                 doStartEvent()
 
                 func()

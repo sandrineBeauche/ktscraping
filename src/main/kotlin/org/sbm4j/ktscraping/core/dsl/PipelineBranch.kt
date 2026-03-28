@@ -7,7 +7,7 @@ import org.sbm4j.ktscraping.core.Crawler
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.ktscraping.core.components.Component
 import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcher
 import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcherAll
 import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcherOne
@@ -24,7 +24,7 @@ fun Crawler.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
         this.channelManager.pipelineChannel,
         this.di)
     branch.initBranch()
-    this.controllables.addAll(branch.senders)
+    this.topologyManager.nodes.addAll(branch.senders)
 }
 
 fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: PipelineDispatcherAll.() -> Unit){
@@ -32,7 +32,7 @@ fun Crawler.pipelineDispatcherAll(name: String = "dispatcher", initDispatcher: P
     dispatcher.channelIn = this.channelManager.pipelineChannel
 
     dispatcher.initDispatcher()
-    this.controllables.add(dispatcher)
+    this.topologyManager.nodes.add(dispatcher)
 }
 
 
@@ -50,7 +50,7 @@ fun Crawler.pipelineDispatcherOne(
     dispatcher.channelIn = this.channelManager.pipelineChannel
 
     dispatcher.init()
-    this.controllables.add(dispatcher)
+    this.topologyManager.nodes.add(dispatcher)
 }
 
 
@@ -59,7 +59,7 @@ class PipelineBranch(
     override val di: DI
 ): DIAware{
 
-    val senders : MutableList<Controllable> = mutableListOf()
+    val senders : MutableList<Component> = mutableListOf()
 
     inline fun <reified T: AbstractPipeline>pipeline(
                                       name: String? = null,
@@ -123,7 +123,7 @@ inline fun <reified T: AbstractExporter> PipelineDispatcher.exporter(
     val exp = buildControllable<T>(name)
 
     val crawler: Crawler by di.instance(arg = this.di)
-    crawler.controllables.add(exp)
+    crawler.topologyManager.nodes.add(exp)
 
     val newChannel = SuperChannel()
 
@@ -143,5 +143,5 @@ fun PipelineDispatcher.pipelineBranch(initBranch: PipelineBranch.() -> Unit){
     branch.initBranch()
 
     val crawler : Crawler by this.di.instance(arg = this.di)
-    crawler.controllables.addAll(branch.senders)
+    crawler.topologyManager.nodes.addAll(branch.senders)
 }

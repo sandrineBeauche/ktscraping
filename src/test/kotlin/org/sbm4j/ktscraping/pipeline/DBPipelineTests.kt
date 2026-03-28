@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
@@ -17,6 +16,7 @@ import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import java.io.File
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import org.sbm4j.meercat.nodes.logger
 
 class DBPipelineTests: AbstractPipelineTester() {
 

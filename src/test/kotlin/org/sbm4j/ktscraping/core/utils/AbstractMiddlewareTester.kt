@@ -5,13 +5,13 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
+import org.sbm4j.meercat.data.ErrorInfo
 import kotlin.test.BeforeTest
 
 abstract class AbstractMiddlewareTester: DualScrapingTest() {
@@ -76,7 +76,7 @@ abstract class AbstractMiddlewareTester: DualScrapingTest() {
             initChannels(this)
 
             launch{
-                middleware.start(this).join()
+                middleware.start(this)?.join()
                 doStartEvent()
                 func()
                 doEndEvent()

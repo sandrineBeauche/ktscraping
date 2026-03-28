@@ -42,7 +42,7 @@ abstract class AbstractPipelineTester: DualScrapingTest() {
             initChannels(this)
 
             launch {
-                pipeline.start(this).join()
+                pipeline.start(this)?.join()
 
                 doStartEvent()
                 func()

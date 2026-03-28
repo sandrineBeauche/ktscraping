@@ -6,7 +6,7 @@ import it.skrape.core.htmlDocument
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.meercat.channels.Status
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request

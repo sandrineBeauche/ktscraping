@@ -4,16 +4,16 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
-import org.sbm4j.meercat.components.logger
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
 import org.sbm4j.ktscraping.data.events.EndEvent
-import org.sbm4j.ktscraping.data.internal.ErrorInfo
 import org.sbm4j.ktscraping.data.internal.ErrorInternal
-import org.sbm4j.ktscraping.data.internal.ErrorLevel
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.exporters.Contact
 import org.sbm4j.ktscraping.exporters.ItemDelete
+import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.nodes.logger
 
 class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
     override fun buildMiddleware(middlewareName: String): SpiderMiddleware {

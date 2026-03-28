@@ -3,16 +3,19 @@ package org.sbm4j.ktscraping.core.dispatchers
 import org.kodein.di.DI
 import org.kodein.di.DIAware
 import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.components.AbstractControllable
-import org.sbm4j.meercat.components.logger
+import org.sbm4j.ktscraping.core.components.AbstractComponent
+
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.meercat.nodes.dispatchers.Broadcast
+import org.sbm4j.meercat.nodes.dispatchers.Router
+import org.sbm4j.meercat.nodes.logger
 
 abstract class PipelineDispatcher(
     override val name: String,
     override val di: DI
-) : EventDispatcher, AbstractControllable(), DIAware {
+) : EventDispatcher, AbstractComponent(), DIAware {
 
-    override val receivers: MutableList<SuperChannel> = mutableListOf()
+    override val channelOuts: MutableList<SuperChannel> = mutableListOf()
 
     override lateinit var channelIn: SuperChannel
 
@@ -25,28 +28,29 @@ abstract class PipelineDispatcher(
     override suspend fun stop() {
         logger.info{ "Stopping the pipeline dispatcher ${name}"}
         super<EventDispatcher>.stop()
-        super<AbstractControllable>.stop()
+        super<AbstractComponent>.stop()
     }
 
 }
 
-class PipelineDispatcherAll(name: String, di: DI): PipelineDispatcher(name, di), SendPropagatorAll{
+class PipelineDispatcherAll(name: String, di: DI): PipelineDispatcher(name, di), Broadcast {
 
     override suspend fun performItems(){
         val flow = channelIn.getSendFlow(Item::class)
         val coroutineName = "${name}-performItems"
-        propagateAll(coroutineName, flow)
+        broadcast(coroutineName, flow)
     }
 
 }
 
-abstract class PipelineDispatcherOne(name: String, di: DI): PipelineDispatcher(name, di), SendPropagatorOne{
+abstract class PipelineDispatcherOne(name: String, di: DI): PipelineDispatcher(name, di), Router {
 
     abstract fun selectChannel(item: Item): SuperChannel
 
     override suspend fun performItems() {
         val flow = channelIn.getSendFlow(Item::class)
         val coroutineName = "${name}-performItems"
-        propagateOne(coroutineName, flow, ::selectChannel)
+        route(coroutineName, flow, ::selectChannel)
+        forwardBacks { it is Item }
     }
 }

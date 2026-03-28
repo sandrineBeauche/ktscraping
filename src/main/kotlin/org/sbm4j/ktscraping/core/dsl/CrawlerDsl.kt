@@ -2,7 +2,7 @@ package org.sbm4j.ktscraping.core.dsl
 
 import org.kodein.di.DI
 import org.kodein.di.instance
-import org.sbm4j.meercat.components.Controllable
+import org.sbm4j.ktscraping.core.components.Component
 import org.sbm4j.ktscraping.core.Crawler
 import kotlin.reflect.full.primaryConstructor
 
@@ -20,7 +20,7 @@ fun crawler(name: String = "Crawler",
 
 
 
-inline fun <reified T: Controllable> buildControllable(
+inline fun <reified T: Component> buildControllable(
     name: String? = null,
 ): T {
     val construct = T::class.primaryConstructor!!
