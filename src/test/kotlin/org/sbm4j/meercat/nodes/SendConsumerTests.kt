@@ -17,13 +17,8 @@ import kotlin.test.Test
 
 class TestingSendConcumer(
     override var inChannel: SuperChannel,
-    override val name: String = "TestingConsumer2"
-): SendConsumer, AbstractProcessingNode() {
-    override suspend fun sendPostProcess(send: Send, result: Any) {
-        logger.debug{"${name}: processed ${send.loggingLabel} ${send.name}, sending back"}
-        inChannel.send(result as Channelable)
-    }
-
+    name: String = "TestingConsumer2"
+): AbstractSinkNode(name) {
     suspend fun consumeSend1(send: TestingSend): Any?{
         logger.debug{"${name}: inside consumeSend1 -> received a ${send.loggingLabel}: ${send.name}"}
         return send.buildBack()
@@ -43,6 +38,8 @@ class TestingSendConcumer(
         val clazz2 = TestingSend2::class
         val flow2 = inChannel.getSendFlow(clazz2)
         this.performSends(clazz2, flow2, ::consumeSend2)
+
+        super.run()
     }
 }
 
@@ -81,7 +78,7 @@ class SendConsumerTests : ConsumerNodeTester<TestingSendConcumer>() {
         }
     }
 
-    //@Test
+    @Test
     fun `consumer processes mixed Send types concurrently`() = testScope.runTest {
         val backs1 = (0..2).map { index ->
             async {

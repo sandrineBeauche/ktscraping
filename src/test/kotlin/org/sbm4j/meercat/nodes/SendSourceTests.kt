@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.*
+import org.sbm4j.meercat.nodes.sendProcessors.AbstractInitiator
 import org.sbm4j.meercat.nodes.sendProcessors.Initiator
 import org.sbm4j.meercat.nodes.sendProcessors.NodeStatus
 import kotlin.test.Test
@@ -15,9 +16,7 @@ import kotlin.test.Test
 class TestingSendSource(
     override var outChannel: SuperChannel,
     override val name: String = "TestingSendSource"
-): Initiator, AbstractProcessingNode(){
-
-    override lateinit var initiatorStatus: MutableStateFlow<NodeStatus>
+): AbstractInitiator(){
 
     fun okBack(back: Back<*>){
         logger.debug {"${name}: received a back with OK status: ${back}"}
@@ -46,16 +45,16 @@ class SendSourceTests: InitiatorTester<TestingSendSource>() {
         return spyk(TestingSendSource(outChannel))
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+
     @Test
-    fun testSendSource() = TestScope().runTest {
+    fun `send data and receive ok back`() = TestScope().runTest {
         startAndWait()
         verify { node.okBack(any()) }
     }
 
 
     @Test
-    fun testSendSourceErrors() = TestScope().runTest {
+    fun `send data and receive error back`() = TestScope().runTest {
         stub.respondWithError(message = "error")
         startAndWait()
         verify { node.errorBack(any()) }

@@ -11,25 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger
 val logger = KotlinLogging.logger {}
 
 
-class ReadyLatch {
-    private val expected = AtomicInteger(0)
-    private val received = AtomicInteger(0)
-    private val deferred = CompletableDeferred<Unit>()
 
-    fun increment() {
-        expected.incrementAndGet()
-    }
-
-    fun signal() {
-        if (received.incrementAndGet() == expected.get())
-            deferred.complete(Unit)
-    }
-
-    suspend fun await() {
-        if (expected.get() > 0)
-            deferred.await()
-    }
-}
 
 /**
  * Represents a node in the Meercat topology.
@@ -52,7 +34,6 @@ interface Node: Controllable {
      */
     val name: String
 
-    val collectReadyLatch: ReadyLatch
 
     /**
      * Starts this node by launching a setup coroutine within [parentScope],
@@ -81,7 +62,6 @@ interface Node: Controllable {
         return parentScope.launch(CoroutineName("${name}-starting")) {
             super.start(parentScope, rootName)
             run()
-            collectReadyLatch.await()
             logger.trace{"${name}: finished run"}
         }
     }
@@ -126,8 +106,6 @@ abstract class AbstractNode(): Node{
      * The coroutine scope owned by this node, initialized by [start].
      */
     override lateinit var scope: CoroutineScope
-
-    override val collectReadyLatch: ReadyLatch = ReadyLatch()
 }
 
 /**
@@ -144,10 +122,11 @@ abstract class AbstractNode(): Node{
 abstract class AbstractProcessingNode(): AbstractNode(){
 
     /**
-     * A thread-safe map accumulating [ErrorInfo] entries of [ErrorLevel.MINOR] severity,
-     * keyed by the [Channelable.channelableId] of the [Send] message being processed.
-     * Minor errors are collected here during processing and can be attached to the
-     * corresponding [Back] response before it is sent back to the [SendSource].
+     * Stores pending minor errors indexed by their associated [Send] identifier,
+     * accumulated during processing and attached to the final [Back] response.
+     *
+     * @see BackForwarder.pendingMinorError
      */
-    val pendingMinorError: ConcurrentHashMap<UUID, MutableList<ErrorInfo>> = ConcurrentHashMap()
+    val pendingMinorError: ConcurrentHashMap<UUID, MutableList<ErrorInfo>> =
+        ConcurrentHashMap()
 }

@@ -10,6 +10,7 @@ import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.data.Status
 import org.sbm4j.meercat.data.TestingSend
 import org.sbm4j.meercat.nodes.AbstractProcessingNode
+import org.sbm4j.meercat.nodes.dispatchers.AbstractBarrier
 import org.sbm4j.meercat.nodes.dispatchers.Barrier
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.testingBack
@@ -18,13 +19,13 @@ import java.util.concurrent.ConcurrentHashMap
 
 class TestingBarrierNode(
     override val channelsIns: MutableList<SuperChannel>,
-    override val channelOut: SuperChannel,
+    override var channelOut: SuperChannel,
     override val name: String = "testingBarrier"
-) : Barrier, AbstractProcessingNode() {
-    override val pendingBarrier: ConcurrentHashMap<String, MutableList<Pair<Send, Int>>> = ConcurrentHashMap()
+) : AbstractBarrier() {
 
     override suspend fun run() {
         performSendBacks()
+        super.run()
     }
 }
 

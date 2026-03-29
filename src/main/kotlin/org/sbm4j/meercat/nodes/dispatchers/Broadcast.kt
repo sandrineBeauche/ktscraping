@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import org.sbm4j.meercat.channels.sendSyncAll
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
 
 /**
@@ -46,21 +47,36 @@ interface Broadcast: Propagator {
      * @param message an optional human-readable label used for logging purposes
      */
     suspend fun broadcast(coroutineName: String, flow: Flow<Send>, message: String = "") {
-        collectReadyLatch.increment()
         scope.launch(CoroutineName(coroutineName)) {
-            flow
-                .onStart {
-                    logger.trace{"${name}: flow started for $coroutineName"}
-                    collectReadyLatch.signal()
+            flow.collect { send ->
+                launch(CoroutineName("${coroutineName}-${send.name}")) {
+                    logger.trace { "${name}: Received ${send.name} and dispatch it to all" }
+                    val result = sendSyncAll(channelOuts, send)
+                    logger.trace { "${name}: Received back for ${send.name} and forward it" }
+                    channelIn.send(result)
                 }
-                .collect { send ->
-                    launch(CoroutineName("${coroutineName}-${send.name}")) {
-                        logger.trace { "${name}: Received ${send.name} and dispatch it to all" }
-                        val result = sendSyncAll(channelOuts, send)
-                        logger.trace { "${name}: Received back for ${send.name} and forward it" }
-                        channelIn.send(result)
-                    }
-                }
+            }
         }
+    }
+
+
+}
+
+/**
+ * Abstract base implementation of [Broadcast] that waits for [channelIn] to be ready
+ * before proceeding, delegating all other behavior to [AbstractNode].
+ *
+ * Subclasses only need to implement the broadcasting logic specific to their use case,
+ * as the [channelIn] readiness is handled here.
+ */
+abstract class AbstractBroadcast: AbstractNode(), Broadcast {
+
+    /**
+     * Waits until [channelIn] is ready to receive messages before the node is considered started.
+     *
+     * @see Broadcast.run
+     */
+    override suspend fun run() {
+        channelIn.awaitReady()
     }
 }

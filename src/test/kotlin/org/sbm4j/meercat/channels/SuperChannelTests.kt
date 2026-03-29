@@ -97,13 +97,15 @@ data class BackD(
 class SuperChannelTests {
 
     @Test
-    fun testSendBackExchange() = TestScope().runTest{
+    fun `send on SuperChannel and receive`() = TestScope().runTest{
         val contA = mockk<SendSource>()
 
         coroutineScope {
             val channel = SuperChannel.build(this)
+            val flow = channel.getSendFlow()
 
             launch(CoroutineName("launchA")){
+                channel.awaitReady()
                 repeat(5){
                     val chanA = SendA("messsage #$it from A", sender = contA)
                     val chanB = channel.sendSync<BackB>(chanA)
@@ -113,7 +115,7 @@ class SuperChannelTests {
                 channel.close()
             }
             launch(CoroutineName("launchB")){
-                channel.getSendFlow().take(5).collect { chanA ->
+                flow.take(5).collect { chanA ->
                     logger.debug{"received ${chanA.name} from ${chanA.sender.name} and answers with a back"}
                     val chanB = chanA.buildBack()
                     channel.send(chanB)
@@ -124,14 +126,17 @@ class SuperChannelTests {
     }
 
     @Test
-    fun testMultipleSendType() = TestScope().runTest {
+    fun `send and receive multiple type of messages`() = TestScope().runTest {
         val sender = mockk<SendSource>()
 
         coroutineScope {
             val channel = SuperChannel.build(this)
+            val flowA = channel.getSendFlow(SendA::class)
+            val flowC= channel.getSendFlow(SendC::class)
 
             coroutineScope {
                 launch {
+                    channel.awaitReady()
                     repeat(3){
                         val s1 = SendA("coucou$it", sender)
                         channel.send(s1)
@@ -141,12 +146,12 @@ class SuperChannelTests {
                     }
                 }
                 launch {
-                    channel.getSendFlow(SendA::class).take(3).collect {
+                    flowA.take(3).collect {
                         logger.debug { "received the sendA: ${it}" }
                     }
                 }
                 launch {
-                    channel.getSendFlow(SendC::class).take(3).collect {
+                    flowC.take(3).collect {
                         logger.debug { "received the sendC: ${it}" }
                     }
                 }
@@ -155,35 +160,4 @@ class SuperChannelTests {
             channel.close()
         }
     }
-
-    //@Test
-    fun testLock() = TestScope().runTest {
-        val sender = mockk<SendSource>()
-        val s1 = SendA("coucou", sender)
-        val s2 = SendA("salut", sender)
-
-        coroutineScope {
-            val channel = SuperChannel.build(this)
-            coroutineScope {
-                launch{
-                    channel.send(s1)
-                    logger.debug{ "sent ${s1}"}
-
-                    channel.send(s2)
-                    logger.debug{ "sent ${s2}"}
-                }
-                launch{
-                    delay(2000L)
-                    logger.debug{" Wait for 2 sensds"}
-                    channel.getSendFlow().take(2).collect {
-                        logger.debug{ "received ${it}"}
-                    }
-
-                }
-            }
-            channel.close()
-        }
-
-    }
-
 }

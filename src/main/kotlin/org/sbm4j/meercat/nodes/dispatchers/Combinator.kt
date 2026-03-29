@@ -1,12 +1,14 @@
 package org.sbm4j.meercat.nodes.dispatchers
 
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.Node
 import org.sbm4j.meercat.nodes.logger
 
@@ -50,7 +52,7 @@ interface Combinator: Node {
      * The output [SuperChannel] through which this node forwards [Send] messages
      * and receives [Back] responses from downstream nodes.
      */
-    val channelOut: SuperChannel
+    var channelOut: SuperChannel
 
     /**
      * Registers a collector on each channel in [channelsIns] that processes incoming [Send]
@@ -73,9 +75,6 @@ interface Combinator: Node {
         predicate: (suspend (Send) -> Boolean)? = null,
         perform: suspend (Send, SuperChannel, Int) -> Unit
     ) {
-        repeat(channelsIns.size) {
-            collectReadyLatch.increment()
-        }
         for ((index, channel) in channelsIns.withIndex()) {
             val coroutineName = "${name}-performSends-${index}"
             scope.launch(CoroutineName(coroutineName)) {
@@ -83,14 +82,9 @@ interface Combinator: Node {
                 val filtered = if (predicate != null) {
                     flow.filter(predicate)
                 } else flow
-                filtered
-                    .onStart {
-                        logger.trace { "${name}: flow started on coroutine $coroutineName" }
-                        collectReadyLatch.signal()
-                    }
-                    .collect { send ->
-                        perform(send, channel, index)
-                    }
+                filtered.collect { send ->
+                    perform(send, channel, index)
+                }
             }
         }
     }
@@ -110,7 +104,6 @@ interface Combinator: Node {
         predicate: (suspend (Send) -> Boolean)? = null,
         perform: suspend (Back<*>) -> Unit
     ) {
-        collectReadyLatch.increment()
         val coroutineName = "${name}-performBacks"
         scope.launch(CoroutineName(coroutineName)) {
             val flow = channelOut.getBackFlow()
@@ -118,13 +111,8 @@ interface Combinator: Node {
                 flow.filter { back -> predicate(back.send) }
             }
             else flow
-            filtered
-                .onStart {
-                    logger.trace { "${name}: flow started on coroutine $coroutineName" }
-                    collectReadyLatch.signal()
-                }
-                .collect { back ->
-                    perform(back)
+            filtered.collect { back ->
+                perform(back)
             }
         }
     }
@@ -141,4 +129,35 @@ interface Combinator: Node {
      * of [Back] responses, ensuring both collectors handle the same subset of messages
      */
     suspend fun performSendBacks(predicate: (suspend (Send) -> Boolean)? = null)
+}
+
+/**
+ * Abstract base implementation of [Combinator] that provides concrete [channelsIns] and
+ * [channelOut] properties, and waits for all input channels to be ready before proceeding,
+ * delegating all other behavior to [AbstractNode].
+ *
+ * Subclasses only need to implement the combining logic specific to their use case,
+ * as the [channelsIns] readiness is handled here.
+ */
+abstract class AbstractCombinator : AbstractNode(), Combinator {
+
+    /**
+     * @see Combinator.channelsIns
+     */
+    override val channelsIns : MutableList<SuperChannel> = mutableListOf()
+
+    /**
+     * @see Combinator.channelOut
+     */
+    override lateinit var channelOut: SuperChannel
+
+    /**
+     * Waits until all [channelsIns] are ready to receive messages before the node
+     * is considered started.
+     *
+     * @see Combinator.run
+     */
+    override suspend fun run() {
+        channelsIns.forEach { it.awaitReady() }
+    }
 }

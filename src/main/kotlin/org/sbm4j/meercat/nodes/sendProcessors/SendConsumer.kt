@@ -59,33 +59,27 @@ interface SendConsumer: Node {
         flow: Flow<T>,
         func: suspend (T) -> Any?
     ) {
-        collectReadyLatch.increment()
         val coroutineName = "${name}-perform${sendClazz.simpleName}"
         scope.launch(CoroutineName(coroutineName)) {
             logger.debug { "${name}: Waits for ${sendClazz.simpleName} to process" }
-            flow
-                .onStart {
-                    logger.trace { "${name}: Starting collect on coroutine $coroutineName" }
-                    collectReadyLatch.signal()
-                }
-                .collect { send ->
-                    this.launch() {
-                        try {
-                            logger.trace { "${name}: received ${send.loggingLabel} ${send.channelableId}: $send" }
-                            val result: Any? = func(send)
+            flow.collect { send ->
+                this.launch() {
+                    try {
+                        logger.trace { "${name}: received ${send.loggingLabel} ${send.channelableId}: $send" }
+                        val result: Any? = func(send)
 
-                            if ((result is Boolean && result) || result != null) {
-                                sendPostProcess(send, result)
-                            }
-                        } catch (ex: Exception) {
-                            logger.error { "${this@SendConsumer.name}: error when processing ${sendClazz.simpleName} ${send.channelableId} - ${ex.message}" }
-                            val infos = generateErrorInfos(ex)
-                            val back = send.buildErrorBack(infos)
-                            inChannel.send(back)
+                        if ((result is Boolean && result) || result != null) {
+                            sendPostProcess(send, result)
                         }
+                    } catch (ex: Exception) {
+                        logger.error { "${this@SendConsumer.name}: error when processing ${sendClazz.simpleName} ${send.channelableId} - ${ex.message}" }
+                        val infos = generateErrorInfos(ex)
+                        val back = send.buildErrorBack(infos)
+                        inChannel.send(back)
                     }
-                    logger.trace { "${name}: ready to receive another ${sendClazz.simpleName}" }
                 }
+                logger.trace { "${name}: ready to receive another ${sendClazz.simpleName}" }
+            }
             logger.debug { "${name}: Finished to receive ${sendClazz.simpleName}" }
         }
     }
@@ -100,4 +94,5 @@ interface SendConsumer: Node {
      * @param result the non-null result returned by the processing function
      */
     suspend fun sendPostProcess(send: Send, result: Any)
+
 }

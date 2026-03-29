@@ -7,8 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.TestingBack
 import org.sbm4j.meercat.data.TestingSend
-import org.sbm4j.meercat.nodes.AbstractProcessingNode
-import org.sbm4j.meercat.nodes.dispatchers.Router
+import org.sbm4j.meercat.nodes.dispatchers.AbstractRouter
 import org.sbm4j.meercat.testingBack
 import kotlin.test.Test
 
@@ -16,7 +15,7 @@ class TestingRouterNode(
     override var channelIn: SuperChannel,
     override val channelOuts: MutableList<SuperChannel>,
     override val name: String = "testingRouter"
-) : Router, AbstractProcessingNode() {
+) : AbstractRouter() {
 
     override suspend fun run() {
         performSendBacks(null) { send ->
@@ -25,6 +24,7 @@ class TestingRouterNode(
                 else -> channelOuts[1]
             }
         }
+        super.run()
     }
 }
 

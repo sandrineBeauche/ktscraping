@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
 
 /**
@@ -50,19 +51,13 @@ interface Router: Propagator {
         flow: Flow<T>,
         selectChannelFunc: (T) -> SuperChannel
     ) {
-        collectReadyLatch.increment()
         scope.launch(CoroutineName(coroutineName)) {
-            flow
-                .onStart {
-                    logger.trace {"${name}: flow started for $coroutineName"}
-                    collectReadyLatch.signal()
+            flow.collect { send ->
+                launch(CoroutineName("${coroutineName}-${send.name}")) {
+                    val channel = selectChannelFunc(send)
+                    channel.send(send)
                 }
-                .collect { send ->
-                    launch(CoroutineName("${coroutineName}-${send.name}")) {
-                        val channel = selectChannelFunc(send)
-                        channel.send(send)
-                    }
-                }
+            }
         }
     }
 
@@ -84,9 +79,6 @@ interface Router: Propagator {
         predicate: (suspend (Send) -> Boolean)? = null,
         perform: suspend (Back<*>) -> Unit
     ) {
-        repeat(channelOuts.size) {
-            collectReadyLatch.increment()
-        }
         channelOuts.forEach { channel ->
             val coroutineName = "${name}-${channel.name}"
             scope.launch(CoroutineName(coroutineName)) {
@@ -94,14 +86,9 @@ interface Router: Propagator {
                 val filtered = if (predicate != null) {
                     flow.filter { predicate(it.send) }
                 } else flow
-                filtered
-                    .onStart {
-                        logger.trace {"${name}: flow started for $coroutineName"}
-                        collectReadyLatch.signal()
-                    }
-                    .collect {
-                        perform(it)
-                    }
+                filtered.collect {
+                    perform(it)
+                }
             }
         }
     }
@@ -143,5 +130,25 @@ interface Router: Propagator {
         }
         route("${name}-route", flow, selectFuncChannel)
         forwardBacks(predicate) { forwardBackRouter(it) }
+    }
+}
+
+/**
+ * Abstract base implementation of [Router] that waits for [channelIn] and all [channelOuts]
+ * to be ready before proceeding, delegating all other behavior to [AbstractPropagator].
+ *
+ * Subclasses only need to implement the routing logic specific to their use case.
+ */
+abstract class AbstractRouter : AbstractPropagator(), Router {
+
+    /**
+     * Waits until [channelIn] and all [channelOuts] are ready to receive messages
+     * before the node is considered started.
+     *
+     * @see Router.run
+     */
+    override suspend fun run() {
+        channelIn.awaitReady()
+        channelOuts.forEach { it.awaitReady() }
     }
 }

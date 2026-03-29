@@ -10,19 +10,20 @@ import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.TestingBack
 import org.sbm4j.meercat.data.TestingSend
 import org.sbm4j.meercat.nodes.AbstractProcessingNode
+import org.sbm4j.meercat.nodes.dispatchers.AbstractBackDispatcher
 import org.sbm4j.meercat.nodes.dispatchers.BackDispatcher
 import org.sbm4j.meercat.testingBack
 import kotlin.test.Test
 
 class TestingBackDispatcherNode(
     override val channelsIns: MutableList<SuperChannel>,
-    override val channelOut: SuperChannel,
+    override var channelOut: SuperChannel,
     override val name: String = "testingBackDispatcher"
-) : BackDispatcher, AbstractProcessingNode() {
-    override val pendingAnswerable: MutableMap<UUID, SuperChannel> = mutableMapOf()
+) : AbstractBackDispatcher() {
 
     override suspend fun run() {
         performSendBacks()
+        super.run()
     }
 }
 

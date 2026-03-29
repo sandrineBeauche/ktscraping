@@ -15,6 +15,7 @@ import org.sbm4j.meercat.data.Status
 import org.sbm4j.meercat.data.TestingBack
 import org.sbm4j.meercat.data.TestingSend
 import org.sbm4j.meercat.nodes.AbstractProcessingNode
+import org.sbm4j.meercat.nodes.dispatchers.AbstractBroadcast
 import org.sbm4j.meercat.nodes.dispatchers.Broadcast
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.testingBack
@@ -25,11 +26,12 @@ class TestingBroadcastNode(
     override var channelIn: SuperChannel,
     override val channelOuts: MutableList<SuperChannel>,
     override val name: String = "testingBroadcast"
-) : Broadcast, AbstractProcessingNode() {
+) : AbstractBroadcast() {
 
     override suspend fun run() {
         val flow = channelIn.getSendFlow()
         broadcast("$name-broadcast", flow)
+        super.run()
     }
 }
 
@@ -58,12 +60,10 @@ class BroadcastTests : PropagatorTester<TestingBroadcastNode>() {
     fun `broadcast sends independent clones to each branch`() = testScope.runTest {
         val sentSends = mutableListOf<Send>()
         coEvery { stubs[0].processSend(any()) } coAnswers {
-            delay(10L)
             sentSends.add(firstArg())
             firstArg<Send>().buildBack()
         }
         coEvery { stubs[1].processSend(any()) } coAnswers {
-            delay(10L)
             sentSends.add(firstArg())
             firstArg<Send>().buildBack()
         }

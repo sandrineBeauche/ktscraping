@@ -21,7 +21,7 @@ class Stub(
 
     val responses: MutableMap<Send, Any> = mutableMapOf()
 
-    var processingDelay: Long = 10L
+    var processingDelay: Long = 0L
 
     override suspend fun sendPostProcess(send: Send, result: Any) {
         if(result is Back<*>){

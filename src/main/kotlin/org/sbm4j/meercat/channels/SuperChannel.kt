@@ -3,16 +3,18 @@ package org.sbm4j.meercat.channels
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import org.sbm4j.meercat.childScope
 import org.sbm4j.ktscraping.core.components.Component
+import org.sbm4j.meercat.channels.SuperChannel.Companion.build
+import org.sbm4j.meercat.childScope
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Channelable
 import org.sbm4j.meercat.data.Send
-import org.sbm4j.meercat.exemples.main
 import org.sbm4j.meercat.nodes.Node
 import org.sbm4j.meercat.nodes.logger
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.reflect.KClass
+
+
 
 /**
  * A bidirectional, typed communication channel between nodes in the Meercat topology.
@@ -54,6 +56,8 @@ class SuperChannel(val name: String = "superChannel") {
         }
     }
 
+    val collectReadyLatch = ReadyLatch()
+
     /**
      * The underlying Kotlin [Channel] with unlimited capacity over which [Channelable] messages transit.
      */
@@ -82,7 +86,8 @@ class SuperChannel(val name: String = "superChannel") {
         scope = childScope(parentScope, "${name}-root")
 
         val flow = channel.consumeAsFlow()
-        mainFlow = flow.shareIn(scope, SharingStarted.WhileSubscribed(), replay = 0)
+        mainFlow = flow
+            .shareIn(scope, SharingStarted.WhileSubscribed(), replay = 0)
 
         logger.debug{"${name} initialized with success"}
     }
@@ -109,13 +114,14 @@ class SuperChannel(val name: String = "superChannel") {
         try {
             return withContext(sendScope.coroutineContext) {
                 val flow =
-                    mainFlow.filterIsInstance<T>()
-                        .filter { it.send.channelableId == data.channelableId }
-                        .onStart {
+                    mainFlow
+                        .onSubscription {
                             logger.trace { "${name} -> send message : ${data}" }
                             channel.send(data)
                             logger.trace { "${name} -> sent message : ${data} and wait for a response" }
                         }
+                        .filterIsInstance<T>()
+                        .filter { it.send.channelableId == data.channelableId }
                 val result = flow.first()
                 logger.trace { "${name} -> received response: ${result}" }
                 result
@@ -132,7 +138,10 @@ class SuperChannel(val name: String = "superChannel") {
      * @return a [Flow] emitting all [Send] messages
      */
     fun  getSendFlow(): Flow<Send> {
-        return mainFlow.filterIsInstance(Send::class)
+        collectReadyLatch.increment()
+        return mainFlow
+            .onSubscription { collectReadyLatch.signal() }
+            .filterIsInstance(Send::class)
     }
 
     /**
@@ -143,7 +152,10 @@ class SuperChannel(val name: String = "superChannel") {
      * @return a [Flow] emitting only [Send] messages of type [T1]
      */
     fun <T1: Send> getSendFlow(clazz: KClass<T1>): Flow<T1> {
-        return mainFlow.filterIsInstance(clazz)
+        collectReadyLatch.increment()
+        return mainFlow
+            .onSubscription { collectReadyLatch.signal() }
+            .filterIsInstance(clazz)
     }
 
     /**
@@ -156,7 +168,10 @@ class SuperChannel(val name: String = "superChannel") {
      * @return a [Flow] emitting [Back] messages, optionally filtered by sender
      */
     fun getBackFlow(component: Component? = null): Flow<Back<*>> {
-        val f = mainFlow.filterIsInstance(Back::class)
+        collectReadyLatch.increment()
+        val f = mainFlow
+            .onSubscription { collectReadyLatch.signal() }
+            .filterIsInstance(Back::class)
         return if(component == null){
             f
         } else{
@@ -176,7 +191,10 @@ class SuperChannel(val name: String = "superChannel") {
      * @return a [Flow] emitting [Back] messages of type [B1], optionally filtered by sender
      */
     fun <B1: Back<*>> getBackFlow(clazz: KClass<B1>, component: Node? = null): Flow<B1>{
-        val f = mainFlow.filterIsInstance(clazz)
+        collectReadyLatch.increment()
+        val f = mainFlow
+            .onSubscription { collectReadyLatch.signal() }
+            .filterIsInstance(clazz)
         return if(component == null){
             f
         } else{
@@ -221,6 +239,9 @@ class SuperChannel(val name: String = "superChannel") {
     suspend inline fun <reified B1: Back<*>> receiveBack(): B1{
         return mainFlow.filterIsInstance<B1>().first()
     }
+
+
+    suspend fun awaitReady() = collectReadyLatch.await()
 
     /**
      * Closes this channel and cancels its internal coroutine scope.

@@ -25,7 +25,7 @@ class TestingBackForwarder(
     override var inChannel: SuperChannel,
     override var outChannel: SuperChannel,
     override val name: String = "TestingBackForwarder"
-): SendForwarder, BackForwarder, AbstractComponent(){
+): SendForwarder, BackForwarder, AbstractProcessingNode(){
 
     suspend fun performBack(back: TestingBack){
         if(back.send.value != "coucou"){
@@ -36,6 +36,7 @@ class TestingBackForwarder(
     override suspend fun run() {
         val flow = outChannel.getBackFlow(TestingBack::class)
         this.receiveBacks(TestingBack::class, flow,::performBack)
+        super<BackForwarder>.run()
     }
 
 }
@@ -57,7 +58,7 @@ class BackForwarderTests: MiddleNodeTester<TestingBackForwarder>() {
     }
 
     @Test
-    fun testBackForward2() = TestScope().runTest {
+    fun `add minor error to back forwarding`() = TestScope().runTest {
             val send = TestingSend("coucou", sender)
 
             val error = ErrorInfo(Exception(), sender, ErrorLevel.MINOR)

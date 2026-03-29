@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.childScope
-import org.sbm4j.meercat.nodes.ReadyLatch
+import org.sbm4j.meercat.nodes.AbstractProcessingNode
 import org.sbm4j.meercat.nodes.logger
 
 /**
@@ -90,13 +90,21 @@ interface Initiator: SendSource{
     }
 }
 
-abstract class AbstractInitiator: Initiator{
+/**
+ * Abstract base implementation of [Initiator] that provides concrete [initiatorStatus] and
+ * [outChannel] properties, delegating all other behavior to [AbstractProcessingNode].
+ *
+ * Subclasses only need to implement the initiation logic specific to their use case.
+ */
+abstract class AbstractInitiator: Initiator, AbstractProcessingNode(){
 
+    /**
+     * @see Initiator.initiatorStatus
+     */
     override lateinit var initiatorStatus: MutableStateFlow<NodeStatus>
 
+    /**
+     * @see Initiator.outChannel
+     */
     override lateinit var outChannel: SuperChannel
-
-    override lateinit var scope: CoroutineScope
-
-    override val collectReadyLatch: ReadyLatch = ReadyLatch()
 }

@@ -23,13 +23,11 @@ interface SendForwarder : Node, SendSource, SendConsumer {
     /**
      * Automatically dispatches the result of processing a [Send] message.
      *
-     * If [result] is a [Back], it is sent back through [inChannel] to the originating
-     * [SendSource], short-circuiting the forwarding chain.
-     * Otherwise, the original [send] message is forwarded to the next node through [outChannel].
+     * If [result] is a [Back], short-circuits the forwarding chain by sending it back
+     * through [inChannel] to the originating [SendSource].
+     * Otherwise, forwards the original [send] through [outChannel] to the next node.
      *
-     * @param send the original [Send] message that was processed
-     * @param result the result produced by the processing function — either a [Back] response
-     * or any other value indicating that the message should be forwarded
+     * @see SendConsumer.sendPostProcess
      */
     override suspend fun sendPostProcess(send: Send, result: Any) {
         if(result is Back<*>){

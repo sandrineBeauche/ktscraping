@@ -75,38 +75,32 @@ interface BackForwarder: Node {
         flow: Flow<B>,
         func: suspend (B) -> Unit
     ) {
-        collectReadyLatch.increment()
         val coroutineName = "${name}-perform${backClazz.simpleName}"
         scope.launch(CoroutineName(coroutineName)) {
             logger.debug { "${name}: Waits for ${backClazz.simpleName} to process" }
-            flow
-                .onStart {
-                    logger.debug { "${name}: started collect on coroutine $coroutineName" }
-                    collectReadyLatch.signal()
-                }
-                .collect { back ->
-                    logger.trace { "${name}: received a ${backClazz.simpleName} for the ${back.send::class.simpleName} ${back.send.name}" }
-                    scope.launch(CoroutineName("${name}-perform${backClazz.simpleName}-${back.send.name}")) {
-                        val errors = pendingMinorError.remove(back.send.channelableId)
-                        if (errors != null && errors.isNotEmpty()) {
-                            back.status = Status.ERROR
-                            back.errorInfos.addAll(errors)
-                        }
-
-                        logger.trace { "${name}: Process ${back.loggingLabel} for the ${back.send.loggingLabel} ${back.send.name}" }
-                        try {
-                            func(back)
-                        } catch (ex: Exception) {
-                            logger.error(ex) { "${name}: Error while processing ${back.loggingLabel} - ${ex.message}" }
-                            val infos = generateErrorInfos(ex)
-                            back.status = Status.ERROR
-                            back.errorInfos.add(infos)
-                        } finally {
-                            this@BackForwarder.inChannel.send(back)
-                        }
+            flow.collect { back ->
+                logger.trace { "${name}: received a ${backClazz.simpleName} for the ${back.send::class.simpleName} ${back.send.name}" }
+                scope.launch(CoroutineName("${name}-perform${backClazz.simpleName}-${back.send.name}")) {
+                    val errors = pendingMinorError.remove(back.send.channelableId)
+                    if (errors != null && errors.isNotEmpty()) {
+                        back.status = Status.ERROR
+                        back.errorInfos.addAll(errors)
                     }
-                    logger.trace { "$name: ready to receive another ${backClazz.simpleName}" }
+
+                    logger.trace { "${name}: Process ${back.loggingLabel} for the ${back.send.loggingLabel} ${back.send.name}" }
+                    try {
+                        func(back)
+                    } catch (ex: Exception) {
+                        logger.error(ex) { "${name}: Error while processing ${back.loggingLabel} - ${ex.message}" }
+                        val infos = generateErrorInfos(ex)
+                        back.status = Status.ERROR
+                        back.errorInfos.add(infos)
+                    } finally {
+                        this@BackForwarder.inChannel.send(back)
+                    }
                 }
+                logger.trace { "$name: ready to receive another ${backClazz.simpleName}" }
+            }
             logger.debug { "${name}: Finished receiving ${backClazz.simpleName}" }
         }
     }

@@ -95,3 +95,18 @@ interface Barrier: Combinator {
         performBacks(predicate, ::performBackBarrier)
     }
 }
+
+/**
+ * Abstract base implementation of [Barrier] that provides a concrete [pendingBarrier]
+ * store, delegating all other behavior to [AbstractCombinator].
+ *
+ * Subclasses only need to implement the key extraction and back-building logic
+ * specific to their use case.
+ */
+abstract class AbstractBarrier: AbstractCombinator(), Barrier {
+
+    /**
+     * @see Barrier.pendingBarrier
+     */
+    override val pendingBarrier: ConcurrentHashMap<String, MutableList<Pair<Send, Int>>> = ConcurrentHashMap()
+}

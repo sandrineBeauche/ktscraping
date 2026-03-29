@@ -3,6 +3,7 @@ package org.sbm4j.meercat.nodes.dispatchers
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
 import java.util.*
 
@@ -82,4 +83,17 @@ interface BackDispatcher: Combinator {
         performSends(predicate, ::performSendDispatcher)
         performBacks(predicate, ::performBackDispathcher)
     }
+}
+
+/**
+ * Abstract base implementation of [BackDispatcher] that provides a concrete [pendingAnswerable]
+ * store, delegating all other behavior to [AbstractCombinator].
+ *
+ * Subclasses only need to implement the routing and combining logic specific to their use case.
+ */
+abstract class AbstractBackDispatcher: AbstractCombinator(), BackDispatcher {
+    /**
+     * @see BackDispatcher.pendingAnswerable
+     */
+    override val pendingAnswerable: MutableMap<UUID, SuperChannel> = mutableMapOf()
 }

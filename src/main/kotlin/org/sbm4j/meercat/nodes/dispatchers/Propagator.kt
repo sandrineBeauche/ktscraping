@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.Node
 
 /**
@@ -41,5 +42,23 @@ interface Propagator: Node {
      */
     val channelOuts: MutableList<SuperChannel>
 
+}
 
+/**
+ * Abstract base implementation of [Propagator] that provides concrete [channelIn] and
+ * [channelOuts] properties, delegating all other behavior to [AbstractNode].
+ *
+ * Subclasses only need to implement the propagation logic specific to their use case.
+ */
+abstract class AbstractPropagator : AbstractNode(), Propagator {
+
+    /**
+     * @see Propagator.channelIn
+     */
+    override lateinit var channelIn: SuperChannel
+
+    /**
+     * @see Propagator.channelOuts
+     */
+    override val channelOuts: MutableList<SuperChannel> = mutableListOf()
 }
