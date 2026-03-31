@@ -11,6 +11,7 @@ import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
+import kotlin.reflect.KClass
 
 /**
  * A [Propagator] that routes each incoming [Send] message to a single output channel
@@ -47,12 +48,13 @@ interface Router: Propagator {
      * the [SuperChannel] from [channelOuts] to which it should be routed
      */
     suspend fun <T : Send> route(
-        coroutineName: String,
-        flow: Flow<T>,
+        clazz: KClass<T>,
+        predicate: ((T) -> Boolean)? = null,
         selectChannelFunc: (T) -> SuperChannel
     ) {
+        val coroutineName = "${name}-route"
         scope.launch(CoroutineName(coroutineName)) {
-            flow.collect { send ->
+            channelIn.getSendFlow(clazz).collect { send ->
                 launch(CoroutineName("${coroutineName}-${send.name}")) {
                     val channel = selectChannelFunc(send)
                     channel.send(send)
@@ -75,18 +77,16 @@ interface Router: Propagator {
      * to ensure consistency between the forward and return paths
      * @param perform the function to apply to each received [Back] response
      */
-    suspend fun forwardBacks(
-        predicate: (suspend (Send) -> Boolean)? = null,
-        perform: suspend (Back<*>) -> Unit
+    suspend fun <T: Send, B:Back<T>> forwardBacks(
+        clazz: KClass<B>,
+        predicate: ((T) -> Boolean)? = null,
+        perform: suspend (B) -> Unit
     ) {
         channelOuts.forEach { channel ->
             val coroutineName = "${name}-${channel.name}"
             scope.launch(CoroutineName(coroutineName)) {
-                val flow = channel.getBackFlow()
-                val filtered = if (predicate != null) {
-                    flow.filter { predicate(it.send) }
-                } else flow
-                filtered.collect {
+                val flow = channel.getBackFlow(clazz)
+                flow.collect {
                     perform(it)
                 }
             }
@@ -118,18 +118,14 @@ interface Router: Propagator {
      * @param selectFuncChannel a function that receives each [Send] message and returns
      * the single [SuperChannel] from [channelOuts] to which it should be routed
      */
-    suspend fun performSendBacks(
-        predicate: (suspend (Send) -> Boolean)?,
-        selectFuncChannel: (Send) -> SuperChannel
+    suspend fun <T: Send, B: Back<T>> performSendBacks(
+        clazz: KClass<T>,
+        backClazz: KClass<B>,
+        predicate: ((T) -> Boolean)? = null,
+        selectFuncChannel: (T) -> SuperChannel
     ) {
-        val flow = if(predicate!= null){
-            channelIn.getSendFlow().filter(predicate)
-        }
-        else{
-            channelIn.getSendFlow()
-        }
-        route("${name}-route", flow, selectFuncChannel)
-        forwardBacks(predicate) { forwardBackRouter(it) }
+        route(clazz, predicate, selectFuncChannel)
+        forwardBacks(backClazz, predicate) { forwardBackRouter(it) }
     }
 }
 

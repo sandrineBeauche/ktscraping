@@ -11,6 +11,7 @@ import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.Node
 import org.sbm4j.meercat.nodes.logger
+import kotlin.reflect.KClass
 
 /**
  * Represents a node in the Meercat topology that can receive [Send] messages from multiple
@@ -71,17 +72,17 @@ interface Combinator: Node {
      * @param perform the processing function applied to each received [Send] message,
      * receiving the message, its originating [SuperChannel], and its index in [channelsIns]
      */
-    suspend fun performSends(
-        predicate: (suspend (Send) -> Boolean)? = null,
-        perform: suspend (Send, SuperChannel, Int) -> Unit
+    @Suppress("UNCHECKED_CAST")
+    suspend fun <T:Send> performSends(
+        clazz: KClass<T> = Send::class as KClass<T>,
+        predicate: ((T) -> Boolean)? = null,
+        perform: suspend (T, SuperChannel, Int) -> Unit
     ) {
         for ((index, channel) in channelsIns.withIndex()) {
             val coroutineName = "${name}-performSends-${index}"
             scope.launch(CoroutineName(coroutineName)) {
-                val flow = channel.getSendFlow()
-                val filtered = if (predicate != null) {
-                    flow.filter(predicate)
-                } else flow
+                val flow = channel.getSendFlow(clazz)
+                val filtered = if(predicate != null) flow.filter(predicate) else flow
                 filtered.collect { send ->
                     perform(send, channel, index)
                 }
@@ -100,18 +101,15 @@ interface Combinator: Node {
      * Only responses whose original [Send] matches the predicate are processed
      * @param perform the processing function applied to each received [Back] response
      */
-    suspend fun performBacks(
-        predicate: (suspend (Send) -> Boolean)? = null,
+    suspend fun <T: Back<*>> performBacks(
+        clazz: KClass<T>,
+        predicate: ((T) -> Boolean)? = null,
         perform: suspend (Back<*>) -> Unit
     ) {
         val coroutineName = "${name}-performBacks"
         scope.launch(CoroutineName(coroutineName)) {
-            val flow = channelOut.getBackFlow()
-            val filtered = if(predicate != null) {
-                flow.filter { back -> predicate(back.send) }
-            }
-            else flow
-            filtered.collect { back ->
+            val flow = channelOut.getBackFlow(clazz)
+            flow.collect { back ->
                 perform(back)
             }
         }
@@ -128,7 +126,11 @@ interface Combinator: Node {
      * @param predicate an optional filter applied to [Send] messages and to the original [Send]
      * of [Back] responses, ensuring both collectors handle the same subset of messages
      */
-    suspend fun performSendBacks(predicate: (suspend (Send) -> Boolean)? = null)
+    suspend fun <T: Send, B: Back<T>> performSendBacks(
+        clazz: KClass<T> = Send::class as KClass<T>,
+        backClazz: KClass<B> = Back::class as KClass<B>,
+        predicate: ((T) -> Boolean)? = null
+    )
 }
 
 /**

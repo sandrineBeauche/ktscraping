@@ -1,9 +1,12 @@
 package org.sbm4j.meercat.channels
 
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.sameInstance
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -102,7 +105,7 @@ class SuperChannelTests {
 
         coroutineScope {
             val channel = SuperChannel.build(this)
-            val flow = channel.getSendFlow()
+            val flow = channel.getSendFlow(SendA::class)
 
             launch(CoroutineName("launchA")){
                 channel.awaitReady()
@@ -159,5 +162,69 @@ class SuperChannelTests {
 
             channel.close()
         }
+    }
+
+
+    @Test
+    fun `send and receive asynchrone`() = TestScope().runTest {
+        val sender = mockk<SendSource>()
+
+        coroutineScope {
+            val channel = SuperChannel.build(this)
+            val flow = channel.getSendFlow()
+            val flowBack = channel.getBackFlow()
+            val s1 = SendA("coucou", sender)
+
+            launch{
+                channel.awaitReady()
+                logger.debug{ "send s1"}
+                channel.send(s1)
+            }
+            launch {
+                logger.debug{"wait s1"}
+                val s = flow.first()
+                logger.debug{"received s1: $s"}
+                val b = s.buildBack()
+                channel.send(b)
+                logger.debug{"sent b"}
+            }
+            launch {
+                logger.debug{"wait back"}
+                val back = flowBack.first()
+                logger.debug{"received back: $back"}
+                assertThat(back.send, sameInstance(s1))
+                channel.close()
+            }
+        }
+    }
+
+    @Test
+    fun `broadcast a message with sendSyncAll`() = TestScope().runTest {
+        val sender = mockk<SendSource>()
+        val s1 = SendA("coucou", sender)
+
+        coroutineScope {
+            val channels = (1..3).map{ SuperChannel.build(this@coroutineScope) }
+            val flows = channels.map {
+                Pair(it, it.getSendFlow(SendA::class))
+            }
+
+            launch{
+                channels.forEach{ it.awaitReady() }
+                val back = sendSyncAll(channels, s1)
+                logger.debug{"received back: $back"}
+                channels.forEach { it.close() }
+            }
+            flows.forEach {
+                launch{
+                    val message = it.second.first()
+                    logger.debug{"received $message on ${it.first.name}" }
+                    val response = message.buildBack()
+                    it.first.send(response)
+                    logger.debug{"sent $response on ${it.first.name}"}
+                }
+            }
+        }
+
     }
 }

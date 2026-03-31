@@ -22,8 +22,8 @@ abstract class DownloaderDispatcher(
     suspend fun performRequests(){
         val flow = channelIn.getSendFlow(AbstractRequest::class)
         val coroutineName = "${name}-performRequests"
-        route(coroutineName, flow, ::selectChannel)
-        forwardBacks { it is AbstractRequest }
+        //route(coroutineName, flow, ::selectChannel)
+        //forwardBacks { it is AbstractRequest }
     }
 
     override suspend fun run() {

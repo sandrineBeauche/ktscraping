@@ -50,7 +50,7 @@ abstract class PipelineDispatcherOne(name: String, di: DI): PipelineDispatcher(n
     override suspend fun performItems() {
         val flow = channelIn.getSendFlow(Item::class)
         val coroutineName = "${name}-performItems"
-        route(coroutineName, flow, ::selectChannel)
-        forwardBacks { it is Item }
+        //route(coroutineName, flow, ::selectChannel)
+        //forwardBacks { it is Item }
     }
 }

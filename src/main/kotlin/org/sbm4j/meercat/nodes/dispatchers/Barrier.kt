@@ -5,6 +5,7 @@ import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.logger
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 /**
  * A [Combinator] that synchronises [Send] messages arriving from multiple input branches
@@ -79,20 +80,18 @@ interface Barrier: Combinator {
         }
     }
 
-    /**
-     * Registers both the send and back collectors for the barrier behaviour,
-     * optionally filtered by [predicate].
-     *
-     * Incoming [Send] messages matching the predicate are accumulated and synchronised
-     * via [performSendBarrier], while [Back] responses matching the predicate are
-     * broadcast to all originating branches via [performBackBarrier].
-     *
-     * @param predicate an optional filter applied to [Send] messages and to the original [Send]
-     * of [Back] responses, ensuring both collectors handle the same subset of messages
-     */
-    override suspend fun performSendBacks(predicate: (suspend (Send) -> Boolean)?) {
-        performSends(predicate, ::performSendBarrier)
-        performBacks(predicate, ::performBackBarrier)
+
+    override suspend fun <T: Send, B: Back<T>>performSendBacks(
+        clazz: KClass<T>,
+        backClazz: KClass<B>,
+        predicate: ((T) -> Boolean)?
+    ) {
+        val pred: ((B) -> Boolean)? = if(predicate != null){
+            { predicate(it.send) }
+        }
+        else null
+        performSends(clazz, predicate, ::performSendBarrier)
+        performBacks(backClazz,pred, ::performBackBarrier)
     }
 }
 

@@ -1,25 +1,12 @@
 package org.sbm4j.meercat.exemples
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.data.ErrorInfo
-import org.sbm4j.meercat.data.Send
-import org.sbm4j.meercat.data.SimpleBack
-import org.sbm4j.meercat.data.SimpleSend
+import org.sbm4j.meercat.data.StringSend
+import org.sbm4j.meercat.data.StringBack
 import org.sbm4j.meercat.nodes.AbstractMiddleNode
 import org.sbm4j.meercat.nodes.AbstractSinkNode
-import org.sbm4j.meercat.nodes.BackForwarder
 import org.sbm4j.meercat.nodes.sendProcessors.AbstractInitiator
-import org.sbm4j.meercat.nodes.sendProcessors.Initiator
-import org.sbm4j.meercat.nodes.sendProcessors.NodeStatus
-import org.sbm4j.meercat.nodes.sendProcessors.SendConsumer
-import org.sbm4j.meercat.nodes.sendProcessors.SendForwarder
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 
-typealias StringSend = SimpleSend<String>
-typealias StringBack = SimpleBack<String>
 
 class Source(
     override val name: String

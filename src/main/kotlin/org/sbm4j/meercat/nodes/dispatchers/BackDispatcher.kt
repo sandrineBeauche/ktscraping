@@ -6,6 +6,7 @@ import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
 import java.util.*
+import kotlin.reflect.KClass
 
 /**
  * A [Combinator] that dispatches [Send] messages from multiple input branches to a single
@@ -39,7 +40,7 @@ interface BackDispatcher: Combinator {
      * @param sender the [SuperChannel] from which the message originated
      * @param index the index of [sender] in [channelsIns]
      */
-    suspend fun performSendDispatcher(send: Send, sender: SuperChannel, index: Int){
+    suspend fun <T: Send> performSendDispatcher(send: T, sender: SuperChannel, index: Int){
         logger.trace { "Received send ${send.name} from input #$index and forwards it" }
         pendingAnswerable[send.channelableId] = sender
         channelOut.send(send)
@@ -56,7 +57,7 @@ interface BackDispatcher: Combinator {
      *
      * @param back the [Back] response to dispatch
      */
-    suspend fun performBackDispathcher(back: Back<*>){
+    suspend fun <B: Back<*>> performBackDispathcher(back: B){
         logger.trace{ "${name}: Received back for the send ${back.send.name} and dispatch it"}
         val channel = pendingAnswerable.remove(back.send.channelableId)
         if (channel != null) {
@@ -67,6 +68,7 @@ interface BackDispatcher: Combinator {
             logger.trace{"${name}: no channel to ${back.send.name} with id ${back.send.channelableId}"}
         }
     }
+
 
     /**
      * Registers both the send and back collectors for the dispatcher behaviour,
@@ -79,10 +81,19 @@ interface BackDispatcher: Combinator {
      * @param predicate an optional filter applied to [Send] messages and to the original [Send]
      * of [Back] responses, ensuring both collectors handle the same subset of messages
      */
-    override suspend fun performSendBacks(predicate: (suspend (Send) -> Boolean)?) {
-        performSends(predicate, ::performSendDispatcher)
-        performBacks(predicate, ::performBackDispathcher)
+    override suspend fun <T: Send, B: Back<T>>performSendBacks(
+        clazz: KClass<T>,
+        backClazz: KClass<B>,
+        predicate: ((T) -> Boolean)?
+    ) {
+        val pred: ((B) -> Boolean)? = if(predicate != null){
+            { predicate(it.send) }
+        }
+        else null
+        performSends(clazz, predicate, ::performSendDispatcher)
+        performBacks(backClazz,pred, ::performBackDispathcher)
     }
+
 }
 
 /**

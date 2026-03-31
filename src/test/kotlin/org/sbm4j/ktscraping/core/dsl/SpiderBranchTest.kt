@@ -21,6 +21,7 @@ import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.logger
 
 class TestingSpiderClass(name:String): AbstractSimpleSpider(name){

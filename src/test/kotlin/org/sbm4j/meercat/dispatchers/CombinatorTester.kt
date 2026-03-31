@@ -33,15 +33,18 @@ abstract class CombinatorTester<T: Combinator> : NodeTester<T>() {
 
     @BeforeEach
     fun setup(): Unit = runBlocking {
-        channelOut = SuperChannel.build(rootScope)
-        repeat(nbChannelsIns) {
-            channelsIns.add(SuperChannel.build(rootScope))
+        channelOut = SuperChannel.build(rootScope, name = "channelOut")
+        repeat(nbChannelsIns) { index ->
+            channelsIns.add(SuperChannel.build(rootScope, name = "channelIn-${index}"))
         }
         node = buildNode()
         stub = spyk(Stub("stub", channelOut))
 
         node.start(rootScope)?.join()
         stub.start(rootScope)?.join()
+
+        //channelsIns.forEach { it.awaitReady() }
+        //channelOut.awaitReady()
     }
 
     @AfterEach

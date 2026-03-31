@@ -32,8 +32,7 @@ class Stub(
     suspend fun processSend(send: Send): Any {
         if(processingDelay > 0) delay(processingDelay)
         logger.debug{"${name}: received ${send.loggingLabel} ${send}"}
-        val resp = responses.get(send)
-        when(resp){
+        when(val resp = responses.get(send)){
             null -> {
                 logger.debug{"${name}: return default back for ${send.loggingLabel} ${send}"}
                 return send.buildBack()

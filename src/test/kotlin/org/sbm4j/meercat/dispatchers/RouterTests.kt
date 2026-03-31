@@ -18,9 +18,13 @@ class TestingRouterNode(
 ) : AbstractRouter() {
 
     override suspend fun run() {
-        performSendBacks(null) { send ->
+
+        performSendBacks(
+            TestingSend::class,
+            TestingBack::class)
+        { send ->
             when {
-                send is TestingSend && send.value.startsWith("branch1") -> channelOuts[0]
+                send.value.startsWith("branch1") -> channelOuts[0]
                 else -> channelOuts[1]
             }
         }

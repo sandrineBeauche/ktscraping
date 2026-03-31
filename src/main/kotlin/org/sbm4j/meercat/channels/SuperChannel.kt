@@ -108,6 +108,7 @@ class SuperChannel(val name: String = "superChannel") {
     suspend inline fun <reified T: Back<*>> sendSync(
         data: Send,
     ): T{
+        /*
         val job = Job(scope.coroutineContext[Job])
         val sendScope = CoroutineScope(scope.coroutineContext + job + CoroutineName("${name}-sendSync"))
 
@@ -120,6 +121,7 @@ class SuperChannel(val name: String = "superChannel") {
                             channel.send(data)
                             logger.trace { "${name} -> sent message : ${data} and wait for a response" }
                         }
+                        .onCompletion {  }
                         .filterIsInstance<T>()
                         .filter { it.send.channelableId == data.channelableId }
                 val result = flow.first()
@@ -130,19 +132,22 @@ class SuperChannel(val name: String = "superChannel") {
         finally{
             job.cancel()
         }
+         */
+        val flow = mainFlow
+            .onSubscription {
+                logger.trace { "${name} -> send message : ${data}" }
+                channel.send(data)
+                logger.trace { "${name} -> sent message : ${data} and wait for a response" }
+            }
+            .filterIsInstance<T>()
+            .filter { it.send.channelableId == data.channelableId }
+
+        val result = flow.first()
+        logger.trace { "${name} -> received response: ${result}" }
+        return result
+
     }
 
-    /**
-     * Returns a [Flow] of all [Send] messages transiting through this channel.
-     *
-     * @return a [Flow] emitting all [Send] messages
-     */
-    fun  getSendFlow(): Flow<Send> {
-        collectReadyLatch.increment()
-        return mainFlow
-            .onSubscription { collectReadyLatch.signal() }
-            .filterIsInstance(Send::class)
-    }
 
     /**
      * Returns a [Flow] of [Send] messages of a specific type transiting through this channel.
@@ -151,12 +156,15 @@ class SuperChannel(val name: String = "superChannel") {
      * @param clazz the [KClass] of the expected [Send] type
      * @return a [Flow] emitting only [Send] messages of type [T1]
      */
-    fun <T1: Send> getSendFlow(clazz: KClass<T1>): Flow<T1> {
+    @Suppress("UNCHECKED_CAST")
+    fun <T1: Send> getSendFlow(clazz: KClass<T1> = Send::class as KClass<T1>): Flow<T1> {
         collectReadyLatch.increment()
         return mainFlow
             .onSubscription { collectReadyLatch.signal() }
             .filterIsInstance(clazz)
     }
+
+    fun getSendFlow(): Flow<Send> = getSendFlow<Send>()
 
     /**
      * Returns a [Flow] of [Back] messages transiting through this channel.
@@ -167,17 +175,9 @@ class SuperChannel(val name: String = "superChannel") {
      * @param component an optional [Component] to exclude from the flow, defaults to `null`
      * @return a [Flow] emitting [Back] messages, optionally filtered by sender
      */
-    fun getBackFlow(component: Component? = null): Flow<Back<*>> {
-        collectReadyLatch.increment()
-        val f = mainFlow
-            .onSubscription { collectReadyLatch.signal() }
-            .filterIsInstance(Back::class)
-        return if(component == null){
-            f
-        } else{
-            f.filter { it.send.sender != component }
-        }
-    }
+    @Suppress("UNCHECKED_CAST")
+    fun getBackFlow(component: Component? = null): Flow<Back<Send>> =
+        getBackFlow(Back::class as KClass<Back<Send>>, component)
 
     /**
      * Returns a [Flow] of [Back] messages of a specific type transiting through this channel.
@@ -190,7 +190,10 @@ class SuperChannel(val name: String = "superChannel") {
      * @param component an optional [Node] to exclude from the flow, defaults to `null`
      * @return a [Flow] emitting [Back] messages of type [B1], optionally filtered by sender
      */
-    fun <B1: Back<*>> getBackFlow(clazz: KClass<B1>, component: Node? = null): Flow<B1>{
+    @Suppress("UNCHECKED_CAST")
+    fun <B1: Back<*>> getBackFlow(
+        clazz: KClass<B1> = Back::class as KClass<B1>,
+        component: Node? = null): Flow<B1> {
         collectReadyLatch.increment()
         val f = mainFlow
             .onSubscription { collectReadyLatch.signal() }

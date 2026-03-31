@@ -6,8 +6,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.meercat.channels.SuperChannel
+import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.data.TestingBack
 import org.sbm4j.meercat.data.TestingSend
 import org.sbm4j.meercat.nodes.AbstractProcessingNode
 import org.sbm4j.meercat.nodes.dispatchers.AbstractBarrier
@@ -16,6 +18,7 @@ import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.testingBack
 import org.sbm4j.meercat.testingBackWithErrors
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
 class TestingBarrierNode(
     override val channelsIns: MutableList<SuperChannel>,
@@ -24,9 +27,10 @@ class TestingBarrierNode(
 ) : AbstractBarrier() {
 
     override suspend fun run() {
-        performSendBacks()
+        performSendBacks(TestingSend::class, TestingBack::class)
         super.run()
     }
+
 }
 
 

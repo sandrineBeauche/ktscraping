@@ -8,6 +8,7 @@ import org.sbm4j.meercat.channels.sendSyncAll
 import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
+import kotlin.reflect.KClass
 
 /**
  * A [Propagator] that broadcasts each incoming [Send] message to all [channelOuts]
@@ -46,7 +47,11 @@ interface Broadcast: Propagator {
      * Any filter applied to this flow upstream determines which messages are broadcast
      * @param message an optional human-readable label used for logging purposes
      */
-    suspend fun broadcast(coroutineName: String, flow: Flow<Send>, message: String = "") {
+    suspend fun <T: Send> broadcast(
+        coroutineName: String,
+        flow: Flow<T>,
+        message: String = ""
+    ) {
         scope.launch(CoroutineName(coroutineName)) {
             flow.collect { send ->
                 launch(CoroutineName("${coroutineName}-${send.name}")) {
