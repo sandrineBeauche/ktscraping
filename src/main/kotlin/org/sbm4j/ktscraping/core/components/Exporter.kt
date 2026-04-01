@@ -6,22 +6,23 @@ import org.sbm4j.ktscraping.core.processors.ItemReceiver
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.ktscraping.data.item.*
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractSinkNode
 import org.sbm4j.meercat.nodes.logger
 
-abstract class AbstractExporter(override val name: String): ItemReceiver, EventSink, AbstractComponent() {
-
-    override lateinit var inChannel: SuperChannel
+abstract class AbstractExporter(
+    name: String
+): AbstractSinkComponent(name), ItemReceiver, EventSink {
 
     override suspend fun run() {
         logger.info{"${name}: Starting Exporter"}
         super<EventSink>.run()
         super<ItemReceiver>.run()
+        super<AbstractSinkComponent>.run()
     }
 
     override suspend fun stop() {
         logger.info{"${name}: Stopping the exporter"}
-        super<EventSink>.stop()
-        super<ItemReceiver>.stop()
+        super<AbstractSinkComponent>.stop()
     }
 
 

@@ -81,6 +81,21 @@ interface Barrier: Combinator {
     }
 
 
+    /**
+     * Registers both the send and back collectors for the barrier behaviour,
+     * optionally filtered by [predicate].
+     *
+     * Incoming [Send] messages matching the predicate are accumulated via [performSendBarrier]
+     * until all branches have contributed, then forwarded to [channelOut].
+     * The [Back] response is then broadcast to all originating branches via [performBackBarrier].
+     *
+     * @param T the type of [Send] message to process
+     * @param B the type of [Back] response to process
+     * @param clazz the [KClass] of [T], specifying the exact type of sends this collector handles
+     * @param backClazz the [KClass] of [B], specifying the exact type of backs this collector handles
+     * @param predicate an optional filter applied to [Send] messages and to the original [Send]
+     * of [Back] responses, ensuring both collectors handle the same subset of messages
+     */
     override suspend fun <T: Send, B: Back<T>>performSendBacks(
         clazz: KClass<T>,
         backClazz: KClass<B>,

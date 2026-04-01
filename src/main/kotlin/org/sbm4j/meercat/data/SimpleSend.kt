@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * @property value the value carried by this send
  * @property sender the [SendSource] that emitted this send
  */
- data class SimpleSend<T>(var value: T, override var sender: SendSource) : Send{
+ abstract class SimpleSend<T>(open var value: T, override var sender: SendSource) : Send{
     companion object{
         /**
          * Counter used to generate unique [name] values across all [SimpleSend] instances.
@@ -41,25 +41,21 @@ import java.util.concurrent.atomic.AtomicInteger
         infos: ErrorInfo,
         status: Status
     ): Back<*> {
-        val result = SimpleBack(this)
+        val result = buildBack()
         result.status = status
         result.errorInfos.add(infos)
         return result
     }
 
-    /**
-     * @see Send.buildBack
-     */
-    override fun buildBack(): Back<*> {
-        return SimpleBack(this)
-    }
 
     /**
-     * @see Send.clone
+     * @see Send.getKeyBarrier
      */
-    override fun clone(): Send {
-        return this.copy()
+    override fun getKeyBarrier(): String {
+        return this.value.toString()
     }
+
+
 }
 
 /**
@@ -71,7 +67,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * @param T the type of the value carried by the original [SimpleSend]
  * @property send the [SimpleSend] this back is responding to
  */
-data class SimpleBack<T>(override val send: SimpleSend<T>): Back<SimpleSend<T>> {
+abstract class SimpleBack<T>(override val send: SimpleSend<T>): Back<SimpleSend<T>> {
     companion object{
         /**
          * Counter used to generate unique [name] values across all [SimpleBack] instances.
@@ -100,21 +96,64 @@ data class SimpleBack<T>(override val send: SimpleSend<T>): Back<SimpleSend<T>> 
      * @see Back.errorInfos
      */
     override val errorInfos: MutableList<ErrorInfo> = mutableListOf()
-
-    /**
-     * @see Back.clone
-     */
-    override fun clone(): Back<SimpleSend<T>> {
-        return this.copy()
-    }
 }
 
 /**
  * A [SimpleSend] carrying a [String] value, for straightforward use cases and tests.
  */
-typealias StringSend = SimpleSend<String>
+data class StringSend(override var value: String, override var sender: SendSource) : SimpleSend<String>(value, sender){
+    override fun clone(): StringSend {
+        return this.copy()
+    }
+
+    /**
+     * @see buildBack
+     */
+    override fun buildBack(): StringBack{
+        return StringBack(this)
+    }
+}
 
 /**
  * A [SimpleBack] carrying a response to a [StringSend], for straightforward use cases and tests.
  */
-typealias StringBack = SimpleBack<String>
+data class StringBack(override val send: StringSend): SimpleBack<String>(send){
+
+    /**
+     * @see clone
+     */
+    override fun clone(): StringBack {
+        return this.copy()
+    }
+}
+
+/**
+ * A [SimpleSend] carrying a [Int] value, for straightforward use cases and tests.
+ */
+data class IntSend(override var value: Int, override var sender: SendSource) : SimpleSend<Int>(value, sender){
+    /**
+     * @see clone
+     */
+    override fun clone(): IntSend {
+        return this.copy()
+    }
+
+    /**
+     * @see buildBack
+     */
+    override fun buildBack(): IntBack {
+        return IntBack(this)
+    }
+}
+
+/**
+ * A [SimpleBack] carrying a response to a [IntSend], for straightforward use cases and tests.
+ */
+data class IntBack(override val send: SimpleSend<Int>): SimpleBack<Int>(send){
+    /**
+     * @see clone
+     */
+    override fun clone(): IntBack {
+        return this.copy()
+    }
+}

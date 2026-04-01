@@ -68,7 +68,7 @@ class TopologyManager(val channelManager: ChannelManager): Controllable {
             channelManager.initChannels(scope)
             nodes.filter { it !is Initiator }.map {
                 launch {
-                    it.start(scope)
+                    it.start(scope)?.join()
                 }
             }.joinAll()
             nodes.filterIsInstance<Initiator>().forEach {

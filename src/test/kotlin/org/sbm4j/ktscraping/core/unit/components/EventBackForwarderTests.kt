@@ -10,15 +10,20 @@ import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractComponent
 import org.sbm4j.ktscraping.core.processors.EventBackForwarder
+import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.Test
 
 class TestingEventBackForwarder(
     override var inChannel: SuperChannel,
     override var outChannel: SuperChannel,
-    override val name: String = "TestingEventBackForwarder"
+    override val name: String = "TestingEventBackForwarder",
 ) : EventBackForwarder, AbstractComponent() {
+
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult>
+        = ConcurrentHashMap()
 
     override suspend fun postStart(event: EventBack) {
         logger.debug{"${name}: inside post start"}

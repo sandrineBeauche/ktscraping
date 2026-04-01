@@ -63,16 +63,21 @@ interface BackForwarder: Node {
      * Once [func] completes — whether successfully or not — the [Back] response is always
      * forwarded back through [inChannel] towards the originating [SendSource].
      *
+     * By default, [flow] is obtained via [SuperChannel.getBackFlow], which registers the collector
+     * in [SuperChannel.collectReadyLatch] and guarantees via [onSubscription] that the subscriber
+     * is active on the [SharedFlow] before any message is dispatched.
+     *
      * @param B the type of [Back] response to process
      * @param backClazz the [KClass] of [B], which specifies the exact type of responses
      * this collector will handle, constraining both the type of [flow] and [func]
-     * @param flow the [Flow] of [Back] responses of type [B] to collect from
+     * @param flow the [Flow] of [Back] responses of type [B] to collect from, defaults to
+     * [SuperChannel.getBackFlow] on [outChannel]
      * @param func the core processing function applied to each received [Back] response of type [B],
      * which may further modify the response before it is forwarded
      */
     suspend fun <B : Back<*>> receiveBacks(
         backClazz: KClass<B>,
-        flow: Flow<B>,
+        flow: Flow<B> = outChannel.getBackFlow(backClazz),
         func: suspend (B) -> Unit
     ) {
         val coroutineName = "${name}-perform${backClazz.simpleName}"

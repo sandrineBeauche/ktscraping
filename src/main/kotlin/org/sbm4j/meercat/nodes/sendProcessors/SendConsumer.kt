@@ -43,20 +43,25 @@ interface SendConsumer: Node {
      * If an exception is thrown during processing, an error [Back] is automatically built
      * using [generateErrorInfos] and sent back through [inChannel].
      *
+     * By default, [flow] is obtained via [SuperChannel.getSendFlow], which registers the collector
+     * in [SuperChannel.collectReadyLatch] and guarantees via [onSubscription] that the subscriber
+     * is active on the [SharedFlow] before any message is dispatched.
+     *
      * This function is typically called from [run] to set up the node's message processing
      * pipeline during startup.
      *
      * @param T the type of [Send] message to process
      * @param sendClazz the [KClass] of [T], which specifies the exact type of messages
      * this collector will handle, constraining both the type of [flow] and [func]
-     * @param flow the [Flow] of [Send] messages of type [T] to collect from
+     * @param flow the [Flow] of [Send] messages of type [T] to collect from, defaults to
+     * [SuperChannel.getSendFlow] on [inChannel]
      * @param func the core processing function applied to each received [Send] message of type [T].
      * It may modify the message or produce a [Back] response, and its return value is forwarded
      * to [sendPostProcess] for automatic dispatching
      */
     suspend fun <T : Send> performSends(
         sendClazz: KClass<T>,
-        flow: Flow<T>,
+        flow: Flow<T> = inChannel.getSendFlow(sendClazz),
         func: suspend (T) -> Any?
     ) {
         val coroutineName = "${name}-perform${sendClazz.simpleName}"

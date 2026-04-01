@@ -3,7 +3,6 @@ package org.sbm4j.meercat.nodes.dispatchers
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
-import org.sbm4j.meercat.nodes.AbstractNode
 import org.sbm4j.meercat.nodes.logger
 import java.util.*
 import kotlin.reflect.KClass
@@ -57,7 +56,7 @@ interface BackDispatcher: Combinator {
      *
      * @param back the [Back] response to dispatch
      */
-    suspend fun <B: Back<*>> performBackDispathcher(back: B){
+    suspend fun <B: Back<*>> performBackDispatcher(back: B){
         logger.trace{ "${name}: Received back for the send ${back.send.name} and dispatch it"}
         val channel = pendingAnswerable.remove(back.send.channelableId)
         if (channel != null) {
@@ -78,9 +77,14 @@ interface BackDispatcher: Combinator {
      * via [performSendDispatcher], while [Back] responses matching the predicate are
      * routed back to their originating branch via [performBackDispathcher].
      *
+     * @param T the type of [Send] message to process
+     * @param B the type of [Back] response to process
+     * @param clazz the [KClass] of [T], specifying the exact type of sends this collector handles
+     * @param backClazz the [KClass] of [B], specifying the exact type of backs this collector handles
      * @param predicate an optional filter applied to [Send] messages and to the original [Send]
      * of [Back] responses, ensuring both collectors handle the same subset of messages
      */
+
     override suspend fun <T: Send, B: Back<T>>performSendBacks(
         clazz: KClass<T>,
         backClazz: KClass<B>,
@@ -91,7 +95,7 @@ interface BackDispatcher: Combinator {
         }
         else null
         performSends(clazz, predicate, ::performSendDispatcher)
-        performBacks(backClazz,pred, ::performBackDispathcher)
+        performBacks(backClazz,pred, ::performBackDispatcher)
     }
 
 }

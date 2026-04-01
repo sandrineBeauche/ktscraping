@@ -1,9 +1,11 @@
 package org.sbm4j.ktscraping.core.processors
 
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.flow.filter
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.EventPropagation
 import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.meercat.data.ErrorInfo
 
@@ -68,11 +70,18 @@ interface EventConsumer: SendConsumer, EventProcessor {
         return event
     }
 
-
-    override suspend fun run() {
+    suspend fun registerEventListening(propagation: EventPropagation? = null){
         val clazz = Event::class
         val flow = inChannel.getSendFlow(clazz)
-        this.performSends(clazz, flow, ::consumeEvent)
+        val filtered = if(propagation != null)
+            flow.filter({ it.propagation == propagation })
+        else flow
+        this.performSends(clazz, filtered, ::consumeEvent)
+    }
+
+
+    override suspend fun run() {
+        registerEventListening()
     }
 }
 
@@ -97,10 +106,16 @@ interface EventBackForwarder: BackForwarder, EventProcessor {
         }
     }
 
+    suspend fun registerEventBackListening(propagation: EventPropagation? = null){
+        val flow = this@EventBackForwarder.outChannel.getBackFlow(EventBack::class, this)
+        val filtered = if(propagation != null)
+            flow.filter { it.send.propagation == propagation }
+        else flow
+        receiveBacks(EventBack::class, filtered, ::resumeEvent)
+    }
 
     override suspend fun run() {
-        val flow = this@EventBackForwarder.outChannel.getBackFlow(EventBack::class, this)
-        receiveBacks(EventBack::class, flow, ::resumeEvent)
+        registerEventBackListening()
     }
 }
 
@@ -110,7 +125,7 @@ interface EventSink: EventConsumer{
     override suspend fun consumeEvent(event: Event): Any? {
         lateinit var result: EventBack
         try {
-            performEvent(event)
+            performEvent(event)?.join()
             result = event.buildBack()
         }
         catch(ex: Exception){

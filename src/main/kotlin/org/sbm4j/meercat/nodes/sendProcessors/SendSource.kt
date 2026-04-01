@@ -74,44 +74,17 @@ interface SendSource: Node {
         }
     }
 
-    /*
-    /**
-     * sends synchronously a request and returns the response. This exchange with the request and the response
-     * is done in a dedicated scope, that is a subscope of the given coroutine scope.
-     * @param request the request to be sent
-     * @param subScope the parent scope of the scope where the request is sent and the response is received
-     * @throws SendException if the response status is not OK
-     */
-    suspend fun <S: Send> sendSync(
-        request: S,
-        subScope: CoroutineScope = scope
-    ) = suspendCancellableCoroutine { continuation ->
-        withContext(CoroutineName("${name}-${request.name}")) {
-        peformSendSync(request, continuation::resume, continuation::resumeWithException)
-    }
-
-        subScope.launch(CoroutineName("${name}-${request.name}")) {
-            this@SendSource.peformSendSync<S>(
-                request, continuation::resume,
-                continuation::resumeWithException
-            )
-        }
-    }*/
-
     /**
      * Sends a [Send] message through [outChannel] and suspends until the matching [Back]
      * response is received.
      *
      * @param S the type of [Send] message
      * @param send the [Send] message to dispatch
-     * @param subScope the coroutine scope in which the send operation is performed,
-     * defaults to the node's own [scope]
      * @return the [Back] response matching the sent message
      * @throws SendException if the response status is not [Status.OK]
      */
     suspend fun <S: Send> sendSync(
-        send: S,
-        subScope: CoroutineScope = scope
+        send: S
     ): Back<S> {
         val back = outChannel.sendSync<Back<S>>(send)
 

@@ -56,6 +56,12 @@ class SuperChannel(val name: String = "superChannel") {
         }
     }
 
+    /**
+     * Latch used to track readiness of all flow collectors registered on this channel.
+     * Incremented each time a new collector is registered via [getSendFlow] or [getBackFlow],
+     * and signalled via [onSubscription] once the subscriber is active on [mainFlow].
+     * Use [awaitReady] to suspend until all collectors are ready.
+     */
     val collectReadyLatch = ReadyLatch()
 
     /**
@@ -108,31 +114,6 @@ class SuperChannel(val name: String = "superChannel") {
     suspend inline fun <reified T: Back<*>> sendSync(
         data: Send,
     ): T{
-        /*
-        val job = Job(scope.coroutineContext[Job])
-        val sendScope = CoroutineScope(scope.coroutineContext + job + CoroutineName("${name}-sendSync"))
-
-        try {
-            return withContext(sendScope.coroutineContext) {
-                val flow =
-                    mainFlow
-                        .onSubscription {
-                            logger.trace { "${name} -> send message : ${data}" }
-                            channel.send(data)
-                            logger.trace { "${name} -> sent message : ${data} and wait for a response" }
-                        }
-                        .onCompletion {  }
-                        .filterIsInstance<T>()
-                        .filter { it.send.channelableId == data.channelableId }
-                val result = flow.first()
-                logger.trace { "${name} -> received response: ${result}" }
-                result
-            }
-        }
-        finally{
-            job.cancel()
-        }
-         */
         val flow = mainFlow
             .onSubscription {
                 logger.trace { "${name} -> send message : ${data}" }
@@ -152,8 +133,12 @@ class SuperChannel(val name: String = "superChannel") {
     /**
      * Returns a [Flow] of [Send] messages of a specific type transiting through this channel.
      *
+     * Increments [collectReadyLatch] before registering the subscription, and signals it
+     * via [onSubscription] once the subscriber is active on [mainFlow], guaranteeing that
+     * the collector is ready to receive messages before any send is dispatched.
+     *
      * @param T1 the specific [Send] type to filter for
-     * @param clazz the [KClass] of the expected [Send] type
+     * @param clazz the [KClass] of the expected [Send] type, defaults to [Send] to receive all sends
      * @return a [Flow] emitting only [Send] messages of type [T1]
      */
     @Suppress("UNCHECKED_CAST")
@@ -164,16 +149,23 @@ class SuperChannel(val name: String = "superChannel") {
             .filterIsInstance(clazz)
     }
 
+    /**
+     * Returns a [Flow] of all [Send] messages transiting through this channel.
+     * Convenience overload of [getSendFlow] for the untyped case.
+     *
+     * @return a [Flow] emitting all [Send] messages
+     */
     fun getSendFlow(): Flow<Send> = getSendFlow<Send>()
 
     /**
-     * Returns a [Flow] of [Back] messages transiting through this channel.
+     * Returns a [Flow] of all [Back] messages transiting through this channel.
+     * Convenience overload of [getBackFlow] for the untyped case.
      *
-     * If a [Component] is provided, [Back] messages whose original [Send] was emitted
-     * by that component are filtered out, allowing a node to ignore its own messages.
+     * If a [Node] is provided, [Back] messages whose original [Send] was emitted
+     * by that node are filtered out.
      *
-     * @param component an optional [Component] to exclude from the flow, defaults to `null`
-     * @return a [Flow] emitting [Back] messages, optionally filtered by sender
+     * @param component an optional [Node] to exclude from the flow, defaults to `null`
+     * @return a [Flow] emitting all [Back] messages, optionally filtered by sender
      */
     @Suppress("UNCHECKED_CAST")
     fun getBackFlow(component: Component? = null): Flow<Back<Send>> =
@@ -182,11 +174,15 @@ class SuperChannel(val name: String = "superChannel") {
     /**
      * Returns a [Flow] of [Back] messages of a specific type transiting through this channel.
      *
+     * Increments [collectReadyLatch] before registering the subscription, and signals it
+     * via [onSubscription] once the subscriber is active on [mainFlow], guaranteeing that
+     * the collector is ready to receive messages before any send is dispatched.
+     *
      * If a [Node] is provided, [Back] messages whose original [Send] was emitted
      * by that node are filtered out.
      *
      * @param B1 the specific [Back] type to filter for
-     * @param clazz the [KClass] of the expected [Back] type
+     * @param clazz the [KClass] of the expected [Back] type, defaults to [Back] to receive all backs
      * @param component an optional [Node] to exclude from the flow, defaults to `null`
      * @return a [Flow] emitting [Back] messages of type [B1], optionally filtered by sender
      */
@@ -243,7 +239,10 @@ class SuperChannel(val name: String = "superChannel") {
         return mainFlow.filterIsInstance<B1>().first()
     }
 
-
+    /**
+     * Suspends until all flow collectors registered on this channel via [getSendFlow]
+     * and [getBackFlow] are active and ready to receive messages.
+     */
     suspend fun awaitReady() = collectReadyLatch.await()
 
     /**

@@ -1,8 +1,10 @@
 package org.sbm4j.meercat
 
+import com.natpryce.hamkrest.Matcher
 import com.natpryce.hamkrest.allOf
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
+import com.natpryce.hamkrest.hasElement
 import com.natpryce.hamkrest.hasSize
 import com.natpryce.hamkrest.isA
 import com.natpryce.hamkrest.sameInstance
@@ -54,4 +56,9 @@ fun testingBackWithErrors(value: String, status: Status, nbErrors: Int) =
                 hasSize(equalTo(nbErrors))
             )
         )
+    )
+
+fun <T> hasElements(vararg elements: T): Matcher<Collection<T>> =
+    allOf(
+        elements.map { hasElement(it) }
     )

@@ -5,6 +5,7 @@ import org.sbm4j.ktscraping.core.processors.EventSink
 import org.sbm4j.ktscraping.core.processors.RequestReceiver
 import org.sbm4j.meercat.data.Back
 import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.nodes.AbstractSinkNode
 import org.sbm4j.meercat.nodes.logger
 
 enum class ContentType{
@@ -19,8 +20,8 @@ enum class ContentType{
 }
 
 abstract class AbstractDownloader(
-    override val name: String
-): AbstractComponent(), RequestReceiver, EventSink {
+    name: String
+): AbstractSinkComponent(name), RequestReceiver, EventSink {
 
     companion object{
         val PAYLOAD: String = "payload"
@@ -28,27 +29,14 @@ abstract class AbstractDownloader(
         val CONTENT_TYPE: String = "contentType"
     }
 
-
-    override lateinit var inChannel: SuperChannel
-
-
-    override suspend fun sendPostProcess(send: Send, result: Any) {
-        if(result is Back<*>) {
-            logger.debug { "$name : answer to ${send.loggingLabel} ${send.name} with a back"}
-            inChannel.send(result)
-        }
-    }
-
-
     override suspend fun run() {
         logger.info{"${name}: Starting downloader"}
-        super<EventSink>.run()
         super<RequestReceiver>.run()
+        super<AbstractSinkComponent>.run()
     }
 
     override suspend fun stop() {
         logger.info{"${name}: Stopping downloader"}
-        super<RequestReceiver>.stop()
-        super<EventSink>.stop()
+        super<AbstractSinkComponent>.stop()
     }
 }

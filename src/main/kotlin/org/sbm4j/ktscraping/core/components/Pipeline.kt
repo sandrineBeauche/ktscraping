@@ -1,37 +1,33 @@
 package org.sbm4j.ktscraping.core.components
 
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.ktscraping.core.processors.EventBackForwarder
-import org.sbm4j.ktscraping.core.processors.EventConsumer
-import org.sbm4j.ktscraping.core.processors.ItemAckForwarder
-import org.sbm4j.ktscraping.core.processors.ItemForwarder
+import org.sbm4j.ktscraping.core.processors.*
 import org.sbm4j.meercat.nodes.logger
+import java.util.concurrent.ConcurrentHashMap
 
 
-interface Pipeline : ItemForwarder, ItemAckForwarder, EventConsumer, EventBackForwarder {
+interface Pipeline : ItemForwarder, ItemAckForwarder{
 
     override suspend fun run() {
         logger.info { "${name}: Starting pipeline" }
         super<ItemForwarder>.run()
         super<ItemAckForwarder>.run()
-        super<EventConsumer>.run()
-        super<EventBackForwarder>.run()
-
     }
 
     override suspend fun stop() {
         logger.info { "${name}: Stopping pipeline" }
         super<ItemForwarder>.stop()
         super<ItemAckForwarder>.stop()
-        super<EventConsumer>.stop()
-        super<EventBackForwarder>.stop()
     }
 
 }
 
-abstract class AbstractPipeline(override var name: String) : Pipeline, AbstractComponent() {
+abstract class AbstractPipeline(name: String) : Pipeline, AbstractMiddleComponent(name) {
 
-    override lateinit var inChannel: SuperChannel
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult>
+            = ConcurrentHashMap()
 
-    override lateinit var outChannel: SuperChannel
+    override suspend fun run() {
+        super<Pipeline>.run()
+        super<AbstractMiddleComponent>.run()
+    }
 }

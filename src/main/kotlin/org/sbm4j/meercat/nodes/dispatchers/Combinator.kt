@@ -57,16 +57,22 @@ interface Combinator: Node {
 
     /**
      * Registers a collector on each channel in [channelsIns] that processes incoming [Send]
-     * messages concurrently, optionally filtered by [predicate].
+     * messages of type [T] concurrently, optionally filtered by [predicate].
      *
      * Each collector is launched in a dedicated coroutine. For each received [Send] message,
      * [perform] is called with the message, the originating [SuperChannel], and its index
      * in [channelsIns], allowing the implementation to identify which branch the message
      * came from.
      *
+     * The flow for each channel is obtained via [SuperChannel.getSendFlow], which registers
+     * the collector in [SuperChannel.collectReadyLatch] and guarantees via [onSubscription]
+     * that the subscriber is active on the [SharedFlow] before any message is dispatched.
+     *
      * This method is typically not called directly — use [performSendBacks] instead to ensure
      * a matching [performBacks] is always registered with the same predicate.
      *
+     * @param T the type of [Send] message to process
+     * @param clazz the [KClass] of [T], defaults to [Send] to receive all sends
      * @param predicate an optional filter applied to incoming [Send] messages.
      * Only messages for which the predicate returns `true` are processed
      * @param perform the processing function applied to each received [Send] message,
@@ -91,14 +97,20 @@ interface Combinator: Node {
     }
 
     /**
-     * Registers a collector on [channelOut] that processes incoming [Back] responses,
-     * optionally filtered by a predicate applied to the original [Send] message.
+     * Registers a collector on [channelOut] that processes incoming [Back] responses of type [T],
+     * optionally filtered by [predicate].
+     *
+     * The flow is obtained via [SuperChannel.getBackFlow], which registers the collector
+     * in [SuperChannel.collectReadyLatch] and guarantees via [onSubscription] that the subscriber
+     * is active on the [SharedFlow] before any message is dispatched.
      *
      * This method is typically not called directly — use [performSendBacks] instead to ensure
      * a matching [performSends] is always registered with the same predicate.
      *
-     * @param predicate an optional filter applied to the original [Send] of each incoming [Back].
-     * Only responses whose original [Send] matches the predicate are processed
+     * @param T the type of [Back] response to process
+     * @param clazz the [KClass] of [T], specifying the exact type of responses this collector handles
+     * @param predicate an optional filter applied to incoming [Back] responses.
+     * Only responses for which the predicate returns `true` are processed
      * @param perform the processing function applied to each received [Back] response
      */
     suspend fun <T: Back<*>> performBacks(
@@ -109,7 +121,8 @@ interface Combinator: Node {
         val coroutineName = "${name}-performBacks"
         scope.launch(CoroutineName(coroutineName)) {
             val flow = channelOut.getBackFlow(clazz)
-            flow.collect { back ->
+            val filtered = if(predicate != null) flow.filter(predicate) else flow
+            filtered.collect { back ->
                 perform(back)
             }
         }
@@ -126,6 +139,7 @@ interface Combinator: Node {
      * @param predicate an optional filter applied to [Send] messages and to the original [Send]
      * of [Back] responses, ensuring both collectors handle the same subset of messages
      */
+    @Suppress("UNCHECKED_CAST")
     suspend fun <T: Send, B: Back<T>> performSendBacks(
         clazz: KClass<T> = Send::class as KClass<T>,
         backClazz: KClass<B> = Back::class as KClass<B>,

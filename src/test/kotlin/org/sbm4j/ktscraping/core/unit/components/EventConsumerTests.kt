@@ -14,12 +14,16 @@ import org.sbm4j.ktscraping.core.processors.EventConsumer
 import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.Test
 
 class TestingEventConsumer(
     override var inChannel: SuperChannel,
     override val name: String = "TestingEventConsumer"
 ): EventConsumer, AbstractComponent(){
+
+    override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult>
+            = ConcurrentHashMap()
 
     override suspend fun sendPostProcess(send: Send, result: Any) {
         logger.debug{"${name}: processed ${send.loggingLabel}: ${send}"}

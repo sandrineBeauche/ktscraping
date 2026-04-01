@@ -29,6 +29,7 @@ import org.sbm4j.ktscraping.data.response.Response
 import org.sbm4j.ktscraping.exporters.ItemDelete
 import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.stats.StatsCrawlerResult
+import org.sbm4j.meercat.nodes.AbstractMiddleNode
 import org.sbm4j.meercat.nodes.AbstractProcessingNode
 import org.sbm4j.meercat.nodes.logger
 
@@ -57,9 +58,7 @@ abstract class AbstractEngine(
     val innerRequestForwarder: AbstractProcessingNode = object :
         RequestForwarder,
         ResponseForwarder,
-        EventConsumer,
-        EventBackForwarder,
-        AbstractComponent()
+        AbstractMiddleComponent("${this@AbstractEngine.name}-RequestForwarder")
     {
         override var inChannel: SuperChannel
             get() = this@AbstractEngine.spiderChannel
@@ -73,7 +72,6 @@ abstract class AbstractEngine(
             get() = this@AbstractEngine.scope
             set(value) {}
 
-        override val name: String = "${this@AbstractEngine.name}-RequestForwarder"
 
         override suspend fun processRequest(request: AbstractRequest): Any? {
             this@AbstractEngine.processRequest(request)
@@ -90,26 +88,16 @@ abstract class AbstractEngine(
             super<RequestForwarder>.run()
             super<ResponseForwarder>.run()
 
-            val clazz = Event::class
-            val flow = inChannel.getSendFlow(clazz).filter {
-                it.propagation == EventPropagation.DOWNLOADER
-            }
-            this.performSends(clazz, flow, ::consumeEvent)
-
-            val flowBack = outChannel.getBackFlow(EventBack::class, this).filter {
-                it.send.propagation == EventPropagation.DOWNLOADER
-            }
-            receiveBacks(EventBack::class, flowBack, ::resumeEvent)
+            registerEventListening(EventPropagation.DOWNLOADER)
+            registerEventBackListening(EventPropagation.DOWNLOADER)
         }
     }
 
 
-    val innerItemForwarder: AbstractComponent = object:
+    val innerItemForwarder: AbstractMiddleComponent = object:
         ItemForwarder,
         ItemAckForwarder,
-        EventConsumer,
-        EventBackForwarder,
-        AbstractComponent()
+        AbstractMiddleComponent("${this@AbstractEngine.name}-ItemForwarder")
     {
         override var inChannel: SuperChannel
             get() = this@AbstractEngine.spiderChannel
@@ -123,7 +111,6 @@ abstract class AbstractEngine(
             get() = this@AbstractEngine.scope
             set(value) {}
 
-        override val name: String = "${this@AbstractEngine.name}-ItemForwarder"
 
         override suspend fun processItem(item: Item): Any? {
             this@AbstractEngine.processItem(item)
@@ -139,28 +126,17 @@ abstract class AbstractEngine(
             super<ItemForwarder>.run()
             super<ItemAckForwarder>.run()
 
-            val clazz = Event::class
-            val flow = inChannel.getSendFlow(clazz).filter {
-                it.propagation == EventPropagation.PIPELINE
-            }
-            this.performSends(clazz, flow, ::consumeEvent)
-
-            val flowBack = outChannel.getBackFlow(EventBack::class, this).filter {
-                it.send.propagation == EventPropagation.PIPELINE
-            }
-            receiveBacks(EventBack::class, flowBack, ::resumeEvent)
+            registerEventListening(EventPropagation.PIPELINE)
+            registerEventBackListening(EventPropagation.PIPELINE)
         }
     }
 
-    val innerEventPropagator: AbstractComponent = object:
-        EventConsumer,
-        AbstractComponent()
+    val innerEventPropagator = object:
+        AbstractMiddleComponent("${this@AbstractEngine.name}-EventPropagator")
     {
         override var inChannel: SuperChannel
             get() = this@AbstractEngine.spiderChannel
             set(value) {}
-
-        override val name: String = "${this@AbstractEngine.name}-EventPropagator"
 
 
         override var scope: CoroutineScope

@@ -29,21 +29,20 @@ import kotlin.reflect.KClass
 interface Router: Propagator {
 
     /**
-     * Registers a collector on the given [flow] that routes each incoming [Send] message
+     * Registers a collector on [channelIn] that routes each incoming [Send] message
      * of type [T] to a single output channel determined by [selectChannelFunc].
      *
      * Each message is processed in a dedicated coroutine. [selectChannelFunc] is called
      * for each received message to dynamically select the target [SuperChannel] from
      * [channelOuts], allowing conditional routing based on the message content.
      *
-     * For consistency, the filter applied to [flow] before passing it to this function
-     * must match the predicate passed to the corresponding [forwardBacks] call, ensuring
-     * that the same subset of messages is handled on both the forward and return paths.
+     * The flow is obtained via [SuperChannel.getSendFlow], which registers the collector
+     * in [SuperChannel.collectReadyLatch] and guarantees via [onSubscription] that the
+     * subscriber is active on the [SharedFlow] before any message is dispatched.
      *
      * @param T the type of [Send] message to route
-     * @param coroutineName the name to assign to the collector coroutine
-     * @param flow the [Flow] of [Send] messages of type [T] to collect from. Any filter
-     * applied to this flow upstream must match the predicate passed to [forwardBacks]
+     * @param clazz the [KClass] of [T], specifying the exact type of sends this collector handles
+     * @param predicate an optional filter applied to incoming [Send] messages
      * @param selectChannelFunc a function that receives each [Send] message and returns
      * the [SuperChannel] from [channelOuts] to which it should be routed
      */
@@ -54,7 +53,9 @@ interface Router: Propagator {
     ) {
         val coroutineName = "${name}-route"
         scope.launch(CoroutineName(coroutineName)) {
-            channelIn.getSendFlow(clazz).collect { send ->
+            val flow = channelIn.getSendFlow(clazz)
+            val filtered = if(predicate != null) { flow.filter(predicate) } else flow
+            filtered.collect { send ->
                 launch(CoroutineName("${coroutineName}-${send.name}")) {
                     val channel = selectChannelFunc(send)
                     channel.send(send)
@@ -65,16 +66,18 @@ interface Router: Propagator {
 
     /**
      * Registers a collector on each channel in [channelOuts] that processes incoming [Back]
-     * responses, optionally filtered by a predicate applied to the original [Send] message.
+     * responses of type [B], optionally filtered by a predicate applied to the original [Send].
      *
      * Each [SuperChannel] in [channelOuts] gets its own dedicated collector coroutine.
-     * [perform] is called for each received [Back] response, allowing the implementation
-     * to define what to do with it — typically forwarding it back through [channelIn]
-     * via [forwardBackRouter].
+     * The flow for each channel is obtained via [SuperChannel.getBackFlow], which registers
+     * the collector in [SuperChannel.collectReadyLatch] and guarantees via [onSubscription]
+     * that the subscriber is active on the [SharedFlow] before any message is dispatched.
      *
-     * @param predicate an optional filter applied to the original [Send] of each incoming
-     * [Back] response. Must match the filter applied to the [flow] passed to [route]
-     * to ensure consistency between the forward and return paths
+     * @param T the type of [Send] of the original message
+     * @param B the type of [Back] response to process
+     * @param clazz the [KClass] of [B], specifying the exact type of backs this collector handles
+     * @param predicate an optional filter applied to the original [Send] of each incoming [Back].
+     * Must match the filter applied to [route] to ensure consistency between forward and return paths
      * @param perform the function to apply to each received [Back] response
      */
     suspend fun <T: Send, B:Back<T>> forwardBacks(
@@ -86,7 +89,12 @@ interface Router: Propagator {
             val coroutineName = "${name}-${channel.name}"
             scope.launch(CoroutineName(coroutineName)) {
                 val flow = channel.getBackFlow(clazz)
-                flow.collect {
+                val filtered = if(predicate != null){
+                    val pred: (B) -> Boolean = { predicate(it.send) }
+                    flow.filter(pred)
+                }
+                else flow
+                filtered.collect {
                     perform(it)
                 }
             }
@@ -113,8 +121,11 @@ interface Router: Propagator {
      * selected by [selectFuncChannel] via [route], while [Back] responses matching the
      * predicate are forwarded back through [channelIn] via [forwardBackRouter].
      *
-     * @param predicate an optional filter ensuring both collectors handle the same subset
-     * of messages
+     * @param T the type of [Send] message to process
+     * @param B the type of [Back] response to process
+     * @param clazz the [KClass] of [T], specifying the exact type of sends this collector handles
+     * @param backClazz the [KClass] of [B], specifying the exact type of backs this collector handles
+     * @param predicate an optional filter ensuring both collectors handle the same subset of messages
      * @param selectFuncChannel a function that receives each [Send] message and returns
      * the single [SuperChannel] from [channelOuts] to which it should be routed
      */

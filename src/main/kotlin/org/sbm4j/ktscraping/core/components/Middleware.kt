@@ -1,35 +1,23 @@
 package org.sbm4j.ktscraping.core.components
 
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.ktscraping.core.processors.EventBackForwarder
-import org.sbm4j.ktscraping.core.processors.EventConsumer
-import org.sbm4j.ktscraping.core.processors.ItemForwarder
-import org.sbm4j.ktscraping.core.processors.RequestForwarder
-import org.sbm4j.ktscraping.core.processors.ResponseForwarder
+import org.sbm4j.ktscraping.core.processors.*
 import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.meercat.nodes.AbstractMiddleNode
 import org.sbm4j.meercat.nodes.logger
 
-abstract class AbstractMiddleware(override val name: String):
-    AbstractComponent(),
+abstract class AbstractMiddleware(name: String):
+    AbstractMiddleComponent(name),
     RequestForwarder,
-    ResponseForwarder,
-    EventConsumer,
-    EventBackForwarder
+    ResponseForwarder
 {
-
-    override lateinit var inChannel: SuperChannel
-
-    override lateinit var outChannel: SuperChannel
-
 
     override suspend fun processResponse(response: Response) {
     }
 
     override suspend fun run() {
-        super<EventConsumer>.run()
-        super<EventBackForwarder>.run()
         super<RequestForwarder>.run()
         super<ResponseForwarder>.run()
+        super<AbstractMiddleComponent>.run()
     }
 }
 /**

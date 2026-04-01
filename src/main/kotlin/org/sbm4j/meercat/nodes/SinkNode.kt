@@ -37,6 +37,11 @@ abstract class AbstractSinkNode(
         }
     }
 
+    /**
+     * Waits until [inChannel] is ready to receive messages before the node is considered started.
+     *
+     * @see Node.run
+     */
     override suspend fun run() {
         inChannel.awaitReady()
     }
