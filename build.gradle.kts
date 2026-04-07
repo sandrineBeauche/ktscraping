@@ -3,6 +3,7 @@ plugins {
     application
     kotlin("plugin.serialization") version "1.8.0"
     id("com.vanniktech.maven.publish") version "0.31.0-rc2"
+    idea
 }
 
 group = "org.sbm4j"
@@ -10,6 +11,14 @@ version = "1.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven {
+        name = "githubPackages"
+        url = uri("https://maven.pkg.github.com/sandrineBeauche/meercat")
+        credentials {
+            username = System.getenv("GITHUB_PACKAGE_REGISTRY_USER")
+            password = System.getenv("GITHUB_PACKAGE_REGISTRY_TOKEN")
+        }
+    }
 }
 
 
@@ -22,6 +31,7 @@ val playwrightVersion: String by project
 val hamkrestVersion: String by project
 val kotlinLoggingVersion: String by project
 val ktorVersion: String by project
+val meercatVersion: String by project
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
@@ -51,10 +61,15 @@ dependencies {
     implementation("org.apache.httpcomponents.client5:httpclient5:5.4.1")
     implementation("com.nfeld.jsonpathkt:jsonpathkt:2.0.1")
 
+    implementation("org.sbm4j:meercat:${meercatVersion}")
+    testImplementation(testFixtures("org.sbm4j:meercat:${meercatVersion}"))
+    testImplementation("org.sbm4j:meercat:${meercatVersion}:test-fixtures-sources")
+
     testImplementation("io.mockk:mockk:${mockkVersion}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion")
     testImplementation(kotlin("test"))
     testImplementation("com.natpryce:hamkrest:$hamkrestVersion")
+    testImplementation("org.sbm4j:meercat:1.1.1")
 
 
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
@@ -66,8 +81,7 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(21
-    )
+    jvmToolchain(21)
 }
 
 application {
@@ -90,5 +104,12 @@ publishing{
                 password = System.getenv("GITHUB_PACKAGE_REGISTRY_TOKEN")
             }
         }
+    }
+}
+
+idea {
+    module {
+        isDownloadSources = true
+        isDownloadJavadoc = true
     }
 }

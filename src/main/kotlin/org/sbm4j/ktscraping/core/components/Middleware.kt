@@ -25,13 +25,17 @@ abstract class AbstractMiddleware(name: String):
  */
 abstract class SpiderMiddleware(
     name:String
-): AbstractMiddleware(name), ItemForwarder
+):
+    AbstractMiddleware(name),
+    ItemForwarder,
+    ItemAckForwarder
 {
 
     override suspend fun run() {
         logger.info{"${name}: Starting spider middleware"}
-        super<AbstractMiddleware>.run()
         super<ItemForwarder>.run()
+        super<ItemAckForwarder>.run()
+        super<AbstractMiddleware>.run()
     }
 
     override suspend fun stop() {

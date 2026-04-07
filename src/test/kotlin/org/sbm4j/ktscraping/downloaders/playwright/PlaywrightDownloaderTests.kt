@@ -17,9 +17,10 @@ import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightRequest
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
-class PlaywrightDownloaderTests: AbstractDownloaderTester() {
-    override fun buildDownloader(downloaderName: String): AbstractDownloader {
-        val result = PlaywrightDownloader(downloaderName)
+class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>() {
+
+    override fun buildNode(): PlaywrightDownloader {
+        val result = PlaywrightDownloader("playwright dowloader")
         result.headless = true
         return result
     }
@@ -29,7 +30,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         val request = Request(sender, "https://playwright.dev")
         lateinit var response: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             inChannel.send(request)
             response = inChannel.channel.receive() as DownloadingResponse
         }
@@ -42,7 +43,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         val request = Request(sender, "https://www.iana.org/_img/2022/iana-logo-header.svg")
         lateinit var response: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             inChannel.send(request)
             response = inChannel.channel.receive() as DownloadingResponse
         }
@@ -55,7 +56,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         val request = Request(sender, "https://fr.wikipedia.org/static/images/icons/wikipedia.png")
         lateinit var response: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             inChannel.send(request)
             response = inChannel.channel.receive() as DownloadingResponse
         }
@@ -74,7 +75,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         lateinit var response1: DownloadingResponse
         lateinit var response2: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             coroutineScope {
                 request.forEach{
                     launch {
@@ -107,7 +108,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester() {
         request1.parameters["contextName"] = "context1"
         request2.parameters["contextName"] = "context1"
 
-        withDownloader {
+        withConsumer {
             val job1 =launch {
                 inChannel.send(request1)
                 response1 = inChannel.channel.receive() as DownloadingResponse

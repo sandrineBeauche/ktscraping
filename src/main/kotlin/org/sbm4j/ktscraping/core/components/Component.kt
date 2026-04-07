@@ -3,6 +3,7 @@ package org.sbm4j.ktscraping.core.components
 import org.sbm4j.ktscraping.core.processors.EventBackForwarder
 import org.sbm4j.ktscraping.core.processors.EventConsumer
 import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.ktscraping.core.processors.EventSink
 import org.sbm4j.meercat.nodes.AbstractMiddleNode
 import org.sbm4j.meercat.nodes.AbstractProcessingNode
 import org.sbm4j.meercat.nodes.AbstractSinkNode
@@ -50,13 +51,14 @@ abstract class AbstractComponent(): Component, AbstractProcessingNode(){
     override var state: State = State()
 }
 
-abstract class AbstractSourceComponent: AbstractInitiator(), Component{
+abstract class AbstractInitiatorComponent: AbstractInitiator(), Component{
     override var state: State = State()
 }
 
 abstract class AbstractMiddleComponent(
     name: String
 ): AbstractMiddleNode(name), Component, EventConsumer, EventBackForwarder{
+
     override var state: State = State()
 
     override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult>
@@ -64,20 +66,22 @@ abstract class AbstractMiddleComponent(
 
     override suspend fun run() {
         super<EventConsumer>.run()
+        super<EventBackForwarder>.run()
         super<AbstractMiddleNode>.run()
     }
 }
 
+
 abstract class AbstractSinkComponent(
     name: String
-): AbstractSinkNode(name), Component, EventConsumer{
+): AbstractSinkNode(name), Component, EventSink {
     override var state: State = State()
 
     override val pendingEventJobs: ConcurrentHashMap<String, EventJobResult>
         = ConcurrentHashMap()
 
     override suspend fun run() {
-        super<EventConsumer>.run()
+        super<EventSink>.run()
         super<AbstractSinkNode>.run()
     }
 }

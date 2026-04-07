@@ -17,7 +17,7 @@ data class DataItemTest(
 }
 
 data class IntDataItem(
-    override val data: Int,
+    override var data: Int,
     override var sender: SendSource,
     override val name: String = "IntData-#$data"
 ): DataItem<Int>(){

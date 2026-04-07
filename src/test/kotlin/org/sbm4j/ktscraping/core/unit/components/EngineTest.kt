@@ -1,31 +1,47 @@
 package org.sbm4j.ktscraping.core.unit.components
 
-import io.mockk.mockk
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.has
+import com.natpryce.hamkrest.isA
+import com.natpryce.hamkrest.sameInstance
+import io.mockk.coVerify
+import io.mockk.spyk
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.sbm4j.ktscraping.core.CrawlerResult
 import org.sbm4j.ktscraping.core.channels.CrawlerChannelManager
 import org.sbm4j.ktscraping.core.components.AbstractEngine
+import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
-import org.sbm4j.ktscraping.core.utils.DataItemTest
-import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.core.utils.ComponentStub
+import org.sbm4j.ktscraping.core.utils.IntDataItem
+import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
-import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.events.EventPropagation
 import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.NodeTester
+import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+
+data class TestingEvent(
+    override var sender: SendSource,
+    override val eventName: String,
+    override val propagation: EventPropagation = EventPropagation.BOTH,
+    ) : Event(sender, eventName){
+    override fun clone(): Event {
+        return this.copy()
+    }
+}
 
 class TestingEngine(
     crawlerChannelManager: CrawlerChannelManager,
@@ -37,109 +53,125 @@ class TestingEngine(
 }
 
 
-class EngineTest {
-
-    val sender: SendSource = mockk<SendSource>()
+class EngineTest : NodeTester<TestingEngine>() {
 
     lateinit var crawlerChannelManager: CrawlerChannelManager
 
-    lateinit var engine: TestingEngine
+    lateinit var downloadStub: ComponentStub
 
-    @BeforeTest
-    fun setUp() {
+    lateinit var pipelineStub: ComponentStub
+
+    override fun buildNode(): TestingEngine {
+        return TestingEngine(crawlerChannelManager)
+    }
+
+    @BeforeEach
+    fun setupStubs(): Unit = runBlocking{
         crawlerChannelManager = CrawlerChannelManager()
-        engine = TestingEngine(crawlerChannelManager)
+        crawlerChannelManager.initChannels(rootScope)
+        downloadStub = spyk(ComponentStub(
+            "downloadStub",
+            crawlerChannelManager.downloaderChannel)
+        )
+        pipelineStub = spyk(ComponentStub(
+            "pipelineStub",
+            crawlerChannelManager.pipelineChannel
+        ))
+        downloadStub.start(rootScope)?.join()
+        pipelineStub.start(rootScope)?.join()
+
+        node = buildNode()
+        node.start(rootScope)?.join()
     }
 
-    suspend fun processDownloadEvent(event: Event){
-        val ack = event.buildBack()
-        crawlerChannelManager.downloaderChannel.send(ack)
+    @AfterEach
+    fun tearDownStubs(): Unit = runBlocking {
+        downloadStub.stop()
+        pipelineStub.stop()
+        node.stop()
+        crawlerChannelManager.closeChannels()
     }
 
-    suspend fun processPipelineEvent(event: Event){
-        val ack = event.buildBack()
-        crawlerChannelManager.pipelineChannel.send(ack)
+
+    fun getReceivedSend(stub: ComponentStub): Send{
+        val captured = mutableListOf<Send>()
+        coVerify { stub.processSend(capture(captured)) }
+        assertThat(captured.size, equalTo(1))
+        return captured[0]
     }
 
-    suspend fun processDownloadingRequest(request: DownloadingRequest){
-        val response = request.buildBack()
-        crawlerChannelManager.downloaderChannel.send(response)
-    }
 
-    suspend fun processPipelineItem(item: Item){
-        val ack = item.buildBack()
-        crawlerChannelManager.pipelineChannel.send(ack)
-    }
 
-    suspend fun withEngine(
-        nbMessageDownloader: Int = 1, nbMessagePipeline: Int = 1,
-        func: suspend EngineTest.() -> Unit
-    ) {
+    @Test
+    fun `send request`() = testScope.runTest {
+        val url = "une url"
+        val request1 = Request(sender, url)
 
-        coroutineScope {
-            crawlerChannelManager.initChannels(this)
+        val data = mutableMapOf<String, Any>("result" to "1")
+        downloadStub.downloadingResponses[url] = Pair(ContentType.STRING, data)
 
-            launch {
-                engine.start(this)
+        val resp = crawlerChannelManager.spiderChannel.sendSync<DownloadingResponse>(request1)
 
-                logger.info { "Starting interacting with engine" }
-                val start = StartEvent(sender)
-                crawlerChannelManager.spiderChannel.sendSync<EventBack>(start)
+        logger.info { "Received response: ${resp}" }
 
-                func()
+        assertThat(resp, isDownloadingResponseWith(url, data))
 
-                val end = EndEvent(sender)
-                crawlerChannelManager.spiderChannel.sendSync<EventBack>(end)
-
-                engine.stop()
-                crawlerChannelManager.closeChannels()
-                logger.debug{"finished interacting with engine"}
-            }
-            launch {
-                crawlerChannelManager.downloaderChannel
-                    .getSendFlow().take(nbMessageDownloader + 2).collect { send ->
-                    when(send){
-                        is Event -> processDownloadEvent(send)
-                        is DownloadingRequest -> processDownloadingRequest(send)
-                    }
-                }
-                logger.debug{"Finished receiving message on downloading branch"}
-            }
-            launch {
-                crawlerChannelManager.pipelineChannel
-                    .getSendFlow().take(nbMessagePipeline + 2).collect { send ->
-                    when(send){
-                        is Event -> processPipelineEvent(send)
-                        is Item -> processPipelineItem(send)
-                    }
-                }
-                logger.debug{"Finished receiving message on pipeline branch"}
-            }
-        }
+        val captured = getReceivedSend(downloadStub)
+        assertThat(captured, isA<DownloadingRequest>(
+            has(DownloadingRequest::url, equalTo(url))
+        ))
     }
 
 
     @Test
-    fun testEngineSendRequest() = TestScope().runTest {
-        val request1 = Request(sender, "une url")
+    fun `send item`() = testScope.runTest {
+        val item = IntDataItem(1, sender)
 
-        withEngine(nbMessagePipeline = 0, nbMessageDownloader = 1) {
-            val resp = crawlerChannelManager.spiderChannel.sendSync<DownloadingResponse>(request1)
+        val ack = crawlerChannelManager.spiderChannel.sendSync<ItemAck>(item)
 
-            logger.info { "Received response: ${resp}" }
-        }
+        logger.info { "Received item ack on item branch: ${ack}" }
+        val captured = getReceivedSend(pipelineStub)
+        assertThat(
+            captured, isA<IntDataItem>(has(IntDataItem::data, equalTo(item.data)))
+        )
     }
-
 
     @Test
-    fun testEngineSendItem() = TestScope().runTest {
-        val data = DataItemTest("value1", "req1")
-        val item = ObjectDataItem(data, DataItemTest::class, "itemTest", sender)
+    fun `send donwloading event`() = testScope.runTest {
+        val event = TestingEvent(sender, "test", EventPropagation.DOWNLOADER)
 
-        withEngine(nbMessagePipeline = 1, nbMessageDownloader = 0) {
-            val ack = crawlerChannelManager.spiderChannel.sendSync<ItemAck>(item)
+        val back = crawlerChannelManager.spiderChannel.sendSync<EventBack>(event)
 
-            logger.info { "Received item ack on item branch: ${ack}" }
-        }
+        assertThat(back.send, sameInstance(event))
+
+        coVerify(exactly = 1) { downloadStub.processSend(any()) }
+        coVerify(exactly = 0) { pipelineStub.processSend(any()) }
     }
+
+    @Test
+    fun `send pipeline event`() = testScope.runTest {
+        val event = TestingEvent(sender, "test", EventPropagation.PIPELINE)
+
+        val back = crawlerChannelManager.spiderChannel.sendSync<EventBack>(event)
+
+        assertThat(back.send, sameInstance(event))
+
+        coVerify(exactly = 0) { downloadStub.processSend(any()) }
+        coVerify(exactly = 1) { pipelineStub.processSend(any()) }
+    }
+
+    @Test
+    fun `send event both`() = testScope.runTest {
+        val event = TestingEvent(sender, "test", EventPropagation.BOTH)
+
+        val back = crawlerChannelManager.spiderChannel.sendSync<EventBack>(event)
+
+        //assertThat(back.send, sameInstance(event))
+
+        coVerify(exactly = 1) { downloadStub.processSend(any()) }
+        coVerify(exactly = 1) { pipelineStub.processSend(any()) }
+    }
+
 }
+
+

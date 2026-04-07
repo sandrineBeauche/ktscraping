@@ -17,4 +17,6 @@ abstract class AbstractRequest(override var sender: SendSource): Send {
 
     val parameters: MutableMap<String, Any> = mutableMapOf()
 
+    abstract fun toURIString(): String
+
 }

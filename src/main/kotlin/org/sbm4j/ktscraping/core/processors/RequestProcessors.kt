@@ -9,7 +9,7 @@ import org.sbm4j.meercat.nodes.sendProcessors.SendConsumer
 import org.sbm4j.meercat.nodes.sendProcessors.SendForwarder
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
-typealias CallbackError = suspend (Throwable) -> Unit
+
 
 
 class NoRequestSenderException(message: String) : Exception(message)
@@ -41,7 +41,7 @@ interface ResponseForwarder: BackForwarder {
     suspend fun processResponse(response: Response)
 
     override suspend fun run() {
-        val flow = this@ResponseForwarder.outChannel.getBackFlow<Response>(Response::class, this)
+        val flow = this.outChannel.getBackFlow<Response>(Response::class, this)
         receiveBacks(Response::class, flow, ::processResponse)
     }
 }

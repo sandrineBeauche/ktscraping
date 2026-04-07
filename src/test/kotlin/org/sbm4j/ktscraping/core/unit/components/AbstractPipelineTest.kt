@@ -2,37 +2,54 @@ package org.sbm4j.ktscraping.core.unit.components
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.has
+import com.natpryce.hamkrest.isA
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.core.utils.DataItemTest
+import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.meercat.nodes.logger
 
-class AbstractPipelineTest: AbstractPipelineTester() {
-    override fun buildPipeline(pipelineName: String): AbstractPipeline {
-        return object: AbstractPipeline(pipelineName){
-            override suspend fun processItem(item: Item): List<Item> {
-                return listOf(item)
-            }
+class TestingPipeline: AbstractPipeline("pipeline"){
+    override suspend fun processItem(item: Item): List<Item> {
+        if(item is IntDataItem){
+            item.data++
         }
+        return listOf(item)
+    }
+}
+
+class AbstractPipelineTest: AbstractPipelineTester<TestingPipeline>() {
+
+    override fun buildNode(): TestingPipeline {
+        val result = TestingPipeline()
+        result.inChannel = inChannel
+        result.outChannel = outChannel
+        return result
     }
 
 
     @Test
-    fun testPipeline() = TestScope().runTest {
+    fun `forward item and ack`() = testScope.runTest {
 
-        val dataVal = DataItemTest("coucou", "request1")
-        val itemVal = ObjectDataItem.build(dataVal, "itemTest", sender)
+        val item = IntDataItem(1, sender)
+        lateinit var ack: ItemAck
 
-        withPipeline {
-            val ack = inChannel.sendSync<ItemAck>(itemVal)
+        withConsumer {
+            ack = inChannel.sendSync<ItemAck>(item)
             logger.debug{ "received the ack: ${ack}" }
-            assertThat(ack.send.channelableId, equalTo(itemVal.channelableId))
         }
+
+        assertThat(ack.send.channelableId, equalTo(item.channelableId))
+        val captured = getReceivedSend()
+        assertThat(captured[1], isA<IntDataItem>(
+            has(IntDataItem::data, equalTo(2)),
+        ))
     }
 }

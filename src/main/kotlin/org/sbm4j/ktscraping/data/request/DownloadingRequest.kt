@@ -48,6 +48,10 @@ abstract class DownloadingRequest(
     override fun getKeyBarrier(): String {
         return this.url
     }
+
+    override fun toURIString(): String {
+        return this.url
+    }
 }
 
 data class Request(

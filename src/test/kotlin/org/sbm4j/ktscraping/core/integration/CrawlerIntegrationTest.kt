@@ -40,7 +40,7 @@ data class IntegrationTestItem(override val data: String,
 class IntegrationTestSpider(
     name: String
 ): AbstractSpider(name){
-    override suspend fun performScraping(subScope: CoroutineScope) {
+    override suspend fun performScraping() {
         val req1 = Request(this, "request1-${name}")
         val resp1 = sendSync(req1) as DownloadingResponse
         val value = resp1.contents["prop1"] as String

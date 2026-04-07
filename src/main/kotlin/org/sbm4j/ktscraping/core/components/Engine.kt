@@ -40,12 +40,6 @@ abstract class AbstractEngine(
 
     override val name: String = "Engine"
 
-    lateinit var spiderChannel: SuperChannel
-
-    lateinit var downloaderChannel: SuperChannel
-
-    lateinit var pipelineChannel: SuperChannel
-
 
     open suspend fun processRequest(request: AbstractRequest){}
 
@@ -55,17 +49,18 @@ abstract class AbstractEngine(
 
     open suspend fun processItemAck(itemAck: ItemAck){}
 
+
     val innerRequestForwarder: AbstractProcessingNode = object :
         RequestForwarder,
         ResponseForwarder,
         AbstractMiddleComponent("${this@AbstractEngine.name}-RequestForwarder")
     {
         override var inChannel: SuperChannel
-            get() = this@AbstractEngine.spiderChannel
+            get() = this@AbstractEngine.crawlerChannelManager.spiderChannel
             set(value) { }
 
         override var outChannel: SuperChannel
-            get() = this@AbstractEngine.downloaderChannel
+            get() = this@AbstractEngine.crawlerChannelManager.downloaderChannel
             set(value) {}
 
         override var scope: CoroutineScope
@@ -100,11 +95,11 @@ abstract class AbstractEngine(
         AbstractMiddleComponent("${this@AbstractEngine.name}-ItemForwarder")
     {
         override var inChannel: SuperChannel
-            get() = this@AbstractEngine.spiderChannel
+            get() = this@AbstractEngine.crawlerChannelManager.spiderChannel
             set(value) { }
 
         override var outChannel: SuperChannel
-            get() = this@AbstractEngine.pipelineChannel
+            get() = this@AbstractEngine.crawlerChannelManager.pipelineChannel
             set(value) {}
 
         override var scope: CoroutineScope
@@ -135,7 +130,7 @@ abstract class AbstractEngine(
         AbstractMiddleComponent("${this@AbstractEngine.name}-EventPropagator")
     {
         override var inChannel: SuperChannel
-            get() = this@AbstractEngine.spiderChannel
+            get() = this@AbstractEngine.crawlerChannelManager.spiderChannel
             set(value) {}
 
 
@@ -145,7 +140,12 @@ abstract class AbstractEngine(
 
         override suspend fun sendPostProcess(send: Send, result: Any) {
             logger.debug{"$name: forward event to downloader and pipeline channel: $send"}
-            val result = sendSyncAll(listOf(downloaderChannel, pipelineChannel), send)
+            val result = sendSyncAll(
+                listOf(
+                    this@AbstractEngine.crawlerChannelManager.downloaderChannel,
+                    this@AbstractEngine.crawlerChannelManager.pipelineChannel
+                ),
+                send)
             logger.debug{"$name: result $result... send it back"}
 
             inChannel.send(result)
@@ -176,13 +176,14 @@ abstract class AbstractEngine(
 
     override suspend fun run() {
         logger.info { "${name}: starting engine" }
-        spiderChannel = crawlerChannelManager.spiderChannel
-        downloaderChannel = crawlerChannelManager.downloaderChannel
-        pipelineChannel = crawlerChannelManager.pipelineChannel
 
         innerRequestForwarder.run()
         innerItemForwarder.run()
         innerEventPropagator.run()
+
+        this.crawlerChannelManager.spiderChannel.awaitReady()
+        this.crawlerChannelManager.downloaderChannel.awaitReady()
+        this.crawlerChannelManager.pipelineChannel.awaitReady()
     }
 
     override suspend fun stop() {

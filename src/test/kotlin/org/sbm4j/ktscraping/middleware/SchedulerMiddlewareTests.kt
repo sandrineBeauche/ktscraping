@@ -8,16 +8,16 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.junit.jupiter.api.assertThrows
-import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
+import org.sbm4j.ktscraping.core.utils.AbstractDownloaderMiddlewareTester
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.milliseconds
 
-class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
+class SchedulerMiddlewareTests: AbstractDownloaderMiddlewareTester<SchedulerMiddleware>() {
 
-    override fun buildMiddleware(middlewareName: String): AbstractMiddleware {
-        val result = SchedulerMiddleware(middlewareName)
+    override fun buildNode(): SchedulerMiddleware {
+        val result = SchedulerMiddleware("scheduler middleware")
         result.nbConnexions = 1
         return result
     }
@@ -30,7 +30,7 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
         lateinit var req: Request
         lateinit var resp: DownloadingResponse
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request)
             req = outChannel.channel.receive() as Request
 
@@ -54,7 +54,7 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
         lateinit var req2: Request
         lateinit var resp2: DownloadingResponse
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request1)
             inChannel.send(request2)
 
@@ -82,8 +82,8 @@ class SchedulerMiddlewareTests: AbstractMiddlewareTester() {
         val response2 = DownloadingResponse(request2)
 
         assertThrows<TimeoutCancellationException> {
-            withTimeout(5000L) {
-                withMiddleware {
+            withTimeout(5000L.milliseconds) {
+                withConsumer {
                     inChannel.send(request1)
                     inChannel.send(request2)
 

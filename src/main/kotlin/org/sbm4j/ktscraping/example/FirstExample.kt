@@ -33,11 +33,11 @@ data class BoardgameEvent(
 class FirstExampleSpider(
     name: String
 ) : AbstractSpider(name) {
-    override suspend fun performScraping(subScope: CoroutineScope) {
+    override suspend fun performScraping() {
         task("FetchData", taskMessage = "Fetch event data", slotMode = SlotMode.PROGRESS_BAR_UNDEFINED){ task ->
             //sends the initial request and get the response
             val request = Request(this, "http://www.meeple-breton.fr/2025/01/tous-les-festivals-de-2025.html")
-            val response = sendSync(request, subScope) as DownloadingResponse
+            val response = sendSync(request) as DownloadingResponse
             val html = response.contents["payload"] as String
 
             //extracts data from the response

@@ -18,7 +18,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import org.sbm4j.meercat.nodes.logger
 
-class DBPipelineTests: AbstractPipelineTester() {
+class DBPipelineTests: AbstractPipelineTester<DBPipeline<*>>() {
 
     lateinit var db: NitriteDBConnexion
 
@@ -36,17 +36,19 @@ class DBPipelineTests: AbstractPipelineTester() {
         Address("rue des coquelicots", 3, 30000, "MickeyVille")
     )
 
-    override fun buildPipeline(pipelineName: String): AbstractPipeline {
+    override fun buildNode(): DBPipeline<*> {
         val pipeline = DBPipeline<Contact>("db pipeline")
         pipeline.db = db
         pipeline.objectClass = Contact::class.java
+        pipeline.inChannel = inChannel
+        pipeline.outChannel = outChannel
         return pipeline
     }
 
+
     @BeforeTest
-    override fun setUp(){
+    fun setUpDB(){
         db.clear(Contact::class.java)
-        super.setUp()
     }
 
     @Test
@@ -54,7 +56,7 @@ class DBPipelineTests: AbstractPipelineTester() {
 
         val item = ObjectDataItem.build(data1, "test", sender)
 
-        withPipeline {
+        withConsumer {
             inChannel.send(item)
 
             val end = EndEvent(sender)

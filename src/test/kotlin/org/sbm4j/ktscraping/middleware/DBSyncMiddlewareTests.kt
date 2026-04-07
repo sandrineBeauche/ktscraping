@@ -15,9 +15,10 @@ import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.meercat.data.ErrorLevel
 import org.sbm4j.meercat.nodes.logger
 
-class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
-    override fun buildMiddleware(middlewareName: String): SpiderMiddleware {
-        val result = DBSyncMiddleware<Contact>(middlewareName)
+class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester<DBSyncMiddleware<*>>() {
+
+    override fun buildNode(): DBSyncMiddleware<*> {
+        val result = DBSyncMiddleware<Contact>("DB sync middleware")
         result.keys = setOf(1,2,3)
         result.classObject = Contact::class.java
         result.keyProperty = Contact::contactId
@@ -34,7 +35,7 @@ class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
         lateinit var delete1: ItemDelete
         lateinit var delete2: ItemDelete
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request1)
             response = outChannel.channel.receive() as DownloadingResponse
             logger.debug { "Received a response: $response" }
@@ -65,12 +66,12 @@ class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester() {
         lateinit var response: DownloadingResponse
         lateinit var end: EndEvent
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request1)
             response = outChannel.channel.receive() as DownloadingResponse
             logger.debug { "Received a response: $response" }
 
-            val errorInfos = ErrorInfo(Exception(), this.middleware, ErrorLevel.MAJOR)
+            val errorInfos = ErrorInfo(Exception(), node, ErrorLevel.MAJOR)
             outChannel.send(ErrorInternal(errorInfos, sender))
             outChannel.channel.receive()
 

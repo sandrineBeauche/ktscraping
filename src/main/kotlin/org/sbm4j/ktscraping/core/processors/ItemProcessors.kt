@@ -29,11 +29,11 @@ interface ItemForwarder: ItemReceiver, SendForwarder {
 interface ItemAckForwarder: BackForwarder {
 
     suspend fun processItemAck(itemAck: ItemAck){
-        this@ItemAckForwarder.inChannel.send(itemAck)
+        this.inChannel.send(itemAck)
     }
 
     override suspend fun run() {
-        val flow = this@ItemAckForwarder.outChannel.getBackFlow(ItemAck::class, this)
+        val flow = this.outChannel.getBackFlow(ItemAck::class, this)
         receiveBacks(ItemAck::class, flow, ::processItemAck)
     }
 }

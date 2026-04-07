@@ -1,9 +1,9 @@
 package org.sbm4j.ktscraping.core.utils
 
-import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 fun generateRequestResponse(sender: SendSource,
@@ -20,3 +20,4 @@ fun generateRequestResponse(sender: SendSource,
 
     return Pair(req, resp)
 }
+

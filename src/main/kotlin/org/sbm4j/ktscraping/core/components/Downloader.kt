@@ -1,11 +1,6 @@
 package org.sbm4j.ktscraping.core.components
 
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.ktscraping.core.processors.EventSink
 import org.sbm4j.ktscraping.core.processors.RequestReceiver
-import org.sbm4j.meercat.data.Back
-import org.sbm4j.meercat.data.Send
-import org.sbm4j.meercat.nodes.AbstractSinkNode
 import org.sbm4j.meercat.nodes.logger
 
 enum class ContentType{
@@ -16,12 +11,13 @@ enum class ContentType{
     BITMAP_IMAGE,
     IMAGE,
     FILE,
+    STRING,
     NOTHING
 }
 
 abstract class AbstractDownloader(
     name: String
-): AbstractSinkComponent(name), RequestReceiver, EventSink {
+): AbstractSinkComponent(name), RequestReceiver {
 
     companion object{
         val PAYLOAD: String = "payload"

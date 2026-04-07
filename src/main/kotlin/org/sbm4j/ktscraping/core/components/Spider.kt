@@ -1,26 +1,22 @@
 package org.sbm4j.ktscraping.core.components
 
-import kotlinx.coroutines.CoroutineName
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import org.sbm4j.ktscraping.core.SlotMode
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.StartEvent
-import org.sbm4j.ktscraping.data.internal.*
+import org.sbm4j.ktscraping.data.internal.ErrorInternal
+import org.sbm4j.ktscraping.data.internal.StartStepProgressItem
+import org.sbm4j.ktscraping.data.internal.StartTaskProgressInternal
+import org.sbm4j.ktscraping.data.internal.StepDoneProgressItem
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.meercat.data.ErrorLevel
 import org.sbm4j.meercat.data.SendException
 import org.sbm4j.meercat.nodes.logger
-import org.sbm4j.meercat.nodes.sendProcessors.Initiator
-import org.sbm4j.meercat.nodes.sendProcessors.NodeStatus
 
 
 class SpiderStepException(message: String? = null, cause: Throwable? = null) : Exception(message, cause) {
@@ -29,51 +25,44 @@ class SpiderStepException(message: String? = null, cause: Throwable? = null) : E
 
 abstract class AbstractSpider(
     override val name: String = "Spider"
-) : Initiator, AbstractComponent() {
-
-    override lateinit var initiatorStatus: MutableStateFlow<NodeStatus>
-
-    override lateinit var outChannel: SuperChannel
+) : AbstractInitiatorComponent() {
 
     /**
      * Performs the scraping logic. Here the user writes his code to scrape what he wants
      * @param subScope the subscope where the scraping should be executed
      * @throws SendException if there is an exception during the scraping
      */
-    abstract suspend fun performScraping(subScope: CoroutineScope)
+    abstract suspend fun performScraping()
 
 
     override suspend fun run() {
         logger.info { "${name}: Starting spider" }
-        scope.launch(CoroutineName("${name}-performScraping")) {
-            try {
-                logger.info { "${name}: send start event to initialize the crawler" }
-                val startEvent = StartEvent(this@AbstractSpider)
-                val startEventBack = sendSync<Event>(startEvent, this)
-                logger.debug{"${name}: received start event back: ${startEventBack}"}
+        try {
+            logger.info { "${name}: send start event to initialize the crawler" }
+            val startEvent = StartEvent(this@AbstractSpider)
+            val startEventBack = sendSync<Event>(startEvent)
+            logger.debug { "${name}: received start event back: ${startEventBack}" }
 
-                logger.info { "${name}: Crawler initialized with success... start performing scraping" }
-                performScraping(this)
-            } catch (ex: SendException) {
-                logger.error { "${name}: Error when running the spider -> ${ex.message}" }
-                val errorInfos = generateErrorInfos(ex)
-                val error = ErrorInternal(errorInfos, this@AbstractSpider)
-                outChannel.send(error)
-            } finally {
-                logger.info { "${name}: finished performing scraping... send end event" }
+            logger.info { "${name}: Crawler initialized with success... start performing scraping" }
+            performScraping()
+        } catch (ex: SendException) {
+            logger.error { "${name}: Error when running the spider -> ${ex.message}" }
+            val errorInfos = generateErrorInfos(ex)
+            val error = ErrorInternal(errorInfos, this@AbstractSpider)
+            outChannel.send(error)
+        } finally {
+            logger.info { "${name}: finished performing scraping... send end event" }
 
-                val endEvent = EndEvent(this@AbstractSpider)
-                val endEventBack = sendSync<Event>(endEvent, this)
-                logger.info { "${name}: ready to stop: ${endEventBack}" }
-            }
+            val endEvent = EndEvent(this@AbstractSpider)
+            val endEventBack = sendSync<Event>(endEvent)
+            logger.info { "${name}: ready to stop: ${endEventBack}" }
         }
-        logger.debug{"${name}: done launching run in spider"}
+        logger.debug { "${name}: done launching run in spider" }
     }
 
 
     override suspend fun stop() {
-        super<Initiator>.stop()
-        super<AbstractComponent>.stop()
+        super.stop()
     }
 
     suspend fun <T> task(
@@ -179,7 +168,7 @@ abstract class AbstractSimpleSpider(
 
     lateinit var urlRequest: String
 
-    override suspend fun performScraping(subScope: CoroutineScope) {
+    override suspend fun performScraping() {
         val req = Request(this, urlRequest)
         logger.info { "$name sends a new request ${req.name}" }
         try {

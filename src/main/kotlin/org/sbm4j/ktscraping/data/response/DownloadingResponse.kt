@@ -18,15 +18,31 @@ data class DownloadingResponse(
 
     fun isText(): Boolean{
         return when(type){
-            ContentType.XML, ContentType.JSON, ContentType.SVG_IMAGE, ContentType.HTML -> true
-            ContentType.FILE, ContentType.IMAGE, ContentType.BITMAP_IMAGE, ContentType.NOTHING -> false
+            ContentType.XML,
+            ContentType.JSON,
+            ContentType.SVG_IMAGE,
+            ContentType.HTML,
+            ContentType.STRING -> true
+
+            ContentType.FILE,
+            ContentType.IMAGE,
+            ContentType.BITMAP_IMAGE,
+            ContentType.NOTHING -> false
         }
     }
 
     fun isByteArray(): Boolean{
         return when(type){
-            ContentType.XML, ContentType.JSON, ContentType.SVG_IMAGE, ContentType.HTML, ContentType.NOTHING -> false
-            ContentType.FILE, ContentType.IMAGE, ContentType.BITMAP_IMAGE -> true
+            ContentType.XML,
+            ContentType.JSON,
+            ContentType.SVG_IMAGE,
+            ContentType.HTML,
+            ContentType.NOTHING,
+            ContentType.STRING -> false
+
+            ContentType.FILE,
+            ContentType.IMAGE,
+            ContentType.BITMAP_IMAGE -> true
         }
     }
 

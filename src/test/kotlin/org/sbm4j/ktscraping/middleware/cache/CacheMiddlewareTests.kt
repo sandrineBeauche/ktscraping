@@ -5,9 +5,8 @@ import com.natpryce.hamkrest.assertion.assertThat
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
-import org.sbm4j.ktscraping.core.components.AbstractMiddleware
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.core.utils.AbstractMiddlewareTester
+import org.sbm4j.ktscraping.core.utils.AbstractDownloaderMiddlewareTester
 import org.sbm4j.ktscraping.middleware.CacheAvailability
 import org.sbm4j.ktscraping.middleware.CacheEntry
 import org.sbm4j.ktscraping.middleware.CacheMiddleware
@@ -104,11 +103,12 @@ class CacheMiddlewareUnitTests{
     }
 }
 
-class CacheMiddlewareTests: AbstractMiddlewareTester() {
-    override fun buildMiddleware(middlewareName: String): AbstractMiddleware {
+class CacheMiddlewareTests: AbstractDownloaderMiddlewareTester<CacheMiddleware>() {
+
+    override fun buildNode(): CacheMiddleware {
         val rootCache = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware")!!
 
-        val result = CacheMiddleware(middlewareName)
+        val result = CacheMiddleware("cache middleware")
         result.availability = CacheAvailability.HOUR
         result.root = File(rootCache.file, "cache")
         if(!result.root.exists()){
@@ -131,7 +131,7 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
         lateinit var resp: DownloadingResponse
         lateinit var resp2: DownloadingResponse
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request)
             req = outChannel.channel.receive() as Request
 
@@ -149,12 +149,12 @@ class CacheMiddlewareTests: AbstractMiddlewareTester() {
     @Test
     fun testCacheMiddlewareLoadCache() = TestScope().runTest {
         val cacheDir = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/cache1")!!.file
-        (middleware as CacheMiddleware).root = File(cacheDir)
+        node.root = File(cacheDir)
 
         val request = Request(sender, "http://www.exemple.com")
         lateinit var resp: DownloadingResponse
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request)
             resp = outChannel.channel.receive() as DownloadingResponse
         }

@@ -15,10 +15,10 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 
-class HttpClientDownloaderTests: AbstractDownloaderTester() {
+class HttpClientDownloaderTests: AbstractDownloaderTester<HttpClientDownloader>() {
 
-    override fun buildDownloader(downloaderName: String): AbstractDownloader {
-        return HttpClientDownloader(downloaderName)
+    override fun buildNode(): HttpClientDownloader {
+        return HttpClientDownloader("http downloader")
     }
 
     @Test
@@ -26,7 +26,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
         val request = Request(sender, "https://fr.wikipedia.org/static/images/icons/wikipedia.png")
         lateinit var response: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             inChannel.send(request)
             response = inChannel.channel.receive() as DownloadingResponse
         }
@@ -49,7 +49,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
         val request = Request(sender, "https://fr.wikipe/static/images/icons/wikipedia.png")
         lateinit var response: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             inChannel.send(request)
             response = inChannel.channel.receive() as DownloadingResponse
         }
@@ -63,7 +63,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester() {
         val request = Request(sender, "https://www.iana.org/_img/2022/iana-logo-header.svg")
         lateinit var response: DownloadingResponse
 
-        withDownloader {
+        withConsumer {
             inChannel.send(request)
             response = inChannel.channel.receive() as DownloadingResponse
         }

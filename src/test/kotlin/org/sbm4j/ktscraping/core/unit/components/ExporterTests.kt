@@ -1,11 +1,14 @@
 package org.sbm4j.ktscraping.core.unit.components
 
+import com.natpryce.hamkrest.assertion.assertThat
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
 import org.sbm4j.ktscraping.core.utils.DataItemTest
+import org.sbm4j.ktscraping.core.utils.IntDataItem
+import org.sbm4j.ktscraping.core.utils.isOkItemAck
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
@@ -14,38 +17,31 @@ import org.sbm4j.meercat.nodes.logger
 import kotlin.test.Test
 import kotlin.test.assertSame
 
-class ExporterTests(): AbstractExporterTester() {
-
-    override fun buildExporter(exporterName: String): AbstractExporter {
-        return object: AbstractExporter(exporterName){
-            override suspend fun exportItem(item: Item) {
-                logger.info{"${name}: exports the item ${item}"}
-            }
-
-            override suspend fun preStart(event: Event): EventJobResult? {
-                logger.info { "${name}: inside pre start" }
-                return null
-            }
-
-            override suspend fun preEnd(event: Event): EventJobResult? {
-                logger.info { "${name}: inside pre end" }
-                return null
-            }
-        }
+class TestingExporter : AbstractExporter("exporter") {
+    override suspend fun exportItem(item: Item) {
+        logger.info{"${name}: exports the item ${item}"}
     }
 
+}
+
+class ExporterTests(): AbstractExporterTester<TestingExporter>() {
+
+    override fun buildNode(): TestingExporter {
+        val result = TestingExporter()
+        result.inChannel = inChannel
+        return result
+    }
 
     @Test
-    fun testExporter() = TestScope().runTest {
-        val data = DataItemTest("value1", "req1")
-        val item = ObjectDataItem<DataItemTest>(data, DataItemTest::class, sender = sender)
+    fun `export a int item`() = testScope.runTest {
+        val item = IntDataItem(1, sender)
         lateinit var ack: ItemAck
 
-        withExporter {
+        withConsumer {
             ack = inChannel.sendSync<ItemAck>(item)
         }
 
-        assertSame(item, ack.send)
+        assertThat(ack, isOkItemAck(item))
     }
 
 }

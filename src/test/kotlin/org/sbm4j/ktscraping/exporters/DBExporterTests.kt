@@ -5,15 +5,15 @@ import com.natpryce.hamkrest.equalTo
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
-import org.sbm4j.ktscraping.core.components.AbstractExporter
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
-import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
+import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.meercat.nodes.logger
 import java.io.File
 import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 @Serializable
@@ -37,7 +37,7 @@ data class Contact(
     }
 }
 
-class DBExporterTests: AbstractExporterTester() {
+class DBExporterTests: AbstractExporterTester<DBExporter>() {
 
     lateinit var db: NitriteDBConnexion
 
@@ -55,17 +55,16 @@ class DBExporterTests: AbstractExporterTester() {
         Address("rue des coquelicots", 3, 30000, "MickeyVille")
     )
 
-    override fun buildExporter(exporterName: String): AbstractExporter {
-        val result = DBExporter(exporterName)
+
+    override fun buildNode(): DBExporter {
+        val result = DBExporter("exporter")
         result.db = db
         return result
     }
 
-
-    @BeforeTest
-    override fun setUp(){
+    @BeforeEach
+    fun setUpDB(){
         db.clear(Contact::class.java)
-        super.setUp()
     }
 
     fun getFirstContact(): Contact{
@@ -73,9 +72,9 @@ class DBExporterTests: AbstractExporterTester() {
         return contacts[0] as Contact
     }
 
-    @AfterTest
-    fun tearDown(){
-        //db.close()
+    @AfterEach
+    fun tearDownDB(){
+        db.close()
     }
 
     @Test
@@ -83,7 +82,7 @@ class DBExporterTests: AbstractExporterTester() {
 
         val item = ObjectDataItem.build(data1, "test", sender)
 
-        withExporter {
+        withConsumer {
             inChannel.send(item)
             val itemAck = inChannel.channel.receive()
         }
@@ -102,7 +101,7 @@ class DBExporterTests: AbstractExporterTester() {
 
         val item = ObjectDataItem.build(data2, "test", sender)
 
-        withExporter {
+        withConsumer {
             inChannel.send(item)
             val itemAck = inChannel.channel.receive()
         }
@@ -128,7 +127,7 @@ class DBExporterTests: AbstractExporterTester() {
             sender = sender
         )
 
-        withExporter {
+        withConsumer {
             inChannel.send(item)
             val itemAck = inChannel.channel.receive()
 
@@ -153,7 +152,7 @@ class DBExporterTests: AbstractExporterTester() {
             sender = sender
         )
 
-        withExporter {
+        withConsumer {
             inChannel.send(item)
             val itemAck = inChannel.channel.receive()
 
@@ -175,7 +174,7 @@ class DBExporterTests: AbstractExporterTester() {
             sender = sender
         )
 
-        withExporter {
+        withConsumer {
             inChannel.send(ObjectDataItem.build(data1, "test", sender))
             val itemAck1 = inChannel.channel.receive()
 

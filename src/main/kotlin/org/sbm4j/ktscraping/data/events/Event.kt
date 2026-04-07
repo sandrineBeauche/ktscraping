@@ -1,3 +1,4 @@
+
 package org.sbm4j.ktscraping.data.events
 
 import org.sbm4j.meercat.data.Send
@@ -16,8 +17,8 @@ enum class EventPropagation{
 
 abstract class Event(
     override var sender: SendSource,
-    val eventName: String,
-    val propagation: EventPropagation = EventPropagation.BOTH,
+    open val eventName: String,
+    open val propagation: EventPropagation = EventPropagation.BOTH,
     override val name: String = "${eventName}-Event"
 ): Send {
 

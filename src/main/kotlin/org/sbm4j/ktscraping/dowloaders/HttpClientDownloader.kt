@@ -64,6 +64,7 @@ class HttpClientDownloader(name: String = "HTTP Client downloader"): AbstractDow
                 ContentType.IMAGE -> BodyType.IMAGE
                 ContentType.FILE -> BodyType.FILE
                 ContentType.NOTHING -> TODO()
+                ContentType.STRING -> BodyType.TEXT
             }
         }
         else{

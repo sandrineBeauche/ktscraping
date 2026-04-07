@@ -7,9 +7,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
+import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.core.utils.isEndItemAckWithErrors
 import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
-import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
@@ -18,23 +18,11 @@ import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.meercat.nodes.logger
-import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-data class IntDataItem(override val data: Int,
-                       override var sender: SendSource,
-                       override val name: String = "DataItem-${data}"
-): DataItem<Int>(){
-    override fun clone(): Item {
-        return this.copy()
-    }
-
-    override fun getKeyBarrier(): String {
-        return name
-    }
-}
 
 class TestingAccumulatePipeline(name: String): AggregatePipeline(name) {
 
@@ -52,21 +40,23 @@ class TestingAccumulatePipeline(name: String): AggregatePipeline(name) {
     }
 }
 
-class AccumulatePipelineTests: AbstractPipelineTester() {
+class AccumulatePipelineTests: AbstractPipelineTester<TestingAccumulatePipeline>() {
 
     val values = listOf(1, 5, 7, 8)
 
     val items = values.map{ IntDataItem(it, sender) }
 
-    override fun buildPipeline(pipelineName: String): AbstractPipeline {
-        return TestingAccumulatePipeline("Testing accumulate")
+    override fun buildNode(): TestingAccumulatePipeline {
+        val result = TestingAccumulatePipeline("Testing accumulate")
+        result.inChannel = inChannel
+        result.outChannel = outChannel
+        return result
     }
-
 
     suspend fun withAccumulatePipeline(inputItems: List<DataItem<*>>, nbResults: Int = 1,
                                func: AccumulatePipelineTests.(outputItems: List<Item>) -> List<ItemAck>): EventBack{
         lateinit var final: EventBack
-        withPipeline() {
+        withConsumer() {
 
             //inputItems.forEach { inChannel.send(it) }
 
@@ -114,7 +104,7 @@ class AccumulatePipelineTests: AbstractPipelineTester() {
             val result = outputs[0] as IntDataItem
             logger.info { "received the data from pipeline: $result and send back ack" }
             assertEquals(values.sum(), result.data)
-            val error = ErrorInfo(Exception("une erreur"), this.pipeline, ErrorLevel.MAJOR)
+            val error = ErrorInfo(Exception("une erreur"), node, ErrorLevel.MAJOR)
             val resultAck = result.buildErrorBack(error, Status.ERROR)
             listOf(resultAck)
         }

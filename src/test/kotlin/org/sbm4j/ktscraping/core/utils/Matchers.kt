@@ -4,6 +4,8 @@ import com.natpryce.hamkrest.*
 import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 
@@ -51,6 +53,16 @@ fun isDownloadingResponseWith(url: String, contents: MutableMap<String, Any>): M
     )
 }
 
+fun isDownloadingResponseWithErrors(url: String, status: Status, nbErrors: Int): Matcher<DownloadingResponse>{
+    return isA<DownloadingResponse>(
+        allOf(
+            has(DownloadingResponse::send, isDownloadingRequestWith(url)),
+            has(DownloadingResponse::status, equalTo(status)),
+            has(DownloadingResponse::errorInfos, hasSize(equalTo(nbErrors)))
+        )
+    )
+}
+
 fun isOKEventBackWith(eventName: String): Matcher<EventBack>{
     return isA<EventBack>(
         allOf(
@@ -69,6 +81,16 @@ fun isEventResponseWithError(eventName: String, status: Status, nbErrors: Int): 
                 has(Event::eventName, equalTo(eventName)))),
             has(EventBack::status, equalTo(status)),
             has(EventBack::errorInfos, hasSize(equalTo(nbErrors)))
+        )
+    )
+}
+
+fun isOkItemAck(item: Item): Matcher<ItemAck>{
+    return isA<ItemAck>(
+        allOf(
+            has(ItemAck::send, sameInstance(item)),
+            has(ItemAck::status, equalTo(Status.OK)),
+            has(ItemAck::errorInfos, isEmpty)
         )
     )
 }

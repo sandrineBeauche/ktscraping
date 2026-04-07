@@ -22,11 +22,4 @@ interface EventDispatcher: Component, DIAware, Broadcast {
     override suspend fun run() {
         performEvents()
     }
-
-    override suspend fun stop() {
-        this.channelIn.close()
-        for(receiver in channelOuts){
-            receiver.close()
-        }
-    }
 }

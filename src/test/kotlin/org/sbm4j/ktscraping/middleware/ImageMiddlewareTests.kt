@@ -19,9 +19,10 @@ import org.sbm4j.meercat.nodes.logger
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
-class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
-    override fun buildMiddleware(middlewareName: String): SpiderMiddleware {
-        val result = ImageMiddleware(middlewareName)
+class ImageMiddlewareTests: AbstractSpiderMiddlewareTester<ImageMiddleware>() {
+
+    override fun buildNode(): ImageMiddleware {
+        val result = ImageMiddleware("image middleware")
         return result
     }
 
@@ -36,7 +37,7 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         lateinit var resp: DownloadingResponse
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request)
             val req = outChannel.channel.receive()
 
@@ -77,7 +78,7 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         lateinit var resp: DownloadingResponse
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request)
             val req = outChannel.channel.receive()
 
@@ -113,7 +114,7 @@ class ImageMiddlewareTests: AbstractSpiderMiddlewareTester() {
 
         val bytesImage = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/le_mariage_des_lapins.jpg")?.readBytes()!!
 
-        withMiddleware {
+        withConsumer {
             inChannel.send(request)
             val req = outChannel.channel.receive()
             logger.info { "received the followed request, now send response" }
