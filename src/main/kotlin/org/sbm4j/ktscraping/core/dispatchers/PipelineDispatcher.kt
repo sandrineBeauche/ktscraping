@@ -20,6 +20,11 @@ abstract class PipelineDispatcher(
 
     override var state: State = State()
 
+    override suspend fun run() {
+        super<EventDispatcher>.run()
+        super<AbstractPropagator>.run()
+    }
+
     override suspend fun stop() {
         logger.info{ "${name}: Stopping the pipeline dispatcher"}
         super<AbstractPropagator>.stop()
@@ -27,13 +32,17 @@ abstract class PipelineDispatcher(
 
 }
 
-class PipelineDispatcherAll(name: String, di: DI): PipelineDispatcher(name, di), Broadcast {
+class PipelineDispatcherAll(name: String, di: DI):
+    PipelineDispatcher(name, di),
+    Broadcast
+{
 
     override suspend fun run() {
         logger.info{ "${name}: Starting the pipeline dispatcher all"}
         val flow = channelIn.getSendFlow(Item::class)
         val coroutineName = "${name}-performItems"
         broadcast(coroutineName, flow)
+        super<PipelineDispatcher>.run()
     }
 
 }
@@ -46,5 +55,6 @@ abstract class PipelineDispatcherOne(name: String, di: DI): PipelineDispatcher(n
         logger.info{ "${name}: Stopping the pipeline dispatcher one"}
         performSendBacks(Item::class, ItemAck::class,
             null, ::selectChannel)
+        super<PipelineDispatcher>.run()
     }
 }

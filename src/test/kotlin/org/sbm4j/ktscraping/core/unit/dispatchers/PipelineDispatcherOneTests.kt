@@ -8,6 +8,8 @@ import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.ktscraping.core.dispatchers.PipelineDispatcherOne
 import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.core.utils.AbstractSendDispatcherTester
+import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
@@ -22,19 +24,35 @@ class TestingPipelineDispatcherOne(override val di: DI): PipelineDispatcherOne("
 
 }
 
-class PipelineDispatcherOneTests: AbstractSendDispatcherTester() {
-    override fun buildDispatcher(): Propagator {
-        return TestingPipelineDispatcherOne(di)
+class PipelineDispatcherOneTests:
+    AbstractSendDispatcherTester<TestingPipelineDispatcherOne>()
+{
+    override val nbChannelsOuts: Int = 3
+
+    override fun buildNode(): TestingPipelineDispatcherOne {
+        val result = TestingPipelineDispatcherOne(di)
+        result.channelIn = channelIn
+        result.channelOuts.addAll(channelOuts)
+        return result
     }
 
     @Test
     fun testSendItem() = TestScope().runTest {
         val item = IntDataItem(1, sender)
 
-        withDispatcher(listOf(0, 1, 0)){
-            val ack= inChannel.sendSync<ItemAck>(item)
-            logger.debug{"Received response: $ack"}
-        }
+        val ack= channelIn.sendSync<ItemAck>(item)
+        logger.debug{"Received response: $ack"}
+
+        verifyNbInvocations(listOf(0, 1, 0))
     }
 
+    @Test
+    fun `send event on pipeline`() = testScope.runTest {
+        val event = StartEvent(sender)
+
+        val response = channelIn.sendSync<EventBack>(event)
+        logger.debug{"Received response: $response"}
+
+        verifyNbInvocations(listOf(1, 1, 1))
+    }
 }

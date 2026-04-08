@@ -1,53 +1,49 @@
 package org.sbm4j.ktscraping.core.unit.dispatchers
 
+import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.kodein.di.DI
-import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.channels.sendSyncAll
 import org.sbm4j.ktscraping.core.dispatchers.SpiderDispatcher
-import org.sbm4j.meercat.data.Status
-import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.core.utils.ComponentStub
+import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.StartEvent
+import org.sbm4j.ktscraping.data.internal.ErrorInternal
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
+import org.sbm4j.meercat.Stub
+import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.ErrorInfo
+import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.data.Status
+import org.sbm4j.meercat.dispatchers.CombinatorTester
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 
-class BackDispatcherTests{
-
-    lateinit var outChannel: SuperChannel
-
-    lateinit var inChannels: List<SuperChannel>
-
-    lateinit var senders: List<SendSource>
+class BackDispatcherTests: CombinatorTester<SpiderDispatcher>(){
 
     val di: DI = mockk<DI>()
 
-    lateinit var dispatcher: SpiderDispatcher
-
     val nbSenders: Int = 3
 
-    @BeforeTest
-    fun setUp(){
-        dispatcher = SpiderDispatcher(di = di)
+    var senders: List<SendSource> = List(nbSenders){mockk<SendSource>()}
 
-        outChannel = SuperChannel()
-        inChannels = List(nbSenders){SuperChannel()}
+    override val nbChannelsIns: Int = 3
 
-        dispatcher.channelOut = outChannel
-        dispatcher.channelsIns.addAll(inChannels)
+    override fun buildNode(): SpiderDispatcher {
+        val result = SpiderDispatcher(di = di)
+        result.channelsIns.addAll(channelsIns)
+        result.channelOut = channelOut
+        return result
+    }
 
-        senders = List(nbSenders){mockk<SendSource>()}
+    override fun buildStub(channel: SuperChannel): Stub {
+        return ComponentStub("stub", channel)
     }
 
     fun generateRequestResponse(sender: SendSource,
@@ -65,64 +61,44 @@ class BackDispatcherTests{
         return Pair(req, resp)
     }
 
-    suspend fun doStartEvent(){
-        logger.debug{"Do Start event"}
 
-        val startEvents = senders.map{StartEvent(it)}
-        val sends = inChannels.zip(startEvents).toMap()
-        val result = sendSyncAll(sends)
-        logger.debug{"Start event done: $result"}
-    }
 
-    suspend fun doEndEvent(){
-        logger.debug{"Do End event"}
-        val endEvent = senders.map{EndEvent(it)}
-        val sends = inChannels.zip(endEvent).toMap()
-        val result = sendSyncAll(sends)
-        logger.debug{"End event done: $result"}
-    }
 
-    fun initChannels(parentScope: CoroutineScope){
-        outChannel.init(parentScope)
-        inChannels.forEach {it.init(parentScope)}
-    }
+    @Test
+    fun `send request`() = TestScope().runTest {
+        val url = "an url"
+        val request = Request(senders[0], url)
 
-    suspend fun closeChannels(){
-        logger.debug{"Close channels"}
-        outChannel.close()
-        inChannels.forEach {it.close()}
-        logger.debug { "Close channels finished" }
-    }
+        val response = channelsIns[0].sendSync<DownloadingResponse>(request)
+        logger.debug { "Received response: $response" }
 
-    suspend fun withDispatcher(nbMessages: Int = 1, func: suspend BackDispatcherTests.() -> Unit){
-        coroutineScope {
-            initChannels(this)
-
-            launch{
-                dispatcher.start(this)
-                doStartEvent()
-                func()
-                doEndEvent()
-                dispatcher.stop()
-                closeChannels()
-            }
-            launch{
-                outChannel.getSendFlow().take(nbMessages + 2).collect{ send ->
-                    val back = send.buildBack()
-                    outChannel.send(back)
-                }
-                logger.debug { "Finished with $nbMessages messages" }
-            }
-        }
+        coVerify(exactly = 1) { stub.processSend(any()) }
     }
 
     @Test
-    fun testSendEvent() = TestScope().runTest {
-        val (req1, resp1) = generateRequestResponse(senders[0])
-
-        withDispatcher {
-            val response = inChannels[0].sendSync<DownloadingResponse>(req1)
-            logger.debug{"Received response: $response"}
+    fun `send events barrier`() = TestScope().runTest {
+        coroutineScope {
+            channelsIns.forEachIndexed { index, channel ->
+                launch {
+                    val event = StartEvent(senders[index])
+                    val resp = channel.sendSync<EventBack>(event)
+                }
+            }
         }
+
+        coVerify(exactly = 1) { stub.processSend(any()) }
+    }
+
+    @Test
+    fun `send internal`() = TestScope().runTest {
+        val error = ErrorInfo(Exception("an exception"), senders[0], ErrorLevel.MAJOR)
+        val internal = ErrorInternal(error, senders[0])
+
+        val cs = stub as ComponentStub
+
+        channelsIns[0].send(internal)
+        cs.internalSendLatch.await()
+
+        coVerify(exactly = 1) { (stub as ComponentStub).processInternal(any()) }
     }
 }
