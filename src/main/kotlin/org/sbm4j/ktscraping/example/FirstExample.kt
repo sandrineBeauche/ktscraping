@@ -71,7 +71,7 @@ fun buildCrawler(): Crawler{
 }
 
 suspend fun executeCrawler(crawler: Crawler) = coroutineScope {
-    crawler.start(this, "firstCrawler-root")
+    crawler.start(this, "firstCrawler-root")?.join()
     val result: CrawlerResult = crawler.waitFinished()
     crawler.stop()
     println(result)

@@ -1,15 +1,20 @@
 package org.sbm4j.ktscraping.pipeline
 
 import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
+import io.mockk.coVerify
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
+import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.core.utils.isEndItemAckWithErrors
+import org.sbm4j.ktscraping.core.utils.isEventItemAckWithErrors
 import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
+import org.sbm4j.ktscraping.core.utils.isOKEventBackWith
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
@@ -53,74 +58,33 @@ class AccumulatePipelineTests: AbstractPipelineTester<TestingAccumulatePipeline>
         return result
     }
 
-    suspend fun withAccumulatePipeline(inputItems: List<DataItem<*>>, nbResults: Int = 1,
-                               func: AccumulatePipelineTests.(outputItems: List<Item>) -> List<ItemAck>): EventBack{
-        lateinit var final: EventBack
-        withConsumer() {
-
-            //inputItems.forEach { inChannel.send(it) }
-
-            val endItem = EndEvent(sender)
-            inChannel.send(endItem)
-
-            inputItems.forEach {
-                val ack = outChannel.channel.receive()
-                logger.info{ "received the ack for the item ${it}: $ack"}
-            }
-
-            val results = outChannel.getSendFlow(Item::class).take(5).toList()
-            val acks = func(results)
-
-            acks.forEach { outChannel.send(it)}
-
-            val endEventItem = outChannel.channel.receive() as Event
-            val endEventItemAck = endEventItem.buildBack()
-            outChannel.send(endEventItemAck)
-
-            logger.info { "waiting for the end event ack..." }
-            final = outChannel.channel.receive() as EventBack
-            logger.info { "received final ack: $final" }
-        }
-        return final
-    }
-
 
     @Test
-    fun testAccumulate1() = TestScope().runTest{
-        val final = withAccumulatePipeline(items){ outputs ->
-            val result = outputs[0] as IntDataItem
-            logger.info { "received the data from pipeline: $result and send back ack" }
-            assertEquals(values.sum(), result.data)
-            val resultAck = result.buildBack()
-            listOf(resultAck)
-        }
+    fun `sum of ints`() = TestScope().runTest{
+        withConsumer {
+            val backs = inChannel.sendSync(items)
+            val eventAgg = AggregateEvent(sender)
+            val backAgg = inChannel.sendSync<EventBack>(eventAgg)
 
-        assertThat(final, isOKEndItemAck())
+            assertThat(backAgg, isOKEventBackWith("aggregate"))
+            coVerify(exactly = 1) { (stub as ComponentStub).processItem(any()) }
+            val received = getReceivedItem()[0] as IntDataItem
+
+            assertThat(received.data, equalTo(values.sum()) )
+        }
     }
 
     @Test
-    fun testAccumulate2() = TestScope().runTest{
-        val final = withAccumulatePipeline(items){outputs ->
-            val result = outputs[0] as IntDataItem
-            logger.info { "received the data from pipeline: $result and send back ack" }
-            assertEquals(values.sum(), result.data)
-            val error = ErrorInfo(Exception("une erreur"), node, ErrorLevel.MAJOR)
-            val resultAck = result.buildErrorBack(error, Status.ERROR)
-            listOf(resultAck)
+    fun `sum of ints return error`() = TestScope().runTest{
+        val pred = IntDataItem.predicateOnValue(21)
+        stub.matches.add(pred to Exception("an error"))
+
+        withConsumer {
+            val backs = inChannel.sendSync(items)
+            val eventAgg = AggregateEvent(sender)
+            val backAgg = inChannel.sendSync<EventBack>(eventAgg)
+
+            assertThat(backAgg, isEventItemAckWithErrors("aggregate", Status.ERROR, 1))
         }
-
-        assertThat(final, isEndItemAckWithErrors(Status.ERROR, 1))
-    }
-
-    @Test
-    fun testAccumulate3() = TestScope().runTest{
-        val final = withAccumulatePipeline(items){outputs ->
-            val result = outputs[0] as IntDataItem
-            logger.info { "received the data from pipeline: $result and send back ack" }
-            assertEquals(values.sum(), result.data)
-            listOf()
-        }
-
-        assertThat(final, isEndItemAckWithErrors(Status.ERROR, 1))
     }
 }

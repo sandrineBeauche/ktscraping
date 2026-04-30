@@ -33,7 +33,8 @@ import org.sbm4j.meercat.nodes.logger
 
 
 
-class TestingAbstractSpider(): AbstractSpider("spider") {
+class
+TestingAbstractSpider(): AbstractSpider("spider") {
     val url = "an url"
     lateinit var resp: DownloadingResponse
     lateinit var ack: ItemAck

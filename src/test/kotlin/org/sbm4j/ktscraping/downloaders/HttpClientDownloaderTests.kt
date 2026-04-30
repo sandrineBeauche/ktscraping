@@ -18,17 +18,18 @@ import kotlin.test.assertNotNull
 class HttpClientDownloaderTests: AbstractDownloaderTester<HttpClientDownloader>() {
 
     override fun buildNode(): HttpClientDownloader {
-        return HttpClientDownloader("http downloader")
+        val result = HttpClientDownloader("http downloader")
+        result.inChannel = inChannel
+        return result
     }
 
     @Test
-    fun testDownloadImage1() = TestScope().runTest {
+    fun testDownloadImage1() = testScope.runTest {
         val request = Request(sender, "https://fr.wikipedia.org/static/images/icons/wikipedia.png")
         lateinit var response: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         assertNotNull(response)
@@ -50,8 +51,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester<HttpClientDownloader>(
         lateinit var response: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         assertThat(response.status, equalTo(Status.FAIL))
@@ -64,8 +64,7 @@ class HttpClientDownloaderTests: AbstractDownloaderTester<HttpClientDownloader>(
         lateinit var response: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         assertThat(response.status, equalTo(Status.OK))

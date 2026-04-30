@@ -29,25 +29,9 @@ class ExporterClassTest(name: String): AbstractExporter(name){
 
 class PipelineBranchTest: CrawlerTest() {
 
-    suspend fun sendStartItem(){
-        val startEvent = StartEvent(sender)
-        val startAck = crawlerChannelManager.pipelineChannel.sendSync<EventBack>(startEvent)
-        logger.info{ "received ack for the start event item " }
-
-        assertThat(startAck, isOKStartItemAck())
-    }
-
-
-    suspend fun sendEndItem(){
-        val endItem = EndEvent(sender)
-        val endAck = crawlerChannelManager.pipelineChannel.sendSync<EventBack>(endItem)
-        logger.info{ "received ack for the end event item " }
-
-        assertThat(endAck, isOKEndItemAck())
-    }
 
     @Test
-    fun testBuildCrawlerWithPipelineBranch() = TestScope().runTest {
+    fun `branch with pipeline and exporter`() = TestScope().runTest {
 
         val c = crawler("MainCrawler", ::testDIModule) {
             pipelineBranch {
@@ -56,26 +40,25 @@ class PipelineBranchTest: CrawlerTest() {
             }
         }
 
-        c.start(this)
+        c.start(this)?.join()
 
         logger.debug { "interacting with crawler" }
-        sendStartItem()
+        sendStartEvent(crawlerChannelManager.pipelineChannel)
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
         val ack = crawlerChannelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
-        assertThat(ack.channelableId, equalTo(item1.channelableId))
+        assertThat(ack.send.channelableId, equalTo(item1.channelableId))
 
-        sendEndItem()
+        sendEndEvent(crawlerChannelManager.pipelineChannel)
         c.stop()
-        crawlerChannelManager.closeChannels()
 
     }
 
 
     @Test
-    fun testBuildCrawlerWithItemDispatcherAll() = TestScope().runTest {
+    fun `branch with dispatcher all and exporters`() = TestScope().runTest {
 
         val c = crawler("MainCrawler", ::testDIModule) {
             pipelineDispatcherAll {
@@ -84,25 +67,24 @@ class PipelineBranchTest: CrawlerTest() {
             }
         }
 
-        c.start(this)
+        c.start(this)?.join()
 
         logger.debug { "interacting with crawler" }
-        sendStartItem()
+        sendStartEvent(crawlerChannelManager.pipelineChannel)
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
         val ack = crawlerChannelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
-        assertThat(ack.channelableId, equalTo(item1.channelableId))
+        assertThat(ack.send.channelableId, equalTo(item1.channelableId))
 
-        sendEndItem()
+        sendEndEvent(crawlerChannelManager.pipelineChannel)
         c.stop()
-        crawlerChannelManager.closeChannels()
     }
 
 
     @Test
-    fun testBuildCrawlerWithItemDispatcherOne() = TestScope().runTest {
+    fun `branch with dispatcher one and exporters`() = TestScope().runTest {
 
         val c = crawler("MainCrawler", ::testDIModule) {
             pipelineDispatcherOne(
@@ -120,19 +102,18 @@ class PipelineBranchTest: CrawlerTest() {
         }
 
 
-        c.start(this)
+        c.start(this)?.join()
 
         logger.debug { "interacting with crawler" }
-        sendStartItem()
+        sendStartEvent(crawlerChannelManager.pipelineChannel)
 
         val data1 = DataItemTest("value1", "request1")
         val item1 = ObjectDataItem.build(data1, "data1", sender)
         val ack = crawlerChannelManager.pipelineChannel.sendSync<ItemAck>(item1)
 
-        assertThat(ack.channelableId, equalTo(item1.channelableId))
+        assertThat(ack.send.channelableId, equalTo(item1.channelableId))
 
-        sendEndItem()
+        sendEndEvent(crawlerChannelManager.pipelineChannel)
         c.stop()
-        crawlerChannelManager.closeChannels()
     }
 }

@@ -22,6 +22,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
     override fun buildNode(): PlaywrightDownloader {
         val result = PlaywrightDownloader("playwright dowloader")
         result.headless = true
+        result.inChannel = inChannel
         return result
     }
 
@@ -31,8 +32,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
         lateinit var response: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         assertNotNull(response)
@@ -44,8 +44,7 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
         lateinit var response: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         assertNotNull(response)
@@ -57,40 +56,13 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
         lateinit var response: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            response = inChannel.channel.receive() as DownloadingResponse
+            response = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         assertNotNull(response)
     }
 
-    @Test
-    fun testMultiple() = TestScope().runTest {
-        val request = (1..4).map {
-            PlaywrightRequest(sender, "https://playwright.dev"){
-                waitForTimeout(2000.0)
-            }
-        }
 
-        lateinit var response1: DownloadingResponse
-        lateinit var response2: DownloadingResponse
-
-        withConsumer {
-            coroutineScope {
-                request.forEach{
-                    launch {
-                        inChannel.send(it)
-                        response1 = inChannel.channel.receive() as DownloadingResponse
-                    }
-                }
-            }
-        }
-
-        println("coucou")
-
-        //assertThat(response1.status, equalTo(Status.OK))
-        //assertThat(response2.status, equalTo(Status.OK))
-    }
 
     @Test
     fun testMultipleNamed() = TestScope().runTest {
@@ -109,17 +81,13 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
         request2.parameters["contextName"] = "context1"
 
         withConsumer {
-            val job1 =launch {
-                inChannel.send(request1)
-                response1 = inChannel.channel.receive() as DownloadingResponse
+            val job1 = launch {
+                response1 = inChannel.sendSync<DownloadingResponse>(request1)
             }
             val job2 = launch {
-                inChannel.send(request2)
-                response2 = inChannel.channel.receive() as DownloadingResponse
+                response2 = inChannel.sendSync<DownloadingResponse>(request2)
             }
             joinAll(job1, job2)
-
-
         }
 
         assertThat(response1.status, equalTo(Status.OK))

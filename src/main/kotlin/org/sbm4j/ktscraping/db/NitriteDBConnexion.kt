@@ -13,11 +13,34 @@ import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import java.io.File
 import kotlin.reflect.KProperty1
 
+/**
+ * [DBConnexion] implementation backed by a [Nitrite] embedded document database.
+ *
+ * Nitrite is a serverless, embedded document store that persists Kotlin objects
+ * directly via [KotlinXSerializationMapper], making it ideal for local scraping
+ * sessions without requiring an external database server.
+ *
+ * Implements a multiton pattern via the [dbs] companion map: multiple
+ * [NitriteDBConnexion] instances pointing to the same file share the same
+ * underlying [Nitrite] instance, preventing concurrent access conflicts on
+ * the same file.
+ *
+ * @param dbFile The file to use as the Nitrite database store.
+ * If it does not exist, it is created automatically.
+ *
+ * @see DBConnexion
+ */
 class NitriteDBConnexion(dbFile: File): DBConnexion{
     companion object{
+        /**
+         * Multiton cache of [Nitrite] instances keyed by absolute file path.
+         * Ensures that multiple [NitriteDBConnexion] instances pointing to the
+         * same file share a single [Nitrite] instance.
+         */
         private val dbs: MutableMap<String, Nitrite> = mutableMapOf()
     }
 
+    /** The underlying [Nitrite] database instance for this connection. */
     val db: Nitrite
 
 
@@ -30,6 +53,13 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
         db = dbs.getOrPut(path) { buildNitriteDB(dbFile) }
     }
 
+    /**
+     * Builds a new [Nitrite] instance backed by an MVStore file at the given [file] path,
+     * with [KotlinXSerializationMapper] for direct Kotlin object serialization.
+     *
+     * @param file The database file to use as the MVStore backend.
+     * @return A fully configured [Nitrite] instance.
+     */
     fun buildNitriteDB(file: File): Nitrite{
         val storeModule = MVStoreModule.withConfig()
             .filePath(file)
@@ -41,23 +71,56 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
         }
     }
 
+    /**
+     * Retrieves the set of existing key values for a given class and key property.
+     *
+     * Opens the Nitrite repository for [classObject], scans all records, and
+     * extracts the value of [keyProperty] for each. Used by [DBSyncMiddleware]
+     * to detect already-stored records and avoid redundant downloads.
+     *
+     * @param T The type of the domain object.
+     * @param classObject The [Class] of the domain object.
+     * @param keyProperty The property to extract as the key.
+     * @return The set of existing key values.
+     */
     override fun <T> getKeys(classObject: Class<T>, keyProperty: KProperty1<T, *>): Set<*>{
         val repo = db.getRepository(classObject)
         val cursor = repo.find()
         return cursor.map { keyProperty.get(it) } as Set<*>
     }
 
+    /**
+     * Clears all records of [classObject] from the Nitrite repository.
+     *
+     * @param classObject The [Class] of the domain object to clear.
+     */
     override fun clear(classObject: Class<*>) {
         val repository = db.getRepository(classObject)
         repository.clear()
     }
 
+    /**
+     * Inserts the data object carried by [item] into its corresponding Nitrite repository.
+     * The insert is not persisted until [commit] is called.
+     *
+     * @param item The item whose [ObjectDataItem.data] object to insert.
+     */
     override fun perfomInsertItem(item: ObjectDataItem<*>) {
         val data = item.data
         val repository = db.getRepository(data.javaClass)
         repository.insert(data)
     }
 
+    /**
+     * Applies a partial update to the record matching [ItemUpdate.keyName] = [ItemUpdate.data]
+     * in the Nitrite repository for [ItemUpdate.entityType].
+     *
+     * Uses Nitrite's filter syntax (`keyName eq data`) to locate the target record,
+     * then applies the [ItemUpdate.values] map as a document patch.
+     * The update is not persisted until [commit] is called.
+     *
+     * @param item The partial update to apply.
+     */
     override fun performItemUpdate(item: ItemUpdate) {
         val repository = db.getRepository(item.entityType)
         val doc = documentOf()
@@ -67,26 +130,59 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
         repository.update(item.keyName eq item.data, doc)
     }
 
+    /**
+     * Removes the record matching [ItemDelete.keyName] = [ItemDelete.data]
+     * from the Nitrite repository for [ItemDelete.entityType].
+     * The deletion is not persisted until [commit] is called.
+     *
+     * @param item The delete operation to apply.
+     */
     override fun performItemDelete(item: ItemDelete) {
         val repository = db.getRepository(item.entityType)
         repository.remove(item.keyName eq item.data)
     }
 
+    /**
+     * Commits all pending operations to the Nitrite database file.
+     *
+     * Should be called periodically or at the end of the scraping session
+     * to flush buffered inserts, updates, and deletes.
+     */
     override fun commit() {
         db.commit()
     }
 
+    /**
+     * Commits all pending operations and closes the Nitrite database.
+     *
+     * Called automatically at the end of the scraping session via
+     * [EventProcessor.preEnd]. Also commits before closing to ensure
+     * no data is lost.
+     */
     override fun close() {
         db.commit()
         db.close()
     }
 
+    /**
+     * Retrieves all records of [classObject] from the Nitrite repository.
+     *
+     * @param T The type of the domain object.
+     * @param classObject The [Class] of the domain object to retrieve.
+     * @return A list of all stored objects of type [T].
+     */
     override fun <T> getObjects(classObject: Class<T>): List<T> {
         val repository = db.getRepository(classObject)
         val cursor = repository.find()
         return cursor.map { it }
     }
 
+    /**
+     * Returns the number of records of [classObject] stored in the Nitrite repository.
+     *
+     * @param classObject The [Class] of the domain object to count.
+     * @return The total number of stored records.
+     */
     override fun getSize(classObject: Class<*>): Long {
         val repository = db.getRepository(classObject)
         return repository.size()

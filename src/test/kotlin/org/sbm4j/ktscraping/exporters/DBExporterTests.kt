@@ -9,6 +9,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
 import org.sbm4j.ktscraping.data.item.Data
+import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.db.NitriteDBConnexion
 import org.sbm4j.meercat.nodes.logger
@@ -59,6 +60,7 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
     override fun buildNode(): DBExporter {
         val result = DBExporter("exporter")
         result.db = db
+        result.inChannel = inChannel
         return result
     }
 
@@ -83,8 +85,7 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
         val item = ObjectDataItem.build(data1, "test", sender)
 
         withConsumer {
-            inChannel.send(item)
-            val itemAck = inChannel.channel.receive()
+            val itemAck = inChannel.sendSync<ItemAck>(item)
         }
 
         val size = db.getSize(Contact::class.java)
@@ -102,8 +103,7 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
         val item = ObjectDataItem.build(data2, "test", sender)
 
         withConsumer {
-            inChannel.send(item)
-            val itemAck = inChannel.channel.receive()
+            val itemAck = inChannel.sendSync<ItemAck>(item)
         }
 
         val size = db.getSize(Contact::class.java)
@@ -128,11 +128,8 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
         )
 
         withConsumer {
-            inChannel.send(item)
-            val itemAck = inChannel.channel.receive()
-
-            inChannel.send(updateItem)
-            val itemAck2 = inChannel.channel.receive()
+            val itemAck = inChannel.sendSync<ItemAck>(item)
+            val itemAck2 = inChannel.sendSync<ItemAck>(updateItem)
         }
 
         val cont = getFirstContact()
@@ -153,11 +150,8 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
         )
 
         withConsumer {
-            inChannel.send(item)
-            val itemAck = inChannel.channel.receive()
-
-            inChannel.send(updateItem)
-            val itemAck2 = inChannel.channel.receive()
+            val itemAck = inChannel.sendSync<ItemAck>(item)
+            val itemAck2 = inChannel.sendSync<ItemAck>(updateItem)
         }
 
         val cont = getFirstContact()
@@ -174,16 +168,13 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
             sender = sender
         )
 
+        val item1 = ObjectDataItem.build(data1, "test", sender)
+        val item2 = ObjectDataItem.build(data2, "test", sender)
+
         withConsumer {
-            inChannel.send(ObjectDataItem.build(data1, "test", sender))
-            val itemAck1 = inChannel.channel.receive()
-
-            inChannel.send(ObjectDataItem.build(data2, "test", sender))
-
-            val itemAck2 = inChannel.channel.receive()
-
-            inChannel.send(deleteItem)
-            val itemAck3 = inChannel.channel.receive()
+            val itemAck1 = inChannel.sendSync<ItemAck>(item1)
+            val itemAck2 = inChannel.sendSync<ItemAck>(item2)
+            val itemAck3 = inChannel.sendSync<ItemAck>(deleteItem)
         }
 
         val size = db.getSize(Contact::class.java)

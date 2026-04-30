@@ -3,6 +3,8 @@ package org.sbm4j.ktscraping.core.utils
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.meercat.data.Send
+import org.sbm4j.meercat.data.TestingSend
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 data class DataItemTest(
@@ -21,6 +23,13 @@ data class IntDataItem(
     override var sender: SendSource,
     override val name: String = "IntData-#$data"
 ): DataItem<Int>(){
+
+    companion object {
+        fun predicateOnValue(value: Int): (Send) -> Boolean {
+            return { send: Send -> send is IntDataItem && send.data == value }
+        }
+    }
+
     override fun clone(): Item {
         return this.copy()
     }

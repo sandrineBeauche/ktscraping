@@ -13,48 +13,92 @@ import java.util.concurrent.ConcurrentHashMap
 
 
 /**
+ * A thread-safe mutable state map for [Component] nodes.
  *
+ * Used to store any data that needs to persist across messages within a component
+ * (e.g. counters, open connections, local cache, session data).
  */
 typealias  State = ConcurrentHashMap<String, Any>
 
 /**
- * A component of the kt scraping crawler that can be started, stopped or paused and resumed.
- * The state of this object can be saved on paused, and is safely used thanks to a mutex.
- * Each component has his own coroutine scope of execution, and has potentially subscopes
- * for each input channel in order to receive requests, responses or items.
- * @property mutex the mutex that allow to safely use the state
- * @property name the name of this objet in the kt scraping line
- * @property state the state of the object
- * @property scope the coroutine scope for this component.
- * @author Sandrine Ben Mabrouk
+ * Base interface for all KtScraping nodes in the topology.
+ *
+ * Extends Meercat's [Node] with a [state] map for stateful processing and lifecycle
+ * hooks ([pause], [resume]) for future scraping session management.
+ *
+ * All three branches of the topology (Spider, Downloader, Pipeline) are composed
+ * of [Component] nodes.
+ *
+ * @see State
+ * @see AbstractComponent
  */
 interface Component: Node {
 
+    /**
+     * Mutable state of this component, persisted across messages.
+     *
+     * Can hold any data relevant to the component's processing (e.g. counters,
+     * open connections, local cache, session data).
+     */
     var state: State
 
     /**
-     * Pauses the kt scraping component
+     * Pauses this component's processing.
+     *
+     * Reserved for future lifecycle management. Default implementation is a no-op.
      */
     suspend fun pause(){
     }
 
     /**
-     * Resumes the kt scraping component
+     * Resumes this component's processing after a [pause].
+     *
+     * Reserved for future lifecycle management. Default implementation is a no-op.
      */
     suspend fun resume(){
     }
-
-
 }
 
+/**
+ * Base abstract class for generic processing [Component] nodes.
+ *
+ * Provides a default [State] implementation for nodes based on [AbstractProcessingNode].
+ *
+ * @see Component
+ */
 abstract class AbstractComponent(): Component, AbstractProcessingNode(){
     override var state: State = State()
 }
 
+/**
+ * Base abstract class for [Initiator] components in the Spider branch.
+ *
+ * Spiders extend this class to drive the scraping session by emitting [Event],
+ * [AbstractRequest] and [Item] messages. Provides a default [State] implementation.
+ *
+ * @see Component
+ * @see AbstractInitiator
+ */
 abstract class AbstractInitiatorComponent: AbstractInitiator(), Component{
     override var state: State = State()
 }
 
+/**
+ * Base abstract class for intermediate [Component] nodes in the topology.
+ *
+ * Combines Meercat's [AbstractMiddleNode] with [EventConsumer] and [EventBackForwarder]
+ * to handle the full event lifecycle: receiving events from upstream, launching
+ * pre-event jobs, and processing backs with post-event hooks before forwarding upstream.
+ *
+ * On startup, [run] concurrently registers event listening, event back listening,
+ * and the standard middle node processing.
+ *
+ * @param name The name of this component node.
+ *
+ * @see EventConsumer
+ * @see EventBackForwarder
+ * @see AbstractMiddleNode
+ */
 abstract class AbstractMiddleComponent(
     name: String
 ): AbstractMiddleNode(name), Component, EventConsumer, EventBackForwarder{
@@ -71,7 +115,21 @@ abstract class AbstractMiddleComponent(
     }
 }
 
-
+/**
+ * Base abstract class for terminal (sink) [Component] nodes in the topology.
+ *
+ * Combines Meercat's [AbstractSinkNode] with [EventSink] to handle events at the end
+ * of a branch: the pre-event job is awaited immediately and the [EventBack] is built
+ * and returned without forwarding downstream.
+ *
+ * On startup, [run] concurrently registers event sink listening and the standard
+ * sink node processing.
+ *
+ * @param name The name of this component node.
+ *
+ * @see EventSink
+ * @see AbstractSinkNode
+ */
 abstract class AbstractSinkComponent(
     name: String
 ): AbstractSinkNode(name), Component, EventSink {

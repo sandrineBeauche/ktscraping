@@ -1,6 +1,7 @@
 package org.sbm4j.ktscraping.core.utils
 
 import io.mockk.coVerify
+import io.mockk.spyk
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.internal.Internal

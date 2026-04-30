@@ -5,61 +5,72 @@ import org.sbm4j.ktscraping.core.processors.EventJobResult
 import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
+import org.sbm4j.ktscraping.data.events.EventPropagation
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.data.SendException
+import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
+data class AggregateEvent(
+    override var sender: SendSource
+): Event(sender, "aggregate", EventPropagation.PIPELINE){
+    override fun clone(): Event {
+        return this.copy()
+    }
+}
+
 abstract class AggregatePipeline(name: String): AbstractPipeline(name) {
-
-    val generatedItemAcks: MutableMap<UUID, ItemAck> = ConcurrentHashMap()
-
-    val generatedItemIds: MutableList<UUID> = mutableListOf()
 
     abstract fun accumulateItem(item: Item)
 
     abstract fun aggregate(): List<Item>
 
-    override suspend fun processItem(item: Item): List<Item> {
+    override suspend fun processItem(item: Item): ItemAck {
         try {
             accumulateItem(item)
-            val ack = item.buildBack()
-            outChannel.send(ack)
+            return item.buildBack()
         }
         catch(ex: Exception){
             val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
             val back = item.buildErrorBack(error)
-            outChannel.send(back)
+            return back
         }
-        return emptyList()
     }
 
+    override suspend fun preCustomEvent(event: Event): Any? {
+        return when(event){
+            is AggregateEvent -> preAggregateEvent(event)
+            else-> null
+        }
+    }
 
+    override suspend fun postCustomEvent(event: EventBack) {
+        when(event.send){
+            is AggregateEvent -> postAggregateEvent(event)
+            else-> throw IllegalArgumentException("event type not supported!")
+        }
+    }
 
-    override suspend fun preEnd(event: Event): EventJobResult? {
-        println(event)
+    suspend fun preAggregateEvent(aggregate: AggregateEvent): Any?{
         val items = aggregate() as MutableList
-        generatedItemIds.addAll(items.map{it.channelableId})
-        items.forEach { outChannel.send(it) }
-        return null
-    }
-
-    override suspend fun postEnd(event: EventBack) {
-        if(generatedItemIds.size != generatedItemAcks.size){
-            event.status += Status.ERROR
-            val error = ErrorInfo(Exception("There are some item that are not acked"), this, ErrorLevel.MAJOR)
-            event.errorInfos.add(error)
+        try{
+            val back = sendSyncAggregate(items)
+            return aggregate.buildBack()
         }
-        generatedItemAcks.forEach { (_, value) ->
-            event.status += value.status
-            event.errorInfos.addAll(value.errorInfos)
+        catch (ex: SendException){
+            val error = ErrorInfo(ex, this, ErrorLevel.MAJOR)
+            return aggregate.buildErrorBack(error)
         }
     }
 
-    override suspend fun processItemAck(itemAck: ItemAck) {
-        generatedItemAcks[itemAck.channelableId] = itemAck
+
+
+    suspend fun postAggregateEvent(aggregate: EventBack){
+
     }
 
 }

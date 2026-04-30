@@ -1,23 +1,15 @@
 package org.sbm4j.ktscraping.core.integration
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractSpider
 import org.sbm4j.ktscraping.core.defaultDIModule
-import org.sbm4j.ktscraping.core.dsl.crawler
-import org.sbm4j.ktscraping.core.dsl.downloaderBranch
-import org.sbm4j.ktscraping.core.dsl.exporter
-import org.sbm4j.ktscraping.core.dsl.pipelineBranch
-import org.sbm4j.ktscraping.core.dsl.pipelineDispatcherAll
-import org.sbm4j.ktscraping.core.dsl.spider
-import org.sbm4j.ktscraping.core.dsl.spiderBranch
-import org.sbm4j.ktscraping.core.dsl.spiderDispatcher
+import org.sbm4j.ktscraping.core.dsl.*
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
@@ -42,10 +34,10 @@ class IntegrationTestSpider(
 ): AbstractSpider(name){
     override suspend fun performScraping() {
         val req1 = Request(this, "request1-${name}")
-        val resp1 = sendSync(req1) as DownloadingResponse
+        val resp1 = this.outChannel.sendSync(req1) as DownloadingResponse
         val value = resp1.contents["prop1"] as String
         val result = IntegrationTestItem(value, this)
-        this.outChannel.send(result)
+        this.outChannel.sendSync<ItemAck>(result)
     }
 }
 
@@ -86,8 +78,7 @@ class CrawlerIntegrationTest {
             }
         }
 
-        crawler.start(this)
-        delay(1000L)
+        crawler.start(this)?.join()
         val result = crawler.waitFinished()
         crawler.stop()
 
@@ -110,8 +101,7 @@ class CrawlerIntegrationTest {
             }
         }
 
-        crawler.start(this)
-        delay(1000L)
+        crawler.start(this)?.join()
         val result = crawler.waitFinished()
         crawler.stop()
 
@@ -134,8 +124,7 @@ class CrawlerIntegrationTest {
             }
         }
 
-        crawler.start(this)
-        delay(1000L)
+        crawler.start(this)?.join()
         val result = crawler.waitFinished()
         crawler.stop()
 

@@ -2,11 +2,13 @@ package org.sbm4j.ktscraping.middleware.cache
 
 import com.natpryce.hamkrest.*
 import com.natpryce.hamkrest.assertion.assertThat
+import io.mockk.coVerify
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.utils.AbstractDownloaderMiddlewareTester
+import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.middleware.CacheAvailability
 import org.sbm4j.ktscraping.middleware.CacheEntry
 import org.sbm4j.ktscraping.middleware.CacheMiddleware
@@ -115,35 +117,34 @@ class CacheMiddlewareTests: AbstractDownloaderMiddlewareTester<CacheMiddleware>(
             result.root.mkdir()
         }
 
+        result.inChannel = inChannel
+        result.outChannel = outChannel
         return result
     }
 
     @Test
     fun testCacheMiddlewareEmpty() = TestScope().runTest {
-        val request = Request(sender, "http://www.exemple.com")
-        val response = DownloadingResponse(request)
+        val url = "http://www.exemple.com"
+        val request = Request(sender, url)
 
         val respFilename = this.javaClass.getResource("/org.sbm4j.ktscraping/middleware/example-domains.html")!!.file
-        response.contents[AbstractDownloader.PAYLOAD] = File(respFilename).readText()
-        response.contents[AbstractDownloader.CONTENT_TYPE] = ContentType.HTML
+        val payload = File(respFilename).readText()
 
-        lateinit var req: Request
+        val cs = stub as ComponentStub
+        cs.downloadingResponses[url] = Pair(ContentType.HTML, mutableMapOf(
+            AbstractDownloader.PAYLOAD to payload
+        ))
+
         lateinit var resp: DownloadingResponse
         lateinit var resp2: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            req = outChannel.channel.receive() as Request
-
-            outChannel.send(response)
-            resp = outChannel.channel.receive() as DownloadingResponse
-
-            inChannel.send(request)
-            resp2 = outChannel.channel.receive() as DownloadingResponse
+            resp = inChannel.sendSync<DownloadingResponse>(request)
+            resp2 = inChannel.sendSync<DownloadingResponse>(request)
         }
 
-        val contentType = resp2.type
-        assertThat(contentType, equalTo(ContentType.HTML))
+        assertThat(resp.contents, equalTo(resp2.contents))
+        coVerify(exactly = 1) { cs.performRequest(any()) }
     }
 
     @Test
@@ -155,8 +156,7 @@ class CacheMiddlewareTests: AbstractDownloaderMiddlewareTester<CacheMiddleware>(
         lateinit var resp: DownloadingResponse
 
         withConsumer {
-            inChannel.send(request)
-            resp = outChannel.channel.receive() as DownloadingResponse
+            resp = inChannel.sendSync<DownloadingResponse>(request)
         }
 
         val contentType = resp.type

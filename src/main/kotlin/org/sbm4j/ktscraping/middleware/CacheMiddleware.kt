@@ -7,10 +7,13 @@ import kotlinx.serialization.json.Json
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.DownloaderMiddleware
-import org.sbm4j.meercat.data.Status
+import org.sbm4j.ktscraping.core.processors.EventJobResult
+import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.ktscraping.data.response.Response
+import org.sbm4j.meercat.data.ErrorLevel
+import org.sbm4j.meercat.data.Status
 import org.sbm4j.meercat.nodes.logger
 import java.io.File
 import java.util.*
@@ -109,6 +112,20 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
 
     lateinit var root: File
 
+    override suspend fun preStart(event: Event): EventJobResult? {
+        return jobPreEvent(ErrorLevel.FATAL) {
+            logger.info{"${name}: load cache from file ${cacheFilename}"}
+            loadCache(cacheFilename)
+        }
+    }
+
+    override suspend fun preEnd(event: Event): EventJobResult? {
+        logger.info{"${name}: save cache to file ${cacheFilename}"}
+        return jobPreEvent {
+            saveCache(cacheFilename)
+        }
+    }
+
     override suspend fun processResponse(response: Response) {
         if(response.status == Status.OK && response is DownloadingResponse) {
             val request = response.send
@@ -184,10 +201,6 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
 
     }
 
-    override suspend fun run() {
-        loadCache(cacheFilename)
-        //super.run()
-    }
 
     fun loadCache(jsonFile: File){
         try {
@@ -227,10 +240,5 @@ class CacheMiddleware(name: String = "Cache middleware"): DownloaderMiddleware(n
                 jsonFile.delete()
             }
         }
-    }
-
-    override suspend fun stop() {
-        saveCache(cacheFilename)
-        super.stop()
     }
 }

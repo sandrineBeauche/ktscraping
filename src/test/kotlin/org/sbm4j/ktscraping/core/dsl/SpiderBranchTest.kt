@@ -5,7 +5,10 @@ import com.natpryce.hamkrest.allOf
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
+import com.natpryce.hamkrest.hasSize
 import com.natpryce.hamkrest.isA
+import io.mockk.coVerify
+import io.mockk.spyk
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
@@ -14,10 +17,14 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.ktscraping.core.components.AbstractSimpleSpider
+import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
+import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.StartEvent
+import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
@@ -30,8 +37,9 @@ class TestingSpiderClass(name:String): AbstractSimpleSpider(name){
         val req = resp.send
         val value = state["returnValue"] as String
         val data = DataItemTest(value, req.name, req.url)
+        val item = ObjectDataItem.build(data, "itemTest", this)
 
-        this.outChannel.send(ObjectDataItem.build(data, "itemTest", this))
+        this.outChannel.sendSync<ItemAck>(item)
     }
 
     override suspend fun callbackError(ex: Throwable) {
@@ -48,20 +56,8 @@ class TestingSpiderMiddlewareClass(name: String) : SpiderMiddleware(name){
 class SpiderBranchTest: CrawlerTest() {
 
 
-    suspend fun answerStartEvent(event: StartEvent, channel: SuperChannel) {
-        logger.debug{ "Received starting event"}
-        val startResp = event.buildBack()
-        channel.send(startResp)
-    }
-
-    suspend fun answerEndEvent(event: EndEvent, channel: SuperChannel) {
-        logger.debug{ "Received ending event request"}
-        val endResp = event.buildBack()
-        channel.send(endResp)
-    }
-
     @Test
-    fun testBuildCrawlerWithBranch() = TestScope().runTest {
+    fun `branch with spider and middleware`() = TestScope().runTest {
         val expectedUrl = "une url"
         val spiderName = "Spider1"
 
@@ -75,46 +71,23 @@ class SpiderBranchTest: CrawlerTest() {
             }
         }
 
-        val spiderChannel = c.channelManager.spiderChannel
+        val stub = spyk(ComponentStub(
+            "stub", c.channelManager.spiderChannel))
+        stub.downloadingResponses[expectedUrl] =
+            Pair(ContentType.STRING, mutableMapOf("result" to "value3"))
+        c.topologyManager.nodes.add(stub)
 
-        coroutineScope {
-            c.channelManager.initChannels(this)
+        c.start(this)?.join()
+        c.waitFinished()
+        c.stop()
 
-            launch {
-                val job = c.start(this)
-                job?.join()
-                c.waitFinished()
-                c.stop()
-            }
-            launch{
-                logger.debug { "interacting with crawler" }
-                spiderChannel.getSendFlow().take(4).collect{ send ->
-                    when(send){
-                        is StartEvent -> answerStartEvent(send, spiderChannel)
-                        is EndEvent -> answerEndEvent(send, spiderChannel)
-                        is DownloadingRequest -> {
-                            logger.debug { "Received the request: $send" }
-                            assertThat(send.url, equalTo(expectedUrl))
-                            val response = send.buildBack()
-                            spiderChannel.send(response)
-                        }
-                        is ObjectDataItem<*> -> {
-                            val data = send.data as DataItemTest
-                            assertThat(data.value, equalTo(spiderName))
-                            logger.debug { "Received the final item: $data" }
-                            val ack = send.buildBack()
-                            spiderChannel.send(ack)
-                        }
-                    }
-                }
-            }
-        }
-
+        coVerify(exactly = 1) { stub.performRequest(any()) }
+        coVerify(exactly = 1) { stub.processItem(any()) }
     }
 
 
     @Test
-    fun testBuildCrawlerWithDispatcher() = TestScope().runTest {
+    fun `branch with spiders and dispatcher `() = TestScope().runTest {
         val url1 = "une url 1"
         val url2 = "une url 2"
         val value1 = "value1"
@@ -133,46 +106,22 @@ class SpiderBranchTest: CrawlerTest() {
             }
         }
 
-        c.start(this)
+        val stub = spyk(ComponentStub(
+            "stub", c.channelManager.spiderChannel))
+        stub.downloadingResponses[url1] =
+            Pair(ContentType.STRING, mutableMapOf("result" to "value3"))
+        stub.downloadingResponses[url2] =
+            Pair(ContentType.STRING, mutableMapOf("result" to "value4"))
+        c.topologyManager.nodes.add(stub)
 
-        logger.debug { "interacting with crawler" }
-        //answerStartEvent()
-
-        val request1 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
-        val request2 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
-
-        val response1 = DownloadingResponse(request1)
-        val response2 = DownloadingResponse(request2)
-
-        crawlerChannelManager.spiderChannel.send(response1)
-        crawlerChannelManager.spiderChannel.send(response2)
-
-        val item1: DataItemTest = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        val item2: DataItemTest = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-
-        logger.debug { "Received the final items:\n $item1 \n $item2" }
-
-        //answerEndEvent()
+        c.start(this)?.join()
         c.waitFinished()
         c.stop()
-        crawlerChannelManager.closeChannels()
 
-        assertThat(
-            item1, isA<DataItemTest>(
-                allOf(
-                    has(DataItemTest::url, equalTo(url1)),
-                    has(DataItemTest::value, equalTo(value1))
-                )
-            )
-        )
-        assertThat(
-            item2, isA<DataItemTest>(
-                allOf(
-                    has(DataItemTest::url, equalTo(url2)),
-                    has(DataItemTest::value, equalTo(value2))
-                )
-            )
-        )
+        val items: MutableList<Item> = mutableListOf()
+        coVerify { stub.processItem(capture(items)) }
+
+        assertThat(items, hasSize(equalTo(2)))
     }
 
 
@@ -182,9 +131,6 @@ class SpiderBranchTest: CrawlerTest() {
         val url2 = "une url 2"
         val value1 = "value1"
         val value2 = "value2"
-
-        lateinit var item1: DataItemTest
-        lateinit var item2: DataItemTest
 
 
         val c = crawler("MainCrawler", ::testDIModule) {
@@ -209,46 +155,21 @@ class SpiderBranchTest: CrawlerTest() {
             }
         }
 
+        val stub = spyk(ComponentStub(
+            "stub", c.channelManager.spiderChannel))
+        stub.downloadingResponses[url1] =
+            Pair(ContentType.STRING, mutableMapOf("result" to "value3"))
+        stub.downloadingResponses[url2] =
+            Pair(ContentType.STRING, mutableMapOf("result" to "value4"))
+        c.topologyManager.nodes.add(stub)
 
-        c.start(this)
-
-        logger.debug { "interacting with crawler" }
-        //answerStartEvent()
-        val request1 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
-        val request2 = crawlerChannelManager.spiderChannel.receiveSend<DownloadingRequest>()
-
-        val response1 = DownloadingResponse(request1)
-        val response2 = DownloadingResponse(request2)
-
-        crawlerChannelManager.spiderChannel.send(response1)
-        crawlerChannelManager.spiderChannel.send(response2)
-
-        item1 = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        item2 = (crawlerChannelManager.spiderChannel.receiveSend<ObjectDataItem<*>>()).data as DataItemTest
-        logger.debug { "Received the final items:\n $item1 \n $item2" }
-
-        //answerEndEvent()
+        c.start(this)?.join()
         c.waitFinished()
         c.stop()
-        crawlerChannelManager.closeChannels()
 
+        val items: MutableList<Item> = mutableListOf()
+        coVerify { stub.processItem(capture(items)) }
 
-        assertThat(
-            item1, isA<DataItemTest>(
-                allOf(
-                    has(DataItemTest::url, equalTo(url1)),
-                    has(DataItemTest::value, equalTo(value1))
-                )
-            )
-        )
-        assertThat(
-            item2, isA<DataItemTest>(
-                allOf(
-                    has(DataItemTest::url, equalTo(url2)),
-                    has(DataItemTest::value, equalTo(value2))
-                )
-            )
-        )
-
+        assertThat(items, hasSize(equalTo(2)))
     }
 }
