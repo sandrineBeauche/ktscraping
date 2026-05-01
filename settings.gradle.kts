@@ -10,3 +10,4 @@ plugins {
 }
 
 rootProject.name = "ktscraping"
+include("ktscraping-core")
