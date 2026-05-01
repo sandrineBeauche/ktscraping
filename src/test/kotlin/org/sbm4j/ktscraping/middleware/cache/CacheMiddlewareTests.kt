@@ -139,6 +139,8 @@ class CacheMiddlewareTests: AbstractDownloaderMiddlewareTester<CacheMiddleware>(
         lateinit var resp2: DownloadingResponse
 
         withConsumer {
+            this@CacheMiddlewareTests.node.cacheMap.clear()
+
             resp = inChannel.sendSync<DownloadingResponse>(request)
             resp2 = inChannel.sendSync<DownloadingResponse>(request)
         }
