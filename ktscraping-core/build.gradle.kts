@@ -71,7 +71,8 @@ application {
     mainClass.set("MainKt")
 }
 
-task("codegen", JavaExec::class) {
+
+tasks.register<JavaExec>("codegen") {
     mainClass = "com.microsoft.playwright.CLI"
     classpath = sourceSets["main"].runtimeClasspath
     args = mutableListOf("codegen")
