@@ -1,13 +1,12 @@
 plugins {
-    kotlin("jvm") version "2.0.20"
+    kotlin("jvm") version "2.3.20"
     application
-    kotlin("plugin.serialization") version "1.8.0"
+    kotlin("plugin.serialization") version "2.3.20"
     id("com.vanniktech.maven.publish") version "0.31.0-rc2"
     idea
 }
 
 
-val kotlinVersion: String by project
 val logbackVersion: String by project
 val coroutinesVersion: String by project
 val mockkVersion: String by project
@@ -19,7 +18,6 @@ val ktorVersion: String by project
 val meercatVersion: String by project
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutinesVersion")
 
@@ -57,7 +55,7 @@ dependencies {
     testImplementation("org.sbm4j:meercat:1.1.1")
 
 
-    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
 }
 
