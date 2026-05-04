@@ -1,0 +1,13 @@
+plugins {
+    `kotlin-dsl`
+}
+
+repositories {
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20")
+    implementation("com.vanniktech:gradle-maven-publish-plugin:0.36.0")
+}

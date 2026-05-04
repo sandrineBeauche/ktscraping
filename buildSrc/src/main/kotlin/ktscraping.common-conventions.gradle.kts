@@ -1,11 +1,11 @@
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("maven-publish")
+    id("com.vanniktech.maven.publish")
     id("java-test-fixtures")
+    idea
 }
 
-group = "org.sbm4j"
-version = "1.1.0"
+group = "org.sbm4j.ktscraping"
 
 
 repositories {
@@ -36,5 +36,12 @@ publishing {
                 password = System.getenv("GITHUB_PACKAGE_REGISTRY_TOKEN")
             }
         }
+    }
+}
+
+idea {
+    module {
+        isDownloadSources = true
+        isDownloadJavadoc = true
     }
 }

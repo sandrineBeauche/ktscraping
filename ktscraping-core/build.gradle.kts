@@ -1,9 +1,6 @@
 plugins {
-    kotlin("jvm") version "2.3.20"
-    application
-    kotlin("plugin.serialization") version "2.3.20"
-    id("com.vanniktech.maven.publish") version "0.31.0-rc2"
-    idea
+    id("ktscraping.common-conventions")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
 }
 
 
@@ -63,14 +60,6 @@ tasks.test {
     useJUnitPlatform()
 }
 
-kotlin {
-    jvmToolchain(21)
-}
-
-application {
-    mainClass.set("MainKt")
-}
-
 
 tasks.register<JavaExec>("codegen") {
     mainClass = "com.microsoft.playwright.CLI"
@@ -78,22 +67,4 @@ tasks.register<JavaExec>("codegen") {
     args = mutableListOf("codegen")
 }
 
-publishing{
-    repositories {
-        maven {
-            name = "githubPackages"
-            url = uri("https://maven.pkg.github.com/sandrineBeauche/ktscraping")
-            credentials{
-                username = System.getenv("GITHUB_PACKAGE_REGISTRY_USER")
-                password = System.getenv("GITHUB_PACKAGE_REGISTRY_TOKEN")
-            }
-        }
-    }
-}
 
-idea {
-    module {
-        isDownloadSources = true
-        isDownloadJavadoc = true
-    }
-}
