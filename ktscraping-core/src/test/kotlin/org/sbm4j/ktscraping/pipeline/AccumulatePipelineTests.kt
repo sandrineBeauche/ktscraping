@@ -3,30 +3,17 @@ package org.sbm4j.ktscraping.pipeline
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import io.mockk.coVerify
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.core.utils.IntDataItem
-import org.sbm4j.ktscraping.core.utils.isEndItemAckWithErrors
-import org.sbm4j.ktscraping.core.utils.isEventItemAckWithErrors
-import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
-import org.sbm4j.ktscraping.core.utils.isOKEventBackWith
-import org.sbm4j.ktscraping.data.events.EndEvent
-import org.sbm4j.ktscraping.data.events.Event
+import org.sbm4j.ktscraping.utils.isEventItemAckWithErrors
+import org.sbm4j.ktscraping.utils.isOKEventBackWith
 import org.sbm4j.ktscraping.data.events.EventBack
-import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
-import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.meercat.data.ErrorInfo
-import org.sbm4j.meercat.data.ErrorLevel
 import org.sbm4j.meercat.data.Status
-import org.sbm4j.meercat.nodes.logger
 import kotlin.test.Test
-import kotlin.test.assertEquals
 
 
 class TestingAccumulatePipeline(name: String): AggregatePipeline(name) {

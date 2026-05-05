@@ -4,7 +4,6 @@ import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.meercat.data.Send
-import org.sbm4j.meercat.data.TestingSend
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 
 data class DataItemTest(

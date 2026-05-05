@@ -5,15 +5,14 @@ import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.natpryce.hamkrest.hasSize
 import com.natpryce.hamkrest.isA
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
 import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.core.utils.IntDataItem
-import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
-import org.sbm4j.ktscraping.core.utils.isOkItemAck
+import org.sbm4j.ktscraping.utils.isDownloadingResponseWith
+import org.sbm4j.ktscraping.utils.isOkItemAck
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.request.DownloadingRequest

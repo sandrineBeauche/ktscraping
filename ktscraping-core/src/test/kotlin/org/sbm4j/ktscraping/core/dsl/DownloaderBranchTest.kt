@@ -9,8 +9,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.AbstractMiddleware
-import org.sbm4j.ktscraping.core.utils.isDownloadingRequestWith
-import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
+import org.sbm4j.ktscraping.utils.isDownloadingRequestWith
+import org.sbm4j.ktscraping.utils.isDownloadingResponseWith
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.DownloadingRequest
 import org.sbm4j.ktscraping.data.request.Request

@@ -1,4 +1,4 @@
-package org.sbm4j.ktscraping.dowloaders.playwright
+package org.sbm4j.ktscraping.downloaders.playwright
 
 import com.microsoft.playwright.Page
 import com.microsoft.playwright.options.Cookie
@@ -14,6 +14,7 @@ import org.sbm4j.ktscraping.middleware.CookiesMiddleware
 import org.sbm4j.meercat.nodes.logger
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 import java.util.concurrent.Executors
+import kotlin.compareTo
 
 /**
  * A request that drives a Playwright browser page to scrape JavaScript-rendered content.

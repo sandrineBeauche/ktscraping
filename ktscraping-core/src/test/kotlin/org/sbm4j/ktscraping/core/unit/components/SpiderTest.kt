@@ -5,30 +5,20 @@ import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.natpryce.hamkrest.hasSize
 import com.natpryce.hamkrest.isA
-import com.natpryce.hamkrest.sameInstance
-import io.mockk.coVerify
-import io.mockk.spyk
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractSpider
 import org.sbm4j.ktscraping.core.components.ContentType
-import org.sbm4j.ktscraping.core.utils.AbstractSpiderTester
-import org.sbm4j.ktscraping.core.utils.ComponentSourceTester
+import org.sbm4j.ktscraping.utils.AbstractSpiderTester
 import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.data.internal.ErrorInternal
-import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ItemAck
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.meercat.Stub
-import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.data.ErrorInfo
-import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.data.SendException
-import org.sbm4j.meercat.nodes.InitiatorTester
 import org.sbm4j.meercat.nodes.logger
 
 

@@ -8,11 +8,6 @@ import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractExporter
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.DataItemTest
-import org.sbm4j.ktscraping.core.utils.isOKEndItemAck
-import org.sbm4j.ktscraping.core.utils.isOKStartItemAck
-import org.sbm4j.ktscraping.data.events.EndEvent
-import org.sbm4j.ktscraping.data.events.EventBack
-import org.sbm4j.ktscraping.data.events.StartEvent
 import org.sbm4j.ktscraping.data.item.*
 import org.sbm4j.meercat.nodes.logger
 

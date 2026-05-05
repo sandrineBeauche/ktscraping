@@ -1,16 +1,13 @@
-package org.sbm4j.ktscraping.core.utils
+package org.sbm4j.ktscraping.utils
 
 import io.mockk.coVerify
-import io.mockk.spyk
-import org.sbm4j.ktscraping.core.components.ContentType
+import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.internal.Internal
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.request.AbstractRequest
-import org.sbm4j.ktscraping.data.response.DownloadingResponse
 import org.sbm4j.meercat.Stub
 import org.sbm4j.meercat.channels.SuperChannel
-import org.sbm4j.meercat.data.Send
 import org.sbm4j.meercat.nodes.SourceNodeTester
 import org.sbm4j.meercat.nodes.sendProcessors.SendSource
 

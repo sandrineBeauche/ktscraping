@@ -1,4 +1,4 @@
-package org.sbm4j.ktscraping.core.utils
+package org.sbm4j.ktscraping.utils
 
 import org.sbm4j.ktscraping.data.events.EndEvent
 import org.sbm4j.ktscraping.data.events.EventBack

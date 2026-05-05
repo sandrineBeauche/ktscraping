@@ -18,7 +18,7 @@ import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.ktscraping.core.dsl.TestingCrawlerResult
 import org.sbm4j.ktscraping.core.utils.ComponentStub
 import org.sbm4j.ktscraping.core.utils.IntDataItem
-import org.sbm4j.ktscraping.core.utils.isDownloadingResponseWith
+import org.sbm4j.ktscraping.utils.isDownloadingResponseWith
 import org.sbm4j.ktscraping.data.events.Event
 import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.events.EventPropagation

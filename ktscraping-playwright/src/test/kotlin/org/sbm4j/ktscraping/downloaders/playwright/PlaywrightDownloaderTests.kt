@@ -2,25 +2,24 @@ package org.sbm4j.ktscraping.downloaders.playwright
 
 import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
-import kotlinx.coroutines.coroutineScope
+import com.natpryce.hamkrest.startsWith
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.components.AbstractDownloader
-import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
-import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightDownloader
-import org.sbm4j.ktscraping.dowloaders.playwright.PlaywrightRequest
+import org.sbm4j.ktscraping.utils.AbstractDownloaderTester
+import org.sbm4j.ktscraping.utils.hasEntry
+import org.sbm4j.ktscraping.utils.hasPayload
+import org.sbm4j.meercat.data.Status
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 
 class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>() {
 
     override fun buildNode(): PlaywrightDownloader {
-        val result = PlaywrightDownloader("playwright dowloader")
+        val result = PlaywrightDownloader("playwright downloader")
         result.headless = true
         result.inChannel = inChannel
         return result
@@ -29,25 +28,27 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
     @Test
     fun testSimpleDownload() = TestScope().runTest {
         val request = Request(sender, "https://playwright.dev")
-        lateinit var response: DownloadingResponse
 
         withConsumer {
-            response = inChannel.sendSync<DownloadingResponse>(request)
+            val response = inChannel.sendSync<DownloadingResponse>(request)
+            assertThat(response, hasPayload(
+                startsWith("<!DOCTYPE html><html")
+            ))
         }
 
-        assertNotNull(response)
+
     }
 
     @Test
     fun testSVGImageDownload() = TestScope().runTest {
         val request = Request(sender, "https://www.iana.org/_img/2022/iana-logo-header.svg")
-        lateinit var response: DownloadingResponse
 
         withConsumer {
-            response = inChannel.sendSync<DownloadingResponse>(request)
+            val response = inChannel.sendSync<DownloadingResponse>(request)
+            assertThat(response, hasPayload(
+                startsWith("<!DOCTYPE svg PUBLIC")
+            ))
         }
-
-        assertNotNull(response)
     }
 
     @Test
@@ -67,11 +68,11 @@ class PlaywrightDownloaderTests: AbstractDownloaderTester<PlaywrightDownloader>(
     @Test
     fun testMultipleNamed() = TestScope().runTest {
         val request1 = PlaywrightRequest(sender, "https://playwright.dev"){
-            waitForTimeout(3000.0)
+            waitForTimeout(500.0)
         }
 
         val request2 = PlaywrightRequest(sender, "https://playwright.dev"){
-            waitForTimeout(3000.0)
+            waitForTimeout(500.0)
         }
 
         lateinit var response1: DownloadingResponse

@@ -1,5 +1,6 @@
 package org.sbm4j.ktscraping.data.response
 
+import org.sbm4j.ktscraping.core.components.AbstractDownloader
 import org.sbm4j.ktscraping.core.components.ContentType
 import org.sbm4j.meercat.data.Status
 import org.sbm4j.meercat.data.ErrorInfo
@@ -84,6 +85,10 @@ data class DownloadingResponse(
     /** Creates a copy of this response via [copy]. */
     override fun clone(): DownloadingResponse {
         return this.copy()
+    }
+
+    fun getPayload(): String{
+        return contents[AbstractDownloader.PAYLOAD] as String
     }
 }
 

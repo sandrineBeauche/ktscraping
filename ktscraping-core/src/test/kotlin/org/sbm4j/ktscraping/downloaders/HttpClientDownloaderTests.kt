@@ -5,7 +5,7 @@ import com.natpryce.hamkrest.equalTo
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.sbm4j.ktscraping.core.components.AbstractDownloader
-import org.sbm4j.ktscraping.core.utils.AbstractDownloaderTester
+import org.sbm4j.ktscraping.utils.AbstractDownloaderTester
 import org.sbm4j.meercat.data.Status
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse

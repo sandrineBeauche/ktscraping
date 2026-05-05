@@ -4,16 +4,13 @@ import com.natpryce.hamkrest.assertion.assertThat
 import com.natpryce.hamkrest.equalTo
 import com.natpryce.hamkrest.has
 import com.natpryce.hamkrest.isA
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
-import org.sbm4j.ktscraping.core.utils.DataItemTest
 import org.sbm4j.ktscraping.core.utils.IntDataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.meercat.nodes.logger
 
 class TestingPipeline: AbstractPipeline("pipeline"){

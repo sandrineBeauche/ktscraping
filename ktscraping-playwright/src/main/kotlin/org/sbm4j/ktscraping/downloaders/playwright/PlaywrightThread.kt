@@ -1,10 +1,11 @@
-package org.sbm4j.ktscraping.dowloaders.playwright
+package org.sbm4j.ktscraping.downloaders.playwright
 
 import com.microsoft.playwright.Browser
 import com.microsoft.playwright.BrowserContext
 import com.microsoft.playwright.BrowserType
 import com.microsoft.playwright.Playwright
 import com.microsoft.playwright.PlaywrightException
+
 import org.sbm4j.meercat.nodes.logger
 import java.util.concurrent.ThreadFactory
 
