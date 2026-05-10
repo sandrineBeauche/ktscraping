@@ -15,3 +15,4 @@ plugins {
 rootProject.name = "ktscraping"
 include("ktscraping-core")
 include("ktscraping-playwright")
+include("ktscraping-nitrite")

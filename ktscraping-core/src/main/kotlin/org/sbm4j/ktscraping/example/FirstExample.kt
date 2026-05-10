@@ -38,7 +38,7 @@ class FirstExampleSpider(
             //sends the initial request and get the response
             val request = Request(this, "http://www.meeple-breton.fr/2025/01/tous-les-festivals-de-2025.html")
             val response = sendSync(request) as DownloadingResponse
-            val html = response.contents["payload"] as String
+            val html = response.getPayload()
 
             //extracts data from the response
             val results = htmlDocument(html) {

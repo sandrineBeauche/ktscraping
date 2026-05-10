@@ -28,10 +28,8 @@ repositories {
 dependencies {
     implementation(kotlin("reflect"))
 
-
     api ("org.kodein.di:kodein-di:$kodeinVersion")
     api("org.kodein.di:kodein-di-jvm:$kodeinVersion")
-
 
     api("it.skrape:skrapeit:1.2.2")
     implementation("com.fleeksoft.ksoup:ksoup:0.2.1")

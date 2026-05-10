@@ -5,39 +5,44 @@ import org.dizitart.kno2.filters.eq
 import org.dizitart.kno2.nitrite
 import org.dizitart.kno2.serialization.KotlinXSerializationMapper
 import org.dizitart.no2.Nitrite
-import org.dizitart.no2.common.module.NitriteModule.module
+import org.dizitart.no2.common.module.NitriteModule
 import org.dizitart.no2.mvstore.MVStoreModule
-import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import java.io.File
+import kotlin.jvm.javaClass
 import kotlin.reflect.KProperty1
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
+import org.sbm4j.ktscraping.exporters.ItemUpdate
+import org.sbm4j.ktscraping.exporters.ItemDelete
 
 /**
- * [DBConnexion] implementation backed by a [Nitrite] embedded document database.
+ * [org.sbm4j.ktscraping.db.DBConnexion] implementation backed by a [org.dizitart.no2.Nitrite] embedded document database.
  *
  * Nitrite is a serverless, embedded document store that persists Kotlin objects
- * directly via [KotlinXSerializationMapper], making it ideal for local scraping
+ * directly via [org.dizitart.kno2.serialization.KotlinXSerializationMapper], making it ideal for local scraping
  * sessions without requiring an external database server.
  *
  * Implements a multiton pattern via the [dbs] companion map: multiple
  * [NitriteDBConnexion] instances pointing to the same file share the same
- * underlying [Nitrite] instance, preventing concurrent access conflicts on
+ * underlying [org.dizitart.no2.Nitrite] instance, preventing concurrent access conflicts on
  * the same file.
  *
  * @param dbFile The file to use as the Nitrite database store.
  * If it does not exist, it is created automatically.
  *
- * @see DBConnexion
+ * @see org.sbm4j.ktscraping.db.DBConnexion
  */
 class NitriteDBConnexion(dbFile: File): DBConnexion{
     companion object{
         /**
-         * Multiton cache of [Nitrite] instances keyed by absolute file path.
+         * Multiton cache of [org.dizitart.no2.Nitrite] instances keyed by absolute file path.
          * Ensures that multiple [NitriteDBConnexion] instances pointing to the
-         * same file share a single [Nitrite] instance.
+         * same file share a single [org.dizitart.no2.Nitrite] instance.
          */
         private val dbs: MutableMap<String, Nitrite> = mutableMapOf()
+
+        fun reset(){
+            dbs.clear()
+        }
     }
 
     /** The underlying [Nitrite] database instance for this connection. */
@@ -55,19 +60,19 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
 
     /**
      * Builds a new [Nitrite] instance backed by an MVStore file at the given [file] path,
-     * with [KotlinXSerializationMapper] for direct Kotlin object serialization.
+     * with [org.dizitart.kno2.serialization.KotlinXSerializationMapper] for direct Kotlin object serialization.
      *
      * @param file The database file to use as the MVStore backend.
      * @return A fully configured [Nitrite] instance.
      */
-    fun buildNitriteDB(file: File): Nitrite{
+    fun buildNitriteDB(file: File): Nitrite {
         val storeModule = MVStoreModule.withConfig()
             .filePath(file)
             .build()
 
         return nitrite {
             loadModule(storeModule)
-            loadModule(module(KotlinXSerializationMapper()))
+            loadModule(NitriteModule.module(KotlinXSerializationMapper()))
         }
     }
 
@@ -86,7 +91,7 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
     override fun <T> getKeys(classObject: Class<T>, keyProperty: KProperty1<T, *>): Set<*>{
         val repo = db.getRepository(classObject)
         val cursor = repo.find()
-        return cursor.map { keyProperty.get(it) } as Set<*>
+        return cursor.map { keyProperty.get(it) }.toSet()
     }
 
     /**
@@ -103,7 +108,7 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
      * Inserts the data object carried by [item] into its corresponding Nitrite repository.
      * The insert is not persisted until [commit] is called.
      *
-     * @param item The item whose [ObjectDataItem.data] object to insert.
+     * @param item The item whose [org.sbm4j.ktscraping.data.item.ObjectDataItem.data] object to insert.
      */
     override fun perfomInsertItem(item: ObjectDataItem<*>) {
         val data = item.data
@@ -112,11 +117,11 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
     }
 
     /**
-     * Applies a partial update to the record matching [ItemUpdate.keyName] = [ItemUpdate.data]
-     * in the Nitrite repository for [ItemUpdate.entityType].
+     * Applies a partial update to the record matching [org.sbm4j.ktscraping.exporters.ItemUpdate.keyName] = [org.sbm4j.ktscraping.exporters.ItemUpdate.data]
+     * in the Nitrite repository for [org.sbm4j.ktscraping.exporters.ItemUpdate.entityType].
      *
      * Uses Nitrite's filter syntax (`keyName eq data`) to locate the target record,
-     * then applies the [ItemUpdate.values] map as a document patch.
+     * then applies the [org.sbm4j.ktscraping.exporters.ItemUpdate.values] map as a document patch.
      * The update is not persisted until [commit] is called.
      *
      * @param item The partial update to apply.
@@ -131,8 +136,8 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
     }
 
     /**
-     * Removes the record matching [ItemDelete.keyName] = [ItemDelete.data]
-     * from the Nitrite repository for [ItemDelete.entityType].
+     * Removes the record matching [org.sbm4j.ktscraping.exporters.ItemDelete.keyName] = [org.sbm4j.ktscraping.exporters.ItemDelete.data]
+     * from the Nitrite repository for [org.sbm4j.ktscraping.exporters.ItemDelete.entityType].
      * The deletion is not persisted until [commit] is called.
      *
      * @param item The delete operation to apply.
