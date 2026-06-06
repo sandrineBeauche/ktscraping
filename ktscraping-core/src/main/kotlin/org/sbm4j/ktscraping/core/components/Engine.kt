@@ -14,12 +14,12 @@ import org.sbm4j.ktscraping.data.events.EventPropagation
 import org.sbm4j.ktscraping.data.item.DataItem
 import org.sbm4j.ktscraping.data.item.Item
 import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemDelete
+import org.sbm4j.ktscraping.data.item.ItemUpdate
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.AbstractRequest
 import org.sbm4j.ktscraping.data.request.GoogleSearchImageRequest
 import org.sbm4j.ktscraping.data.response.Response
-import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.ktscraping.stats.StatsCrawlerResult
 import org.sbm4j.meercat.channels.SuperChannel
 import org.sbm4j.meercat.channels.sendSyncAll
@@ -314,11 +314,11 @@ class Engine(
 
     override suspend fun processItem(item: Item) {
         when(item){
-            is ItemUpdate -> {
+            is ItemUpdate<*> -> {
                 this.stats.nbItems++
                 this.stats.incrUpdate(item.label)
             }
-            is ItemDelete -> {
+            is ItemDelete<*> -> {
                 this.stats.nbItems++
                 this.stats.incrDelete(item.label)
             }

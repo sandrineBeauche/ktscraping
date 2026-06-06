@@ -1,86 +1,118 @@
 package org.sbm4j.ktscraping.middleware
 
+import com.natpryce.hamkrest.assertion.assertThat
+import com.natpryce.hamkrest.equalTo
+import com.natpryce.hamkrest.has
+import com.natpryce.hamkrest.hasSize
+import com.natpryce.hamkrest.isA
+import com.natpryce.hamkrest.isEmpty
+import io.mockk.coVerify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.sbm4j.ktscraping.core.components.SpiderMiddleware
 import org.sbm4j.ktscraping.core.utils.AbstractSpiderMiddlewareTester
+import org.sbm4j.ktscraping.core.utils.ComponentStub
+import org.sbm4j.ktscraping.data.events.DBSyncEvent
 import org.sbm4j.ktscraping.data.events.EndEvent
+import org.sbm4j.ktscraping.data.events.EventBack
 import org.sbm4j.ktscraping.data.internal.ErrorInternal
+import org.sbm4j.ktscraping.data.item.ItemDelete
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.exporters.Contact
-import org.sbm4j.ktscraping.exporters.ItemDelete
+import org.sbm4j.ktscraping.db.CollectionDBConnection
+import org.sbm4j.ktscraping.domain.Contact
+import org.sbm4j.ktscraping.domain.buildDBItems
+import org.sbm4j.ktscraping.domain.buildInsertContact
+import org.sbm4j.ktscraping.utils.isOKEventBackWith
 import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.meercat.data.ErrorLevel
 import org.sbm4j.meercat.nodes.logger
 
-class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester<DBSyncMiddleware<*>>() {
+class DBSyncMiddlewareTests: AbstractSpiderMiddlewareTester<DBSyncMiddleware<Contact>>() {
 
-    override fun buildNode(): DBSyncMiddleware<*> {
+    val dbConnexion: CollectionDBConnection = CollectionDBConnection()
+
+    @BeforeEach
+    fun setupDB(): Unit = runBlocking {
+        val contacts = buildDBItems(listOf(20, 35, 40))
+        dbConnexion.data.addAll(contacts)
+    }
+
+    @AfterEach
+    fun cleanupDB(): Unit = runBlocking {
+        dbConnexion.data.clear()
+    }
+
+    override fun buildNode(): DBSyncMiddleware<Contact> {
         val result = DBSyncMiddleware<Contact>("DB sync middleware")
-        result.keys = setOf(1,2,3)
-        result.classObject = Contact::class.java
+        result.classObject = Contact::class
         result.keyProperty = Contact::contactId
+        result.inChannel = inChannel
+        result.outChannel = outChannel
+        result.dbConnexion = dbConnexion
         return result
     }
 
-    @Test
-    fun testDBSyncMiddleware1() = TestScope().runTest {
-
-        val request1 = Request(sender, "")
-        request1.parameters[DBSyncMiddleware.DBSYNC_KEY] = 2
-
-        lateinit var response: DownloadingResponse
-        lateinit var delete1: ItemDelete
-        lateinit var delete2: ItemDelete
-
-        withConsumer {
-            inChannel.send(request1)
-            response = outChannel.channel.receive() as DownloadingResponse
-            logger.debug { "Received a response: $response" }
-
-            logger.debug { "send end request" }
-            inChannel.send(EndEvent(sender))
-
-            logger.debug { "receive item to delete" }
-            delete1 = outChannel.channel.receive() as ItemDelete
-            logger.debug { "received item delete: $delete1" }
-            delete2 = outChannel.channel.receive() as ItemDelete
-            logger.debug { "received item delete: $delete2" }
-
-            logger.debug { "receive followed item end" }
-            outChannel.channel.receive() as EndEvent
-            logger.debug { "received followed item end" }
-        }
-
-
+    fun buildRequestDBSync(id: Int): Request{
+        val request = Request(sender, "")
+        request.parameters[DBSyncMiddleware.DBSYNC_KEY] = id
+        return request
     }
 
     @Test
-    fun testDBSyncMiddleware2() = TestScope().runTest {
+    fun `all up to date and 1 to delete`() = TestScope().runTest {
 
-        val request1 = Request(sender, "")
-        request1.parameters["DBSyncKey"] = 2
-
-        lateinit var response: DownloadingResponse
-        lateinit var end: EndEvent
+        val request1 = buildRequestDBSync(0)
+        val request2 = buildRequestDBSync(2)
+        val syncEvent = DBSyncEvent(sender, Contact::class)
 
         withConsumer {
-            inChannel.send(request1)
-            response = outChannel.channel.receive() as DownloadingResponse
+            val response1 = inChannel.sendSync<DownloadingResponse>(request1)
+            logger.debug { "Received a response for request 1: $response1" }
+            assertThat(response1.contents[DBSyncMiddleware.DBSYNC_STATE],
+                equalTo(DBSyncState.UPTODATE))
+
+            val response2 = inChannel.sendSync<DownloadingResponse>(request2)
+            logger.debug { "Received a response for request 1: $response2" }
+            assertThat(response1.contents[DBSyncMiddleware.DBSYNC_STATE],
+                equalTo(DBSyncState.UPTODATE))
+
+            val back = inChannel.sendSync<EventBack>(syncEvent)
+            logger.debug { "Received a back for sync event: $back" }
+
+            val items = getReceivedItem()
+
+            assertThat(back, isOKEventBackWith("sync"))
+            assertThat(items, hasSize(equalTo(1)))
+
+            assertThat(items[0], isA<ItemDelete<*>>(
+                has(ItemDelete<*>::keyValue, equalTo(1))
+            ))
+
+            coVerify(exactly = 0) { (stub as ComponentStub).performRequest(any()) }
+        }
+
+    }
+
+
+    @Test
+    fun `new item`() = TestScope().runTest {
+
+        val request1 = buildRequestDBSync(3)
+
+        withConsumer {
+            val response = inChannel.sendSync<DownloadingResponse>(request1)
             logger.debug { "Received a response: $response" }
 
-            val errorInfos = ErrorInfo(Exception(), node, ErrorLevel.MAJOR)
-            outChannel.send(ErrorInternal(errorInfos, sender))
-            outChannel.channel.receive()
+            assertThat(response.contents[DBSyncMiddleware.DBSYNC_STATE],
+                equalTo(DBSyncState.NEW))
 
-            logger.debug { "send item end" }
-            inChannel.channel.send(EndEvent(sender))
+            val requests = getReceivedRequest()
+            assertThat(requests, hasSize(equalTo(1)))
 
-            logger.debug { "receive followed item end" }
-            end = outChannel.channel.receive() as EndEvent
-            logger.debug { "received followed item end" }
         }
     }
 }

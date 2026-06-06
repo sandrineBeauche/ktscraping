@@ -16,4 +16,5 @@ dependencies {
     implementation("org.dizitart:nitrite-mvstore-adapter:$nitriteVersion")
 
     testImplementation("io.github.serpro69:kotlin-faker:1.16.1")
+    testImplementation(testFixtures(project(":ktscraping-core")))
 }

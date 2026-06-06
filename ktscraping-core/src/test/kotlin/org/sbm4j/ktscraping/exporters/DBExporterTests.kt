@@ -10,48 +10,30 @@ import org.junit.jupiter.api.BeforeEach
 import org.sbm4j.ktscraping.core.utils.AbstractExporterTester
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemDelete
+import org.sbm4j.ktscraping.data.item.ItemUpdate
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
-import org.sbm4j.ktscraping.db.NitriteDBConnexion
+import org.sbm4j.ktscraping.db.CollectionDBConnection
+import org.sbm4j.ktscraping.db.clear
+import org.sbm4j.ktscraping.db.getSize
+import org.sbm4j.ktscraping.domain.Address
+import org.sbm4j.ktscraping.domain.Contact
+import org.sbm4j.ktscraping.utils.isOkItemAck
 import org.sbm4j.meercat.nodes.logger
-import java.io.File
-import kotlin.test.AfterTest
 import kotlin.test.Test
 
-@Serializable
-data class Address(
-    val street: String,
-    val number: Int,
-    val zipCode: Int,
-    val city: String
-)
 
-@Serializable
-data class Contact(
-    val contactId: Int,
-    val firstname: String,
-    val lastname: String,
-    val years: Int,
-    val address: Address? = null
-): Data() {
-    override fun clone(): Data {
-        return this.copy()
-    }
-}
 
 class DBExporterTests: AbstractExporterTester<DBExporter>() {
 
-    lateinit var db: NitriteDBConnexion
-
-    lateinit var dbFile: File
+    lateinit var db: CollectionDBConnection
 
     init {
-        logger.debug { "setup nitrite exporter tester" }
-        val uri = this.javaClass.getResource("/org.sbm4j.ktscraping/exporters/nitriteDB.db")?.toURI()!!
-        dbFile = File(uri)
-        db = NitriteDBConnexion(dbFile)
+        logger.debug { "setup collectionDB exporter tester" }
+        db = CollectionDBConnection()
     }
 
-    val data1 = Contact(1,"John", "Doe", 30)
+    val data1 = Contact(1, "John", "Doe", 30)
     val data2 = Contact(2,"Mickey", "Mouse", 60,
         Address("rue des coquelicots", 3, 30000, "MickeyVille")
     )
@@ -66,11 +48,11 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
 
     @BeforeEach
     fun setUpDB(){
-        db.clear(Contact::class.java)
+        db.clear<Contact>()
     }
 
     fun getFirstContact(): Contact{
-        val contacts = db.getObjects(Contact::class.java)
+        val contacts = db.getObjects(Contact::class)
         return contacts[0] as Contact
     }
 
@@ -80,47 +62,49 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
     }
 
     @Test
-    fun testExportItem1() = TestScope().runTest{
+    fun `db export simple object item`() = TestScope().runTest{
 
         val item = ObjectDataItem.build(data1, "test", sender)
 
         withConsumer {
             val itemAck = inChannel.sendSync<ItemAck>(item)
+            assertThat(itemAck, isOkItemAck(item))
         }
 
-        val size = db.getSize(Contact::class.java)
+        val size = db.getSize<Contact>()
         assertThat(size, equalTo(1))
 
-        val cursor = db.getObjects(Contact::class.java)
+        val cursor = db.getObjects(Contact::class)
         cursor.forEach {
             println(it)
         }
     }
 
     @Test
-    fun testExportItem2() = TestScope().runTest{
+    fun `db export complex object item`() = TestScope().runTest{
 
         val item = ObjectDataItem.build(data2, "test", sender)
 
         withConsumer {
             val itemAck = inChannel.sendSync<ItemAck>(item)
+            assertThat(itemAck, isOkItemAck(item))
         }
 
-        val size = db.getSize(Contact::class.java)
+        val size = db.getSize(Contact::class)
         assertThat(size, equalTo(1))
 
-        val cursor = db.getObjects(Contact::class.java)
+        val cursor = db.getObjects(Contact::class)
         cursor.forEach {
             println(it)
         }
     }
 
     @Test
-    fun testUpdateItem() = TestScope().runTest {
+    fun `db export update on simple object item`() = TestScope().runTest {
         val item = ObjectDataItem.build(data1, "test", sender)
 
         val updateItem = ItemUpdate(
-            Contact::class.java,
+            Contact::class,
             Contact::contactId,
             1,
             mapOf("years" to 20),
@@ -129,7 +113,10 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
 
         withConsumer {
             val itemAck = inChannel.sendSync<ItemAck>(item)
+            assertThat(itemAck, isOkItemAck(item))
+
             val itemAck2 = inChannel.sendSync<ItemAck>(updateItem)
+            assertThat(itemAck, isOkItemAck(item))
         }
 
         val cont = getFirstContact()
@@ -138,11 +125,11 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
     }
 
     @Test
-    fun testUpdateItem2() = TestScope().runTest {
+    fun `db export update on complex object item`() = TestScope().runTest {
         val item = ObjectDataItem.build(data2, "test", sender)
 
         val updateItem = ItemUpdate(
-            Contact::class.java,
+            Contact::class,
             Contact::contactId,
             2,
             mapOf("address.number" to 4),
@@ -160,9 +147,9 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
     }
 
     @Test
-    fun testDeleteItem() = TestScope().runTest {
+    fun `db deletes item`() = TestScope().runTest {
         val deleteItem = ItemDelete(
-            Contact::class.java,
+            Contact::class,
             Contact::contactId,
             1,
             sender = sender
@@ -177,8 +164,8 @@ class DBExporterTests: AbstractExporterTester<DBExporter>() {
             val itemAck3 = inChannel.sendSync<ItemAck>(deleteItem)
         }
 
-        val size = db.getSize(Contact::class.java)
-        val contacts = db.getObjects(Contact::class.java)
+        val size = db.getSize(Contact::class)
+        val contacts = db.getObjects(Contact::class)
         contacts.forEach {
             println(it)
         }

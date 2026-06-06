@@ -1,9 +1,9 @@
 package org.sbm4j.ktscraping.db
 
-import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.item.Item
+import org.sbm4j.ktscraping.data.item.ItemDelete
+import org.sbm4j.ktscraping.data.item.ItemUpdate
+import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.meercat.nodes.logger
 
 /**
@@ -37,13 +37,13 @@ interface DBControllable {
      *
      * @param item The item to persist.
      */
-    fun performDBItem(item: Item){
-        when(item){
-            is ItemUpdate -> {
+    fun performDBItem(item: Item): Boolean{
+        return when(item){
+            is ItemUpdate<*> -> {
                 logger.debug { "${name}: update item ${item}" }
                 performItemUpdate(item)
             }
-            is ItemDelete -> {
+            is ItemDelete<*> -> {
                 logger.debug { "${name}: delete item ${item}"}
                 performItemDelete(item)
             }
@@ -51,6 +51,7 @@ interface DBControllable {
                 logger.debug { "${name}: insert item ${item}"}
                 perfomInsertItem(item)
             }
+            else -> false
         }
     }
 
@@ -60,8 +61,8 @@ interface DBControllable {
      *
      * @param item The partial update to apply.
      */
-    fun performItemUpdate(item: ItemUpdate){
-        db.performItemUpdate(item)
+    fun performItemUpdate(item: ItemUpdate<*>): Boolean{
+        return db.performItemUpdate(item)
     }
 
     /**
@@ -70,17 +71,17 @@ interface DBControllable {
      *
      * @param item The delete operation to apply.
      */
-    fun performItemDelete(item: ItemDelete){
-        db.performItemDelete(item)
+    fun performItemDelete(item: ItemDelete<*>): Boolean{
+        return db.performItemDelete(item)
     }
 
     /**
-     * Inserts a new record via [DBConnexion.perfomInsertItem].
+     * Inserts a new record via [DBConnexion.performInsertItem].
      * Override to customize insert behavior.
      *
      * @param item The item to insert.
      */
-    fun perfomInsertItem(item: ObjectDataItem<*>){
-        db.perfomInsertItem(item)
+    fun perfomInsertItem(item: ObjectDataItem<*>): Boolean{
+        return db.performInsertItem(item)
     }
 }

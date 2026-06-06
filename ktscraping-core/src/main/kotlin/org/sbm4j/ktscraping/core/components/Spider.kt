@@ -10,10 +10,10 @@ import org.sbm4j.ktscraping.data.internal.StartTaskProgressInternal
 import org.sbm4j.ktscraping.data.internal.StepDoneProgressItem
 import org.sbm4j.ktscraping.data.item.Data
 import org.sbm4j.ktscraping.data.item.ItemAck
+import org.sbm4j.ktscraping.data.item.ItemUpdate
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
 import org.sbm4j.ktscraping.data.request.Request
 import org.sbm4j.ktscraping.data.response.DownloadingResponse
-import org.sbm4j.ktscraping.exporters.ItemUpdate
 import org.sbm4j.meercat.data.ErrorInfo
 import org.sbm4j.meercat.data.ErrorLevel
 import org.sbm4j.meercat.data.SendException
@@ -265,7 +265,7 @@ abstract class AbstractSpider(
          *
          * @param update The partial update to send.
          */
-        suspend fun sendUpdate(update: ItemUpdate) {
+        suspend fun sendUpdate(update: ItemUpdate<*>) {
             outChannel.sendSync<ItemAck>(update)
         }
     }

@@ -1,8 +1,9 @@
 package org.sbm4j.ktscraping.db
 
-import org.sbm4j.ktscraping.exporters.ItemDelete
-import org.sbm4j.ktscraping.exporters.ItemUpdate
+import org.sbm4j.ktscraping.data.item.ItemDelete
+import org.sbm4j.ktscraping.data.item.ItemUpdate
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
+import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 
 /**
@@ -13,7 +14,7 @@ import kotlin.reflect.KProperty1
  * (SQL, NoSQL, etc.). Multiple components (Spiders, middlewares, exporters, pipelines)
  * can share the same [DBConnexion] instance, which is declared once at the crawler level.
  *
- * Operations ([perfomInsertItem], [performItemUpdate], [performItemDelete]) are
+ * Operations ([performInsertItem], [performItemUpdate], [performItemDelete]) are
  * buffered until [commit] is called explicitly, allowing batch writes for better
  * performance.
  *
@@ -38,41 +39,44 @@ interface DBConnexion {
      * @param keyProperty The property to use as the key (e.g. an ID or URL field).
      * @return The set of existing key values for this class.
      */
-    fun <T> getKeys(classObject: Class<T>, keyProperty: KProperty1<T, *>): Set<*>
+    fun <T: Any> getKeys(classObject: KClass<T>, keyProperty: KProperty1<T, *>): Set<*>
 
     /**
      * Clears all records of the given class from the database.
      *
      * @param classObject The [Class] of the domain object to clear.
      */
-    fun clear(classObject: Class<*>)
+    fun <T: Any> clear(classObject: KClass<T>)
 
     /**
      * Buffers an insert operation for the given [ObjectDataItem].
      * The insert is not committed until [commit] is called.
      *
      * @param item The item to insert.
+     * @return true if the insert succeeds, false otherwise
      */
-    fun perfomInsertItem(item: ObjectDataItem<*>)
+    fun performInsertItem(item: ObjectDataItem<*>): Boolean
 
     /**
      * Buffers an update operation for the given [ItemUpdate].
      * The update is not committed until [commit] is called.
      *
      * @param item The partial update to apply.
+     * @return true if the update succeeds, false otherwise
      */
-    fun performItemUpdate(item: ItemUpdate)
+    fun <T: Any> performItemUpdate(item: ItemUpdate<T>): Boolean
 
     /**
      * Buffers a delete operation for the given [ItemDelete].
      * The delete is not committed until [commit] is called.
      *
      * @param item The delete operation to apply.
+     * @return true if the delete succeeds, false otherwise
      */
-    fun performItemDelete(item: ItemDelete)
+    fun <T: Any> performItemDelete(item: ItemDelete<T>): Boolean
 
     /**
-     * Commits all buffered operations ([perfomInsertItem], [performItemUpdate],
+     * Commits all buffered operations ([performInsertItem], [performItemUpdate],
      * [performItemDelete]) to the database.
      *
      * Should be called periodically or at the end of a scraping session
@@ -95,7 +99,7 @@ interface DBConnexion {
      * @param classObject The [Class] of the domain object to retrieve.
      * @return A list of all stored objects of type [T].
      */
-    fun <T> getObjects(classObject: Class<T>): List<T>
+    fun <T: Any> getObjects(classObject: KClass<T>): List<T>
 
     /**
      * Returns the number of records of the given class stored in the database.
@@ -103,5 +107,34 @@ interface DBConnexion {
      * @param classObject The [Class] of the domain object to count.
      * @return The number of stored records.
      */
-    fun getSize(classObject: Class<*>): Long
+    fun <T: Any> getSize(classObject: KClass<T>): Long
+
+}
+
+/**
+ * Convenience reified overload of [DBConnexion.getSize] for the type [T].
+ */
+inline fun <reified T: Any> DBConnexion.getSize(): Long {
+    return this.getSize(T::class)
+}
+
+/**
+ * Convenience reified overload of [DBConnexion.getObjects] for the type [T].
+ */
+inline fun <reified T: Any> DBConnexion.getObjects(): List<T> {
+    return this.getObjects(T::class)
+}
+
+/**
+ * Convenience reified overload of [DBConnexion.getKeys] for the type [T].
+ */
+inline fun <reified T: Any> DBConnexion.getKeys(keyProperty: KProperty1<T, *>): Set<*>{
+    return this.getKeys(T::class, keyProperty)
+}
+
+/**
+ * Convenience reified overload of [DBConnexion.clear] for the type [T].
+ */
+inline fun <reified T: Any> DBConnexion.clear() {
+    this.clear(T::class)
 }

@@ -6,32 +6,27 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.sbm4j.ktscraping.core.components.AbstractPipeline
 import org.sbm4j.ktscraping.core.utils.AbstractPipelineTester
 import org.sbm4j.ktscraping.data.events.EndEvent
-import org.sbm4j.ktscraping.db.NitriteDBConnexion
-import org.sbm4j.ktscraping.exporters.Address
-import org.sbm4j.ktscraping.exporters.Contact
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
-import java.io.File
+import org.sbm4j.ktscraping.db.CollectionDBConnection
+import org.sbm4j.ktscraping.domain.Address
+import org.sbm4j.ktscraping.domain.Contact
+import org.sbm4j.meercat.nodes.logger
 import kotlin.test.BeforeTest
 import kotlin.test.Test
-import org.sbm4j.meercat.nodes.logger
 
 class DBPipelineTests: AbstractPipelineTester<DBPipeline<*>>() {
 
-    lateinit var db: NitriteDBConnexion
+    lateinit var db: CollectionDBConnection
 
-    lateinit var dbFile: File
 
     init {
         logger.debug { "setup nitrite exporter tester" }
-        val uri = this.javaClass.getResource("/org.sbm4j.ktscraping/exporters/nitriteDB.db")?.toURI()!!
-        dbFile = File(uri)
-        db = NitriteDBConnexion(dbFile)
+        db = CollectionDBConnection()
     }
 
-    val data1 = Contact(1,"John", "Doe", 30)
+    val data1 = Contact(1, "John", "Doe", 30)
     val data2 = Contact(2,"Mickey", "Mouse", 60,
         Address("rue des coquelicots", 3, 30000, "MickeyVille")
     )
@@ -39,7 +34,7 @@ class DBPipelineTests: AbstractPipelineTester<DBPipeline<*>>() {
     override fun buildNode(): DBPipeline<*> {
         val pipeline = DBPipeline<Contact>("db pipeline")
         pipeline.db = db
-        pipeline.objectClass = Contact::class.java
+        pipeline.objectClass = Contact::class
         pipeline.inChannel = inChannel
         pipeline.outChannel = outChannel
         return pipeline
@@ -48,7 +43,7 @@ class DBPipelineTests: AbstractPipelineTester<DBPipeline<*>>() {
 
     @BeforeTest
     fun setUpDB(){
-        db.clear(Contact::class.java)
+        db.clear(Contact::class)
     }
 
     @Test
@@ -67,7 +62,7 @@ class DBPipelineTests: AbstractPipelineTester<DBPipeline<*>>() {
             println(l)
         }
 
-        val size = db.getSize(Contact::class.java)
+        val size = db.getSize(Contact::class)
         assertThat(size, equalTo(1))
     }
 }

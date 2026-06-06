@@ -1,3 +1,4 @@
+
 plugins {
     id("ktscraping.common-conventions")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.20"
@@ -12,6 +13,7 @@ val ktorVersion: String by project
 val meercatVersion: String by project
 val mockkVersion: String by project
 val hamkrestVersion: String by project
+val coroutinesVersion: String by project
 
 repositories {
     maven {
@@ -27,6 +29,7 @@ repositories {
 
 dependencies {
     implementation(kotlin("reflect"))
+    testFixturesImplementation(kotlin("reflect"))
 
     api ("org.kodein.di:kodein-di:$kodeinVersion")
     api("org.kodein.di:kodein-di-jvm:$kodeinVersion")
@@ -49,13 +52,21 @@ dependencies {
     testImplementation("org.sbm4j:meercat:${meercatVersion}:test-fixtures-sources")
     testFixturesApi(testFixtures("org.sbm4j:meercat:${meercatVersion}"))
     testFixturesApi("org.sbm4j:meercat:${meercatVersion}:test-fixtures-sources")
+    testImplementation("org.sbm4j:meercat:${meercatVersion}")
+
     testImplementation(testFixtures(project(":ktscraping-core")))
     testFixturesImplementation("io.mockk:mockk:${mockkVersion}")
     testFixturesImplementation("com.natpryce:hamkrest:${hamkrestVersion}")
 
-    testImplementation("org.sbm4j:meercat:${meercatVersion}")
 
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
     testFixturesImplementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
+
+    testFixturesApi("io.github.serpro69:kotlin-faker:1.16.1")
+
+    //testFixturesImplementation(kotlin("test"))
+    testFixturesImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
+    testFixturesImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${coroutinesVersion}")
+    testFixturesImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:${coroutinesVersion}")
 }

@@ -7,12 +7,13 @@ import org.dizitart.kno2.serialization.KotlinXSerializationMapper
 import org.dizitart.no2.Nitrite
 import org.dizitart.no2.common.module.NitriteModule
 import org.dizitart.no2.mvstore.MVStoreModule
-import java.io.File
-import kotlin.jvm.javaClass
-import kotlin.reflect.KProperty1
+import org.sbm4j.ktscraping.data.item.ItemDelete
+import org.sbm4j.ktscraping.data.item.ItemUpdate
 import org.sbm4j.ktscraping.data.item.ObjectDataItem
-import org.sbm4j.ktscraping.exporters.ItemUpdate
-import org.sbm4j.ktscraping.exporters.ItemDelete
+import org.sbm4j.ktscraping.db.NitriteDBConnexion.Companion.dbs
+import java.io.File
+import kotlin.reflect.KClass
+import kotlin.reflect.KProperty1
 
 /**
  * [org.sbm4j.ktscraping.db.DBConnexion] implementation backed by a [org.dizitart.no2.Nitrite] embedded document database.
@@ -40,6 +41,10 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
          */
         private val dbs: MutableMap<String, Nitrite> = mutableMapOf()
 
+        /**
+         * Clears the multiton cache, closing all cached [Nitrite] instances.
+         * Useful for resetting state between tests.
+         */
         fun reset(){
             dbs.clear()
         }
@@ -88,8 +93,8 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
      * @param keyProperty The property to extract as the key.
      * @return The set of existing key values.
      */
-    override fun <T> getKeys(classObject: Class<T>, keyProperty: KProperty1<T, *>): Set<*>{
-        val repo = db.getRepository(classObject)
+    override fun <T: Any> getKeys(classObject: KClass<T>, keyProperty: KProperty1<T, *>): Set<*>{
+        val repo = db.getRepository(classObject.java)
         val cursor = repo.find()
         return cursor.map { keyProperty.get(it) }.toSet()
     }
@@ -99,8 +104,8 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
      *
      * @param classObject The [Class] of the domain object to clear.
      */
-    override fun clear(classObject: Class<*>) {
-        val repository = db.getRepository(classObject)
+    override fun <T: Any> clear(classObject: KClass<T>) {
+        val repository = db.getRepository(classObject.java)
         repository.clear()
     }
 
@@ -110,41 +115,44 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
      *
      * @param item The item whose [org.sbm4j.ktscraping.data.item.ObjectDataItem.data] object to insert.
      */
-    override fun perfomInsertItem(item: ObjectDataItem<*>) {
+    override fun performInsertItem(item: ObjectDataItem<*>): Boolean {
         val data = item.data
         val repository = db.getRepository(data.javaClass)
-        repository.insert(data)
+        val result = repository.insert(data)
+        return result.affectedCount >= 1
     }
 
     /**
-     * Applies a partial update to the record matching [org.sbm4j.ktscraping.exporters.ItemUpdate.keyName] = [org.sbm4j.ktscraping.exporters.ItemUpdate.data]
-     * in the Nitrite repository for [org.sbm4j.ktscraping.exporters.ItemUpdate.entityType].
+     * Applies a partial update to the record matching [ItemUpdate.keyName] = [ItemUpdate.keyValue]
+     * in the Nitrite repository for [ItemUpdate.entityType].
      *
      * Uses Nitrite's filter syntax (`keyName eq data`) to locate the target record,
-     * then applies the [org.sbm4j.ktscraping.exporters.ItemUpdate.values] map as a document patch.
+     * then applies the [ItemUpdate.values] map as a document patch.
      * The update is not persisted until [commit] is called.
      *
      * @param item The partial update to apply.
      */
-    override fun performItemUpdate(item: ItemUpdate) {
-        val repository = db.getRepository(item.entityType)
+    override fun <T: Any> performItemUpdate(item: ItemUpdate<T>): Boolean {
+        val repository = db.getRepository(item.entityType.java)
         val doc = documentOf()
         item.values.forEach {
             doc.put(it.key, it.value)
         }
-        repository.update(item.keyName eq item.data, doc)
+        val result = repository.update(item.keyName eq item.keyValue, doc)
+        return result.affectedCount >= 1
     }
 
     /**
-     * Removes the record matching [org.sbm4j.ktscraping.exporters.ItemDelete.keyName] = [org.sbm4j.ktscraping.exporters.ItemDelete.data]
-     * from the Nitrite repository for [org.sbm4j.ktscraping.exporters.ItemDelete.entityType].
-     * The deletion is not persisted until [commit] is called.
+     * Removes the record matching [ItemDelete.keyName] = [ItemDelete.keyValue]
+     * from the Nitrite repository for [ItemDelete.entityType].
+     *
      *
      * @param item The delete operation to apply.
      */
-    override fun performItemDelete(item: ItemDelete) {
-        val repository = db.getRepository(item.entityType)
-        repository.remove(item.keyName eq item.data)
+    override fun <T: Any> performItemDelete(item: ItemDelete<T>): Boolean {
+        val repository = db.getRepository(item.entityType.java)
+        val result = repository.remove(item.keyName eq item.keyValue)
+        return result.affectedCount >= 1
     }
 
     /**
@@ -176,8 +184,8 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
      * @param classObject The [Class] of the domain object to retrieve.
      * @return A list of all stored objects of type [T].
      */
-    override fun <T> getObjects(classObject: Class<T>): List<T> {
-        val repository = db.getRepository(classObject)
+    override fun <T: Any> getObjects(classObject: KClass<T>): List<T> {
+        val repository = db.getRepository(classObject.java)
         val cursor = repository.find()
         return cursor.map { it }
     }
@@ -188,8 +196,8 @@ class NitriteDBConnexion(dbFile: File): DBConnexion{
      * @param classObject The [Class] of the domain object to count.
      * @return The total number of stored records.
      */
-    override fun getSize(classObject: Class<*>): Long {
-        val repository = db.getRepository(classObject)
+    override fun <T: Any> getSize(classObject: KClass<T>): Long {
+        val repository = db.getRepository(classObject.java)
         return repository.size()
     }
 
